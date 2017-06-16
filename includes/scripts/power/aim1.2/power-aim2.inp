@@ -1,0 +1,53 @@
+TITLE: this is an example of a Monte Carlo
+simulation study for a growth mixture
+model with two classes (adapted from example 12.3
+take out cubic term for now
+This project calculating power.
+
+MONTECARLO:
+    NAMES ARE u y1-y7;
+    NOBSERVATIONS = 500;
+    NREPS = 1000;
+    SEED = 53487;
+    GENERATE = u (1);       ! binary variable with one threshold
+    CATEGORICAL = u;
+    GENCLASSES = cl (2);
+    CLASSES = cl (2);
+    repsave = all;
+    save = sim2_rev*.dat;
+MODEL POPULATION:
+    %OVERALL%   
+    i s q | y1@0 y2@1 y3@2 y4@3 y5@4 y6@5 y7@6; 
+    i*0.02 s*0.005 q*0.0005 ;    ! set variance for int, slope, quadratic and cubic terms;
+    i WITH s*0;                          ! no correlation between intercept and slope
+    y1-y7*0.1; ! variance of weight is 0.1
+    [cl#1*0]; ! class 1 is equally likely as class 2. threshold=-logit(p) = 0 -> or=1
+    %cl#1%  
+    [i*6 s*2.6 q*-0.12]; ! within class 1, intercept is 6 and slope is 2.5
+    [u$1*0.69] (t1);
+    %cl#2%
+    [i*6 s*2 q*-0.05]; ! within class 2, intercept is 6 and slope is 2;
+    [u$1*0] (t2); ! odds of distal outcome across two levels of latent classes.
+ANALYSIS: TYPE = MIXTURE;
+MODEL:
+    %OVERALL%
+    i s q | y1@0 y2@1 y3@2 y4@3 y5@4 y6@5 y7@6; 
+    i*0.02 s*0.005 q*0.0005; ! set variance for int, slope, quadratic and cubic terms;
+    i WITH s*0;
+    y1-y7*0.1;
+    [cl#1*0];
+    %cl#1%
+    [i*7] (i1);
+    [s*2.6 q*-0.12]; ! within class 1, intercept is 3 and slope is 3
+    [u$1*0.69] (t1);
+    %cl#2%
+    [i*5] (i2);
+    [s*2 q*-0.05]; ! within class 2, intercept is 1 and slope is 0;
+    [u$1*0] (t2);
+MODEL CONSTRAINT:
+New(t1t2);
+t1t2 = t1-t2;  ! estimate log odds ratio and if different than 0 -- or diff then 1
+New(i1i2);
+i1i2 = i1 - i2; ! test differences between intercepts for two groups.
+OUTPUT: TECH9;
+PLOT: type=plot2;
