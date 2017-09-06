@@ -1,0 +1,310 @@
+---
+title: "Individual power calculations for lipid variant association tests"
+author: "Ann Von Holle"
+date: '`r format(Sys.time(), "%d %B, %Y")`'
+bibliography: ../../../bib/lit-review.bib
+csl: ../../../bib/vancouver.csl
+output: 
+  html_document:
+    toc: yes
+    toc_float: yes
+    number_sections: true
+    toc_depth: 5
+    pandoc_args: [ 
+      "--filter", "C:/Python27/Scripts/pandoc-eqnos.exe" 
+    ]
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, results="hide")
+library(knitr)
+library(plyr)
+
+library(readxl)
+library(data.table)
+```
+
+
+# Statistics Background
+
+
+To determine which single variants to select for a linear additive model we considered conditions under which we could achieve power = 0.8 in testing the association between a variant and a continuous outcome/trait (in unrelated individuals). We assume that we pool both males and females in the analysis (n=600) and adjust for sex of child. We assume power would be lower and more conservative in the circumstances provided below absent any adjustment.
+
+The linear model would be:
+
+$$ Y = \beta_0 + \beta_1 X + \epsilon $$
+
+To test the effect of $\beta_1$ under $H_0: \beta_1 = 0$ versus $H_a: \beta_1 \ne 0$, we assume the following (copied from [http://faculty.washington.edu/tathornt/SISG2014/2014_SISG_10_5.pdf](http://faculty.washington.edu/tathornt/SISG2014/2014_SISG_10_5.pdf)):
+
+$$ T = \frac{\hat\beta_1}{\sqrt{var(\hat\beta_1)}} \sim \textbf{t}_{N-2} \approx N(0,1) \textrm{ for large N} $$
+
+$$ T^2 = \frac{\hat\beta_1^2}{var(\hat\beta_1)} \sim \textbf{F}_{1,N-2} \approx \chi_1^2 \textrm{ for large N} $$
+
+and
+
+$$ var(\hat\beta_1) = \frac{\sigma_{\epsilon}^2}{S_{XX}} $$ where $S_{XX}$ is the corrected sum of squares for the $X_i's$. In this context we assume $Var(X) = 2p(1-p)$ where $p$ = MAF.
+
+The non-centrality parameter (NCP) for this model is: 
+<!-- [@sham_statistical_2014] -->
+
+$$\lambda = N \times \frac{\beta^2 Var(X)}{\sigma_{\epsilon}^2}$$
+
+Next, we used the NCP, $\lambda$, in a 1 df chi-square test for equality of means. We made the plots below to examine power across different levels of MAF, standard deviation of the trait and varying $\beta_1$ values all based on the SNPs listed in Appendix A of my dissertation proposal.
+
+# MAF source
+
+To get minor allele frequencies for the AMR populuation in 1000 genomes, used the SPSmart online program [@_spsmart_2016] to input the list of appendix A snps.
+
+## SPSmart online resource.
+
+1. Enter snps from appendix A into SPS online resource  [here](http://spsmart.cesga.es/)
+2. Select '1000 Genomes Phase I May 2011'
+3. Do 'metasearch'
+4. Download SNP frequencies for 'America' group.
+
+<!--
+
+### Entry of SNPS
+
+![snps](..\table-data\spsmart-maf\spsmart-screen4.png)
+
+### Some results
+
+![snps](..\table-data\spsmart-maf\spsmart-screen3.png)
+
+### More results
+
+![snps](..\table-data\spsmart-maf\spsmart-screen2.png)
+-->
+
+### SNPs from Appendix A
+
+Note: if beta were in mg/dL they were converted to mmol/L for power calcs below
+
+```{r, results='markup'}
+
+# read in snps from appendix a
+# at ~\Documents\dissertation\unc-dissertation-markdown\includes\table-data
+
+appa.snps = read_excel("~/dissertation/unc-dissertation-markdown/includes/table-data/Copy of Full_list_lipids_known_loci_02102017-annotated.xlsx")
+#head(appa.snps)
+
+appa.snps = appa.snps[appa.snps$significance=="gw_sig",] # only genome-wide significant
+col.num1 = which(colnames(appa.snps) %in% "Beta (SE)")
+
+colnames(appa.snps)[col.num1] = "beta"
+table(appa.snps$beta.units)
+head(appa.snps)
+
+appa.snps = within(appa.snps, {
+  EAF = round(as.numeric(EAF), 3)
+  beta = round(as.numeric(beta), 3)
+  beta = ifelse(beta.units=="mg", beta/18, beta) # convert mg/dl to mmol/l
+})
+
+kable(appa.snps[,c("rsid", "Effect allele", "EAF", "beta", "Chr")])
+#write.csv(appa.snps[,c("snp2")], file='../table-data/snps-for-spsmart.csv')
+```
+
+### MAF from 1000 G AMR population for selected snps above
+
+Exported .csv file from 1000 genomes AMR population contains minor allele frequencies for these snps. Will use these MAF in the power calculations below.
+
+
+```{r}
+# 1. go to http://spsmart.cesga.es/  
+# 2. then input snps from .csv file above into program to get allele freq in AMR from 1000 genomes data 2011
+# 3. then save as .csv file to following location
+maf.amr = read.table("~/dissertation/unc-dissertation-markdown/includes/scripts/power/aim3/sps-download.csv", sep=";", header=T, skip=1)
+head(maf.amr)
+```
+
+
+```{r, results='markup'}
+select.c = colnames(maf.amr) %in% c("SNP", "N", "MA", "MAF")
+kable(maf.amr[maf.amr$population=="Population Set 1", select.c],
+      row.names = F)
+```
+
+# Calculations
+
+SNPs from Appendix A will make up the weighted genetic risk score, and will also be the SNPs for individual variant tests.
+
+The following information will assess which of these SNPs have enough power to detect a difference in the SLCS sample assuming a
+
+1) n=500, 
+2) effect sizes from studies listed in Appendix A from proposal
+3) standard deviation of the lipid outcomes from the SLCS sample.
+
+## List of SNPS and their effect sizes selected for each trait in Appendix A in proposal
+
+```{r}
+# get list of snps by trait (Appendix A)
+head(appa.snps)
+hdl.snps = appa.snps[appa.snps$Trait=="HDL", "rsid"]
+ldl.snps = appa.snps[appa.snps$Trait=="LDL", "rsid"]
+tg.snps = appa.snps[appa.snps$Trait=="TG", "rsid"]
+#tc.snps = appa.snps[appa.snps$trait=="tc", "snp2"] # no tc in buscot
+```
+
+### HDL
+```{r, results='markup'}
+  hdl.snps
+```
+
+### LDL
+```{r, results='markup'}
+  ldl.snps
+```
+
+### TG
+```{r, results='markup'}
+  tg.snps
+```
+
+
+## Comparison of MAF from 1000 genome AMR population (CLM and MXL) and app A
+
+```{r, results="markup"}
+# Merge 2 data frames together
+
+#head(appa.snps)
+
+b.snps = appa.snps[,c("rsid", "EAF", "Effect allele", "beta")]
+#colnames(b.snps)
+
+# redo amr data
+#head(maf.amr)
+maf.amr2 = maf.amr[maf.amr$population=="Population Set 1",
+                   c("SNP", "MAF", "reference")]
+colnames(maf.amr2) = c("rsid", "EAF", "Effect allele")
+#head(maf.amr2)
+
+# merge appa and amr by snp id
+maf = merge(b.snps, maf.amr2, by="rsid", all.x=T)
+#head(maf)
+colnames(maf) = c("rsid", "EAF.appa", "allele.appa", "beta",
+                  "maf.amr", "allele.amr")
+maf$EAF.appa = round(as.numeric(maf$EAF.appa),4)
+#head(maf)
+
+kable(maf)
+```
+
+
+```{r}
+
+# Look at sd for lipid traits (in mg/dl) in SLCS sample
+# ---------------------------------------
+phendat = read.csv(file = "~/../Dropbox/unc.grad.school/my-papers/ms-201608-1/programs/kure-analysis/phendat.csv")
+head(phendat)
+sapply(phendat[,4:7], function(x) sd(x, na.rm=T))
+
+# Get variables to use for power calcs
+
+maf = within(maf, {
+  
+  snp = as.character(rsid)
+  
+  # set sd -------------------------
+  
+  sd.hdl = 0.6 # sd approximation based on slcs sample (https://avonholle.github.io/ms-201608-1/chile-slides-201612.html#(10))
+#  sd.hdl = 0.2 # sd approximation based on Tikkanen 2011 estimates for hdl, 18 years, table 1
+  sd.ldl = 1.3 # sd approximation based on slcs sample
+  #maf.2$sd.ldl = 0.8 # sd approximation based on Tikkanen 2011 estimates for hdl, 18 years, table 1
+  sd.tg = 2.3 # sd approximation based on slcs
+  #maf.2$sd.tg = 0.4 # sd approximation based on Tikkanen 2011 estimates for hdl, 18 years, table 1
+  sd.tc = 1.4 # sd approx based on slcs sample
+
+  # set variance based on maf from 1000 g AMR
+  var = 2*EAF.appa*(1-EAF.appa)
+  
+  # set effect size to one from app A
+  # for a change in lipid (mg/dL) for a one unit change
+  # in additive model
+  es = as.numeric(beta)
+  
+  # set h2 for hdl
+  h2.hdl = (es^2)*var/(sd.hdl^2)
+    
+  # set h2 for ldl
+  h2.ldl = (es^2)*var/(sd.ldl^2)
+
+  # set h2 for tg
+  h2.tg = (es^2)*var/(sd.tg^2)
+  
+  # set h2 for tc
+  h2.tc = (es^2)*var/(sd.tc^2)
+  
+  threshold = qchisq(0.05, df=1, lower.tail=F)
+  
+  pwr.hdl = pchisq(threshold, df=1,lower.tail=F,
+                   ncp = 500*h2.hdl)
+
+  pwr.ldl = pchisq(threshold, df=1,lower.tail=F,
+                   ncp = 500*h2.ldl)
+  
+  pwr.tg = pchisq(threshold, df=1,lower.tail=F,
+                   ncp = 500*h2.tg)
+  
+  pwr.tc = pchisq(threshold, df=1,lower.tail=F,
+                   ncp = 500*h2.tc)
+})
+
+head(maf)
+
+sub=maf[c("rsid", 'beta', 'EAF.appa', 'maf.amr', 'pwr.hdl', 'pwr.ldl', 'pwr.tg')]
+sub
+
+```
+
+## SNPS with power > 0.8
+
+### HDL-related SNPS
+```{r, results='markup'}
+# any power estimates exceeding 0.8 (by trait specific effect)?
+kable(sub[sub$rsid %in% hdl.snps & sub$pwr.hdl>0.8 & !(is.na(sub$pwr.hdl)),
+          !(colnames(sub) %in% c("pwr.ldl",'pwr.tg'))]
+      )
+```
+
+### LDL-related SNPs
+```{r, results='markup'}
+kable(sub[sub$rsid %in% ldl.snps & sub$pwr.ldl>0.8 & !(is.na(sub$pwr.ldl)),
+          !(colnames(sub) %in% c("pwr.hdl",'pwr.tg'))]
+      )
+```
+
+### TG-related SNPs
+```{r, results='markup'}
+kable(sub[sub$rsid %in% tg.snps & sub$pwr.tg>0.8 & !(is.na(sub$pwr.tg)), 
+    !(colnames(sub) %in% c("pwr.ldl",'pwr.hdl'))])
+```
+
+### All sufficiently powered SNPs
+```{r, results='markup'}
+
+snp.sig = sub[ (sub$pwr.tg>0.8 & sub$rsid %in% tg.snps | 
+                 sub$pwr.hdl>0.8 & sub$rsid %in% hdl.snps | 
+                 sub$pwr.ldl>0.8 & sub$rsid %in% ldl.snps) & complete.cases(sub),]
+
+kable(snp.sig, row.names=F )
+```
+
+```{r, results='markup'}
+# print off table of sign snps with identifying info
+# Export info to .csv file to display in body of proposal.
+
+#head(appa.snps)
+#colnames(appa.snps)
+appa.snps$`Effect allele` = substr(appa.snps$`Effect allele`,1,1)
+table.sig.snp = appa.snps[(appa.snps$rsid %in% snp.sig$rsid), c("Trait", "rsid", "Author", "Chr", 
+                                                    "Gene   ", "Effect allele", "beta")]
+write.csv(table.sig.snp, file="~/dissertation/unc-dissertation-markdown/includes/scripts/power/aim3/sig-snp.csv",
+          row.names = F)
+kable(table.sig.snp)
+```
+
+
+# References
+  
