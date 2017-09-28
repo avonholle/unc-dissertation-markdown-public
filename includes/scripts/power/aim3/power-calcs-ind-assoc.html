@@ -216,7 +216,7 @@ div.tocify {
 
 <h1 class="title toc-ignore">Individual power calculations for lipid variant association tests</h1>
 <h4 class="author"><em>Ann Von Holle</em></h4>
-<h4 class="date"><em>07 May, 2017</em></h4>
+<h4 class="date"><em>24 September, 2017</em></h4>
 
 </div>
 
@@ -263,702 +263,135 @@ div.tocify {
 <div id="snps-from-appendix-a" class="section level3">
 <h3><span class="header-section-number">2.1.1</span> SNPs from Appendix A</h3>
 <p>Note: if beta were in mg/dL they were converted to mmol/L for power calcs below</p>
+<pre><code>##     Locus Chr   Lead.SNP Lead.trait Other.traits Alleles.MAF Effect.size
+## 1 LDLRAP1   1 rs12027135         TC          LDL    T/A/0.45       -1.22
+## 2  PABPC4   1  rs4660293        HDL                 A/G/0.23       -0.48
+## 3   PCSK9   1  rs2479409        LDL           TC    A/G/0.30        2.01
+## 4 ANGPTL3   1  rs2131925         TG      TC, LDL    T/G/0.32       -4.94
+## 5    EVI5   1  rs7515577         TC                 A/C/0.21       -1.18
+## 6   SORT1   1   rs629301        LDL           TC    T/G/0.22       -5.65</code></pre>
+<pre><code>##  [1] &quot;original row #&quot; &quot;significance&quot;   &quot;list&quot;           &quot;PMID&quot;          
+##  [5] &quot;Author&quot;         &quot;Ancestry&quot;       &quot;Trait&quot;          &quot;rsid&quot;          
+##  [9] &quot;Chr&quot;            &quot;Pos_hg19&quot;       &quot;Gene&quot;           &quot;Effect allele&quot; 
+## [13] &quot;Other allele&quot;   &quot;EAF&quot;            &quot;Beta (SE)&quot;      &quot;beta.units&quot;    
+## [17] &quot;P&quot;              &quot;Pjoint/Pcond&quot;   &quot;function&quot;       &quot;Note&quot;          
+## [21] &quot;eur&quot;            &quot;generalize&quot;</code></pre>
+<pre><code>##         rsid Effect allele                 EAF             Beta (SE) Chr
+## 1  rs2367970             G 0.77600000000000002 9.7000000000000003E-2  11
+## 2  rs2472386             A               0.436 8.7999999999999995E-2   9
+## 3   rs261334             G 0.38400000000000001                9.4E-2  15
+## 4 rs28526159             T 0.61799999999999999 7.6999999999999999E-2   8
+## 5  rs7121538             C                  NR 2.5999999999999999E-2  11
+## 6  rs7499892             C 0.77300000000000002   0.24299999999999999  16
+##   Trait   Author beta.units significance eur
+## 1   HDL Below JE         mg       gw_sig   0
+## 2   HDL Below JE         mg       gw_sig   0
+## 3   HDL Below JE         mg       gw_sig   0
+## 4   HDL Below JE         mg       gw_sig   0
+## 5   HDL Below JE         mg       gw_sig   0
+## 6   HDL Below JE         mg       gw_sig   0</code></pre>
+<pre><code>##  [1] &quot;rsid&quot;          &quot;Effect allele&quot; &quot;EAF&quot;           &quot;Beta (SE)&quot;    
+##  [5] &quot;Chr&quot;           &quot;Trait&quot;         &quot;Author&quot;        &quot;beta.units&quot;   
+##  [9] &quot;significance&quot;  &quot;eur&quot;</code></pre>
+<pre><code>## [1] &quot;Locus&quot;        &quot;Chr&quot;          &quot;Lead.SNP&quot;     &quot;Lead.trait&quot;  
+## [5] &quot;Other.traits&quot; &quot;Alleles.MAF&quot;  &quot;Effect.size&quot;</code></pre>
+<pre><code>## [1] &quot;rs2367970-HDL&quot;  &quot;rs2472386-HDL&quot;  &quot;rs261334-HDL&quot;   &quot;rs28526159-HDL&quot;
+## [5] &quot;rs7121538-HDL&quot;  &quot;rs7499892-HDL&quot;</code></pre>
+<pre><code>## [1] &quot;rs12027135-TC&quot; &quot;rs4660293-HDL&quot; &quot;rs2479409-LDL&quot; &quot;rs2131925-TG&quot; 
+## [5] &quot;rs7515577-TC&quot;  &quot;rs629301-LDL&quot;</code></pre>
 <pre><code>## 
-##   mg mmol 
-##   61   18</code></pre>
-<pre><code>##   original row # significance           list     PMID   Author Ancestry
-## 1              8       gw_sig in_gwascatalog 26780889 Below JE Hispanic
-## 2              9       gw_sig in_gwascatalog 26780889 Below JE Hispanic
-## 3             10       gw_sig in_gwascatalog 26780889 Below JE Hispanic
-## 4             11       gw_sig in_gwascatalog 26780889 Below JE Hispanic
-## 5             15       gw_sig in_gwascatalog 26780889 Below JE Hispanic
-## 6             16       gw_sig in_gwascatalog 26780889 Below JE Hispanic
-##   Trait       rsid Chr  Pos_hg19              Gene    Effect allele
-## 1   HDL  rs2367970  11 116581641 LOC101929011 - BUD13             G
-## 2   HDL  rs2472386   9 107601541                ABCA1             A
-## 3   HDL   rs261334  15  58726744                 LIPC             G
-## 4   HDL rs28526159   8  19891227   LPL - LOC105379311             T
-## 5   HDL  rs7121538  11  14504463                COPB1             C
-## 6   HDL  rs7499892  16  57006590                 CETP             C
-##   Other allele                 EAF                  beta beta.units     P
-## 1           NA 0.77600000000000002 9.7000000000000003E-2         mg 8e-10
-## 2           NA               0.436 8.7999999999999995E-2         mg 8e-11
-## 3           NA 0.38400000000000001                9.4E-2         mg 9e-13
-## 4           NA 0.61799999999999999 7.6999999999999999E-2         mg 8e-09
-## 5           NA                  NR 2.5999999999999999E-2         mg 2e-08
-## 6           NA 0.77300000000000002   0.24299999999999999         mg 4e-49
-##   Pjoint/Pcond           function       Note
-## 1           NA intergenic_variant (Hispanic)
-## 2           NA     intron_variant (Hispanic)
-## 3           NA     intron_variant (Hispanic)
-## 4           NA intergenic_variant (Hispanic)
-## 5           NA     intron_variant       &lt;NA&gt;
-## 6           NA     intron_variant (Hispanic)</code></pre>
-<pre><code>## Warning: NAs introduced by coercion
-
-## Warning: NAs introduced by coercion</code></pre>
-<table>
-<thead>
-<tr class="header">
-<th></th>
-<th align="left">rsid</th>
-<th align="left">Effect allele</th>
-<th align="right">EAF</th>
-<th align="right">beta</th>
-<th align="right">Chr</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>1</td>
-<td align="left">rs2367970</td>
-<td align="left">G</td>
-<td align="right">0.776</td>
-<td align="right">0.0053889</td>
-<td align="right">11</td>
-</tr>
-<tr class="even">
-<td>2</td>
-<td align="left">rs2472386</td>
-<td align="left">A</td>
-<td align="right">0.436</td>
-<td align="right">0.0048889</td>
-<td align="right">9</td>
-</tr>
-<tr class="odd">
-<td>3</td>
-<td align="left">rs261334</td>
-<td align="left">G</td>
-<td align="right">0.384</td>
-<td align="right">0.0052222</td>
-<td align="right">15</td>
-</tr>
-<tr class="even">
-<td>4</td>
-<td align="left">rs28526159</td>
-<td align="left">T</td>
-<td align="right">0.618</td>
-<td align="right">0.0042778</td>
-<td align="right">8</td>
-</tr>
-<tr class="odd">
-<td>5</td>
-<td align="left">rs7121538</td>
-<td align="left">C</td>
-<td align="right">NA</td>
-<td align="right">0.0014444</td>
-<td align="right">11</td>
-</tr>
-<tr class="even">
-<td>6</td>
-<td align="left">rs7499892</td>
-<td align="left">C</td>
-<td align="right">0.773</td>
-<td align="right">0.0135000</td>
-<td align="right">16</td>
-</tr>
-<tr class="odd">
-<td>7</td>
-<td align="left">rs884366</td>
-<td align="left">G</td>
-<td align="right">NA</td>
-<td align="right">0.0011667</td>
-<td align="right">6</td>
-</tr>
-<tr class="even">
-<td>8</td>
-<td align="left">rs13392272</td>
-<td align="left">T</td>
-<td align="right">0.387</td>
-<td align="right">0.0052778</td>
-<td align="right">2</td>
-</tr>
-<tr class="odd">
-<td>9</td>
-<td align="left">rs2238675</td>
-<td align="left">C</td>
-<td align="right">0.887</td>
-<td align="right">0.0069444</td>
-<td align="right">19</td>
-</tr>
-<tr class="even">
-<td>10</td>
-<td align="left">rs4791641</td>
-<td align="left">C</td>
-<td align="right">NA</td>
-<td align="right">0.0011667</td>
-<td align="right">17</td>
-</tr>
-<tr class="odd">
-<td>11</td>
-<td align="left">rs660240</td>
-<td align="left">C</td>
-<td align="right">0.793</td>
-<td align="right">0.0099444</td>
-<td align="right">1</td>
-</tr>
-<tr class="even">
-<td>12</td>
-<td align="left">rs7528419</td>
-<td align="left">A</td>
-<td align="right">0.792</td>
-<td align="right">0.0095556</td>
-<td align="right">1</td>
-</tr>
-<tr class="odd">
-<td>13</td>
-<td align="left">rs2238675</td>
-<td align="left">C</td>
-<td align="right">0.887</td>
-<td align="right">0.0091111</td>
-<td align="right">19</td>
-</tr>
-<tr class="even">
-<td>14</td>
-<td align="left">rs964184</td>
-<td align="left">G</td>
-<td align="right">0.248</td>
-<td align="right">0.0057222</td>
-<td align="right">11</td>
-</tr>
-<tr class="odd">
-<td>15</td>
-<td align="left">rs138534124</td>
-<td align="left">T</td>
-<td align="right">0.925</td>
-<td align="right">0.0082222</td>
-<td align="right">19</td>
-</tr>
-<tr class="even">
-<td>16</td>
-<td align="left">rs1250229</td>
-<td align="left">C</td>
-<td align="right">NA</td>
-<td align="right">0.0012778</td>
-<td align="right">2</td>
-</tr>
-<tr class="odd">
-<td>17</td>
-<td align="left">rs2235776</td>
-<td align="left">C</td>
-<td align="right">NA</td>
-<td align="right">0.0014444</td>
-<td align="right">22</td>
-</tr>
-<tr class="even">
-<td>18</td>
-<td align="left">rs8102280</td>
-<td align="left">G</td>
-<td align="right">0.956</td>
-<td align="right">0.0140000</td>
-<td align="right">19</td>
-</tr>
-<tr class="odd">
-<td>19</td>
-<td align="left">rs780093</td>
-<td align="left">T</td>
-<td align="right">0.356</td>
-<td align="right">0.0060000</td>
-<td align="right">2</td>
-</tr>
-<tr class="even">
-<td>20</td>
-<td align="left">rs2954031</td>
-<td align="left">G</td>
-<td align="right">0.612</td>
-<td align="right">0.0054444</td>
-<td align="right">8</td>
-</tr>
-<tr class="odd">
-<td>24</td>
-<td align="left">rs34052647</td>
-<td align="left">G</td>
-<td align="right">0.960</td>
-<td align="right">NA</td>
-<td align="right">19</td>
-</tr>
-<tr class="even">
-<td>25</td>
-<td align="left">rs10902456</td>
-<td align="left">G</td>
-<td align="right">0.730</td>
-<td align="right">NA</td>
-<td align="right">12</td>
-</tr>
-<tr class="odd">
-<td>26</td>
-<td align="left">rs11216230</td>
-<td align="left">A</td>
-<td align="right">NA</td>
-<td align="right">0.2200000</td>
-<td align="right">11</td>
-</tr>
-<tr class="even">
-<td>27</td>
-<td align="left">rs5880</td>
-<td align="left">C</td>
-<td align="right">NA</td>
-<td align="right">0.2900000</td>
-<td align="right">16</td>
-</tr>
-<tr class="odd">
-<td>28</td>
-<td align="left">rs118146573</td>
-<td align="left">A</td>
-<td align="right">NA</td>
-<td align="right">0.2000000</td>
-<td align="right">16</td>
-</tr>
-<tr class="even">
-<td>29</td>
-<td align="left">rs3902354</td>
-<td align="left">A</td>
-<td align="right">NA</td>
-<td align="right">0.1500000</td>
-<td align="right">1</td>
-</tr>
-<tr class="odd">
-<td>30</td>
-<td align="left">rs964184</td>
-<td align="left">G</td>
-<td align="right">NA</td>
-<td align="right">1.8900000</td>
-<td align="right">11</td>
-</tr>
-<tr class="even">
-<td>31</td>
-<td align="left">rs79236614</td>
-<td align="left">?</td>
-<td align="right">NA</td>
-<td align="right">1.8900000</td>
-<td align="right">8</td>
-</tr>
-<tr class="odd">
-<td>32</td>
-<td align="left">rs28680850</td>
-<td align="left">A</td>
-<td align="right">NA</td>
-<td align="right">1.2600000</td>
-<td align="right">8</td>
-</tr>
-<tr class="even">
-<td>33</td>
-<td align="left">rs139961185</td>
-<td align="left">A</td>
-<td align="right">NA</td>
-<td align="right">1.4400000</td>
-<td align="right">11</td>
-</tr>
-<tr class="odd">
-<td>34</td>
-<td align="left">rs78536982</td>
-<td align="left">T</td>
-<td align="right">NA</td>
-<td align="right">1.3800000</td>
-<td align="right">6</td>
-</tr>
-<tr class="even">
-<td>35</td>
-<td align="left">rs62436827</td>
-<td align="left">G</td>
-<td align="right">NA</td>
-<td align="right">1.4900000</td>
-<td align="right">6</td>
-</tr>
-<tr class="odd">
-<td>36</td>
-<td align="left">rs4360309</td>
-<td align="left">T</td>
-<td align="right">NA</td>
-<td align="right">1.3500000</td>
-<td align="right">8</td>
-</tr>
-<tr class="even">
-<td>37</td>
-<td align="left">rs72925845</td>
-<td align="left">?</td>
-<td align="right">NA</td>
-<td align="right">1.6400000</td>
-<td align="right">17</td>
-</tr>
-<tr class="odd">
-<td>38</td>
-<td align="left">rs1077835</td>
-<td align="left">A</td>
-<td align="right">0.380</td>
-<td align="right">0.1700000</td>
-<td align="right">15</td>
-</tr>
-<tr class="even">
-<td>39</td>
-<td align="left">rs1532624</td>
-<td align="left">A</td>
-<td align="right">0.430</td>
-<td align="right">0.2300000</td>
-<td align="right">16</td>
-</tr>
-<tr class="odd">
-<td>41</td>
-<td align="left">rs2278426</td>
-<td align="left">?</td>
-<td align="right">0.300</td>
-<td align="right">0.1400000</td>
-<td align="right">19</td>
-</tr>
-<tr class="even">
-<td>42</td>
-<td align="left">rs9282541</td>
-<td align="left">A</td>
-<td align="right">0.110</td>
-<td align="right">0.3700000</td>
-<td align="right">9</td>
-</tr>
-<tr class="odd">
-<td>43</td>
-<td align="left">rs1042034</td>
-<td align="left">A/G</td>
-<td align="right">0.770</td>
-<td align="right">-0.0600000</td>
-<td align="right">2</td>
-</tr>
-<tr class="even">
-<td>44</td>
-<td align="left">rs4841132</td>
-<td align="left">A/G</td>
-<td align="right">0.170</td>
-<td align="right">-0.1000000</td>
-<td align="right">8</td>
-</tr>
-<tr class="odd">
-<td>45</td>
-<td align="left">rs3208305</td>
-<td align="left">A/T</td>
-<td align="right">0.690</td>
-<td align="right">-0.0761111</td>
-<td align="right">8</td>
-</tr>
-<tr class="even">
-<td>46</td>
-<td align="left">rs66462329</td>
-<td align="left">A/G</td>
-<td align="right">0.270</td>
-<td align="right">0.0555556</td>
-<td align="right">8</td>
-</tr>
-<tr class="odd">
-<td>47</td>
-<td align="left">rs2954038</td>
-<td align="left">A/C</td>
-<td align="right">0.750</td>
-<td align="right">0.0472222</td>
-<td align="right">8</td>
-</tr>
-<tr class="even">
-<td>48</td>
-<td align="left">rs2575876</td>
-<td align="left">A/G</td>
-<td align="right">0.260</td>
-<td align="right">-0.0494444</td>
-<td align="right">9</td>
-</tr>
-<tr class="odd">
-<td>49</td>
-<td align="left">rs174537</td>
-<td align="left">A/C</td>
-<td align="right">0.480</td>
-<td align="right">-0.0422222</td>
-<td align="right">11</td>
-</tr>
-<tr class="even">
-<td>50</td>
-<td align="left">rs180360</td>
-<td align="left">A/G</td>
-<td align="right">0.700</td>
-<td align="right">-0.0766667</td>
-<td align="right">11</td>
-</tr>
-<tr class="odd">
-<td>51</td>
-<td align="left">rs3135506</td>
-<td align="left">C/G</td>
-<td align="right">0.880</td>
-<td align="right">0.1016667</td>
-<td align="right">11</td>
-</tr>
-<tr class="even">
-<td>52</td>
-<td align="left">rs662799</td>
-<td align="left">A/G</td>
-<td align="right">0.860</td>
-<td align="right">0.0766667</td>
-<td align="right">11</td>
-</tr>
-<tr class="odd">
-<td>53</td>
-<td align="left">rs35853021</td>
-<td align="left">A/C</td>
-<td align="right">0.370</td>
-<td align="right">0.0683333</td>
-<td align="right">15</td>
-</tr>
-<tr class="even">
-<td>54</td>
-<td align="left">rs8033940</td>
-<td align="left">A/G</td>
-<td align="right">0.510</td>
-<td align="right">0.0661111</td>
-<td align="right">15</td>
-</tr>
-<tr class="odd">
-<td>55</td>
-<td align="left">rs247617</td>
-<td align="left">A/C</td>
-<td align="right">0.300</td>
-<td align="right">0.1727778</td>
-<td align="right">16</td>
-</tr>
-<tr class="even">
-<td>56</td>
-<td align="left">rs11076175</td>
-<td align="left">A/G</td>
-<td align="right">0.790</td>
-<td align="right">0.1533333</td>
-<td align="right">16</td>
-</tr>
-<tr class="odd">
-<td>57</td>
-<td align="left">rs5883</td>
-<td align="left">A/G</td>
-<td align="right">0.050</td>
-<td align="right">0.1266667</td>
-<td align="right">16</td>
-</tr>
-<tr class="even">
-<td>58</td>
-<td align="left">rs16942887</td>
-<td align="left">A/G</td>
-<td align="right">0.160</td>
-<td align="right">0.0655556</td>
-<td align="right">16</td>
-</tr>
-<tr class="odd">
-<td>59</td>
-<td align="left">rs1800961</td>
-<td align="left">A/G</td>
-<td align="right">0.040</td>
-<td align="right">-0.1400000</td>
-<td align="right">20</td>
-</tr>
-<tr class="even">
-<td>60</td>
-<td align="left">rs12740374</td>
-<td align="left">A/C</td>
-<td align="right">0.210</td>
-<td align="right">-0.4388889</td>
-<td align="right">1</td>
-</tr>
-<tr class="odd">
-<td>61</td>
-<td align="left">rs668948</td>
-<td align="left">A/G</td>
-<td align="right">0.770</td>
-<td align="right">0.2488889</td>
-<td align="right">2</td>
-</tr>
-<tr class="even">
-<td>62</td>
-<td align="left">rs934197</td>
-<td align="left">A/G</td>
-<td align="right">0.270</td>
-<td align="right">0.2250000</td>
-<td align="right">2</td>
-</tr>
-<tr class="odd">
-<td>63</td>
-<td align="left">rs780093</td>
-<td align="left">A/G</td>
-<td align="right">0.330</td>
-<td align="right">0.1461111</td>
-<td align="right">2</td>
-</tr>
-<tr class="even">
-<td>64</td>
-<td align="left">rs4245791</td>
-<td align="left">A/G</td>
-<td align="right">0.790</td>
-<td align="right">-0.1844444</td>
-<td align="right">2</td>
-</tr>
-<tr class="odd">
-<td>65</td>
-<td align="left">rs12916</td>
-<td align="left">A/G</td>
-<td align="right">0.630</td>
-<td align="right">-0.1822222</td>
-<td align="right">5</td>
-</tr>
-<tr class="even">
-<td>66</td>
-<td align="left">rs3798168</td>
-<td align="left">A/C</td>
-<td align="right">0.150</td>
-<td align="right">-0.1816667</td>
-<td align="right">6</td>
-</tr>
-<tr class="odd">
-<td>67</td>
-<td align="left">rs2980869</td>
-<td align="left">A/G</td>
-<td align="right">0.430</td>
-<td align="right">-0.1605556</td>
-<td align="right">8</td>
-</tr>
-<tr class="even">
-<td>68</td>
-<td align="left">rs6511720</td>
-<td align="left">A/C</td>
-<td align="right">0.100</td>
-<td align="right">-0.3727778</td>
-<td align="right">19</td>
-</tr>
-<tr class="odd">
-<td>69</td>
-<td align="left">rs2074304</td>
-<td align="left">C/G</td>
-<td align="right">0.950</td>
-<td align="right">0.3772222</td>
-<td align="right">19</td>
-</tr>
-<tr class="even">
-<td>70</td>
-<td align="left">rs7412</td>
-<td align="left">A/G</td>
-<td align="right">0.050</td>
-<td align="right">-0.9394444</td>
-<td align="right">19</td>
-</tr>
-<tr class="odd">
-<td>71</td>
-<td align="left">rs631106</td>
-<td align="left">A/C</td>
-<td align="right">0.410</td>
-<td align="right">-0.0016667</td>
-<td align="right">1</td>
-</tr>
-<tr class="even">
-<td>72</td>
-<td align="left">rs11902417</td>
-<td align="left">A/G</td>
-<td align="right">0.250</td>
-<td align="right">-0.0022222</td>
-<td align="right">2</td>
-</tr>
-<tr class="odd">
-<td>73</td>
-<td align="left">rs780094</td>
-<td align="left">A/G</td>
-<td align="right">0.340</td>
-<td align="right">0.0033333</td>
-<td align="right">2</td>
-</tr>
-<tr class="even">
-<td>74</td>
-<td align="left">rs33951980</td>
-<td align="left">A/G</td>
-<td align="right">0.070</td>
-<td align="right">-0.0050000</td>
-<td align="right">7</td>
-</tr>
-<tr class="odd">
-<td>75</td>
-<td align="left">rs10096633</td>
-<td align="left">A/G</td>
-<td align="right">0.160</td>
-<td align="right">-0.0044444</td>
-<td align="right">8</td>
-</tr>
-<tr class="even">
-<td>76</td>
-<td align="left">rs60223219</td>
-<td align="left">A/G</td>
-<td align="right">0.920</td>
-<td align="right">0.0050000</td>
-<td align="right">8</td>
-</tr>
-<tr class="odd">
-<td>77</td>
-<td align="left">rs2954038</td>
-<td align="left">A/C</td>
-<td align="right">0.750</td>
-<td align="right">-0.0027778</td>
-<td align="right">8</td>
-</tr>
-<tr class="even">
-<td>78</td>
-<td align="left">rs28927680</td>
-<td align="left">C/G</td>
-<td align="right">0.860</td>
-<td align="right">-0.0055556</td>
-<td align="right">11</td>
-</tr>
-<tr class="odd">
-<td>79</td>
-<td align="left">rs2266788</td>
-<td align="left">A/G</td>
-<td align="right">0.880</td>
-<td align="right">-0.0072222</td>
-<td align="right">11</td>
-</tr>
-<tr class="even">
-<td>80</td>
-<td align="left">rs118029212</td>
-<td align="left">A/G</td>
-<td align="right">0.060</td>
-<td align="right">-0.0055556</td>
-<td align="right">19</td>
-</tr>
-<tr class="odd">
-<td>81</td>
-<td align="left">rs58542926</td>
-<td align="left">A/G</td>
-<td align="right">0.050</td>
-<td align="right">-0.0050000</td>
-<td align="right">19</td>
-</tr>
-<tr class="even">
-<td>82</td>
-<td align="left">rs12721054</td>
-<td align="left">A/G</td>
-<td align="right">0.980</td>
-<td align="right">0.0061111</td>
-<td align="right">19</td>
-</tr>
-<tr class="odd">
-<td>83</td>
-<td align="left">rs439401</td>
-<td align="left">A/G</td>
-<td align="right">0.470</td>
-<td align="right">-0.0016667</td>
-<td align="right">19</td>
-</tr>
-<tr class="even">
-<td>NA</td>
-<td align="left">NA</td>
-<td align="left">NA</td>
-<td align="right">NA</td>
-<td align="right">NA</td>
-<td align="right">NA</td>
-</tr>
-<tr class="odd">
-<td>NA.1</td>
-<td align="left">NA</td>
-<td align="left">NA</td>
-<td align="right">NA</td>
-<td align="right">NA</td>
-<td align="right">NA</td>
-</tr>
-</tbody>
-</table>
+##              Below           Below JE       Elbers et al 
+##                  3                 20                  2 
+##                 Ko               Ko A               Tada 
+##                  2                 12                 50 
+##          Teslovich   Weissglas-Volkov Weissglas-Volkov D 
+##                 61                  5                  4 
+##             Willer                 Wu             Zubair 
+##                 15                 35                 43</code></pre>
+<pre><code>## [1] 252</code></pre>
+<pre><code>## [1] 252</code></pre>
+<pre><code>##          rsid             Author    Beta (SE) Effect.size Trait eur
+## 1  rs10096633             Zubair        -0.08          NA    TG   0
+## 2  rs10106652               Tada       -0.084          NA    TG   1
+## 3    rs103294               Tada        0.045          NA   HDL   1
+## 4   rs1038026                 Wu        0.183          NA   LDL   1
+## 5  rs10401969          Teslovich       -0.118          NA   LDL   1
+## 6  rs10401969          Teslovich       -0.121          NA    TG   1
+## 7   rs1042034             Zubair        -1.08          NA   HDL   0
+## 8  rs10455872               Tada       -0.089          NA   LDL   1
+## 9  rs10468017                 Wu        0.051          NA   HDL   1
+## 10 rs10761731          Teslovich       -0.031       -2.38    TG   1
+## 11  rs1077834                 Wu        -0.05          NA   HDL   1
+## 12  rs1077834               Tada       -0.043          NA    TG   1
+## 13  rs1077835 Weissglas-Volkov D         0.17          NA   HDL   0
+## 14  rs1077835   Weissglas-Volkov        -0.17          NA   HDL   1
+## 15 rs10902456       Elbers et al 0.19 (0.043)          NA    TC   0
+## 16 rs10903129               Tada       -0.029          NA   LDL   1
+## 17 rs11076174               Tada        0.237          NA   HDL   1
+## 18 rs11076175             Zubair         2.76          NA   HDL   0
+## 19 rs11136341          Teslovich        0.045        1.40   LDL   1
+## 20 rs11216230               Ko A         0.22          NA   HDL   0</code></pre>
+<pre><code>##          rsid Trait Beta (SE)
+## 83  rs2479409   LDL     0.064
+## 89  rs2131925   LDL    -0.049
+## 91   rs629301   LDL    -0.167
+## 93  rs2642442   LDL    -0.036
+## 94  rs1367117   LDL     0.119
+## 100 rs4299376   LDL     0.081</code></pre>
+<pre><code>## 
+##   0   1 
+##  79 173</code></pre>
+<pre><code>##               id       rsid Effect allele  EAF Beta (SE) Chr Trait
+## 1  rs10096633-TG rs10096633           A/G 0.16     -0.08   8    TG
+## 2  rs10106652-TG rs10106652             A &lt;NA&gt;    -0.084   8    TG
+## 3   rs103294-HDL   rs103294             T &lt;NA&gt;     0.045  19   HDL
+## 4  rs1038026-LDL  rs1038026             A &lt;NA&gt;     0.183  19   LDL
+## 5 rs10401969-LDL rs10401969             C &lt;NA&gt;    -0.118  19   LDL
+## 6  rs10401969-TG rs10401969             C &lt;NA&gt;    -0.121  19    TG
+##      Author beta.units significance eur Lead.SNP Effect.size Lead.trait
+## 1    Zubair         mg       gw_sig   0     &lt;NA&gt;          NA       &lt;NA&gt;
+## 2      Tada         mg         &lt;NA&gt;   1     &lt;NA&gt;          NA       &lt;NA&gt;
+## 3      Tada         mg         &lt;NA&gt;   1     &lt;NA&gt;          NA       &lt;NA&gt;
+## 4        Wu       mmol         &lt;NA&gt;   1     &lt;NA&gt;          NA       &lt;NA&gt;
+## 5 Teslovich         mg         &lt;NA&gt;   1     &lt;NA&gt;          NA       &lt;NA&gt;
+## 6 Teslovich         mg         &lt;NA&gt;   1     &lt;NA&gt;          NA       &lt;NA&gt;
+##   beta.
+## 1 -0.08
+## 2  &lt;NA&gt;
+## 3  &lt;NA&gt;
+## 4  &lt;NA&gt;
+## 5  &lt;NA&gt;
+## 6  &lt;NA&gt;</code></pre>
+<pre><code>## Warning: NAs introduced by coercion</code></pre>
+<pre><code>## [1] &quot;numeric&quot;</code></pre>
+<pre><code>##      Min.   1st Qu.    Median      Mean   3rd Qu.      Max.      NA's 
+## -16.91000  -0.56000   0.09800  -0.01419   1.35000  16.95000       135</code></pre>
+<pre><code>##                id       rsid Effect allele  EAF Beta (SE) Chr Trait
+## 1   rs10096633-TG rs10096633           A/G 0.16     -0.08   8    TG
+## 7   rs1042034-HDL  rs1042034           A/G 0.77     -1.08   2   HDL
+## 10  rs10761731-TG rs10761731             T &lt;NA&gt;    -0.031  10    TG
+## 13  rs1077835-HDL  rs1077835             A 0.38      0.17  15   HDL
+## 18 rs11076175-HDL rs11076175           A/G 0.79      2.76  16   HDL
+## 19 rs11136341-LDL rs11136341             G &lt;NA&gt;     0.045   8   LDL
+##                Author beta.units significance eur   Lead.SNP Effect.size
+## 1              Zubair         mg       gw_sig   0       &lt;NA&gt;          NA
+## 7              Zubair         mg       gw_sig   0       &lt;NA&gt;          NA
+## 10          Teslovich         mg         &lt;NA&gt;   1 rs10761731       -2.38
+## 13 Weissglas-Volkov D       mmol       gw_sig   0       &lt;NA&gt;          NA
+## 18             Zubair         mg       gw_sig   0       &lt;NA&gt;          NA
+## 19          Teslovich         mg         &lt;NA&gt;   1 rs11136341        1.40
+##    Lead.trait beta.         beta
+## 1        &lt;NA&gt; -0.08 -0.004444444
+## 7        &lt;NA&gt; -1.08 -0.060000000
+## 10         TG -2.38 -0.132222222
+## 13       &lt;NA&gt;  0.17  0.170000000
+## 18       &lt;NA&gt;  2.76  0.153333333
+## 19        LDL   1.4  0.077777778</code></pre>
+<pre><code>## 
+##           Below JE               Ko A          Teslovich 
+##                 20                 12                 40 
+## Weissglas-Volkov D             Zubair 
+##                  4                 41</code></pre>
 </div>
 <div id="maf-from-1000-g-amr-population-for-selected-snps-above" class="section level3">
 <h3><span class="header-section-number">2.1.2</span> MAF from 1000 G AMR population for selected snps above</h3>
@@ -974,466 +407,646 @@ div.tocify {
 </thead>
 <tbody>
 <tr class="odd">
-<td align="left">rs1077835</td>
-<td align="right">126</td>
-<td align="left">G</td>
-<td align="right">0.413</td>
-</tr>
-<tr class="even">
-<td align="left">rs11216230</td>
-<td align="right">126</td>
-<td align="left">A</td>
-<td align="right">0.056</td>
-</tr>
-<tr class="odd">
-<td align="left">rs13392272</td>
-<td align="right">126</td>
+<td align="left">rs10096633</td>
+<td align="right">181</td>
 <td align="left">T</td>
-<td align="right">0.369</td>
+<td align="right">0.124</td>
 </tr>
 <tr class="even">
-<td align="left">rs1532624</td>
-<td align="right">126</td>
-<td align="left">A</td>
-<td align="right">0.361</td>
-</tr>
-<tr class="odd">
-<td align="left">rs2126259</td>
-<td align="right">126</td>
-<td align="left">T</td>
-<td align="right">0.242</td>
-</tr>
-<tr class="even">
-<td align="left">rs2238675</td>
-<td align="right">126</td>
-<td align="left">T</td>
-<td align="right">0.099</td>
-</tr>
-<tr class="odd">
-<td align="left">rs2278426</td>
-<td align="right">126</td>
-<td align="left">T</td>
-<td align="right">0.187</td>
-</tr>
-<tr class="even">
-<td align="left">rs2367970</td>
-<td align="right">126</td>
-<td align="left">A</td>
-<td align="right">0.270</td>
-</tr>
-<tr class="odd">
-<td align="left">rs2472386</td>
-<td align="right">126</td>
-<td align="left">A</td>
-<td align="right">0.468</td>
-</tr>
-<tr class="even">
-<td align="left">rs261334</td>
-<td align="right">126</td>
-<td align="left">G</td>
-<td align="right">0.369</td>
-</tr>
-<tr class="odd">
-<td align="left">rs28526159</td>
-<td align="right">126</td>
-<td align="left">C</td>
-<td align="right">0.456</td>
-</tr>
-<tr class="even">
-<td align="left">rs4791641</td>
-<td align="right">126</td>
-<td align="left">T</td>
-<td align="right">0.329</td>
-</tr>
-<tr class="odd">
-<td align="left">rs5880</td>
-<td align="right">126</td>
-<td align="left">C</td>
-<td align="right">0.067</td>
-</tr>
-<tr class="even">
-<td align="left">rs660240</td>
-<td align="right">126</td>
-<td align="left">T</td>
-<td align="right">0.187</td>
-</tr>
-<tr class="odd">
-<td align="left">rs7121538</td>
-<td align="right">126</td>
-<td align="left">C</td>
-<td align="right">0.111</td>
-</tr>
-<tr class="even">
-<td align="left">rs7499892</td>
-<td align="right">126</td>
-<td align="left">T</td>
-<td align="right">0.143</td>
-</tr>
-<tr class="odd">
-<td align="left">rs884366</td>
-<td align="right">126</td>
-<td align="left">A</td>
-<td align="right">0.425</td>
-</tr>
-<tr class="even">
-<td align="left">rs9282541</td>
-<td align="right">126</td>
-<td align="left">A</td>
-<td align="right">0.048</td>
-</tr>
-<tr class="odd">
-<td align="left">rs7528419</td>
-<td align="right">126</td>
-<td align="left">G</td>
-<td align="right">0.179</td>
-</tr>
-<tr class="even">
-<td align="left">rs964184</td>
-<td align="right">126</td>
-<td align="left">G</td>
-<td align="right">0.238</td>
-</tr>
-<tr class="odd">
-<td align="left">rs1250229</td>
-<td align="right">126</td>
-<td align="left">T</td>
-<td align="right">0.194</td>
-</tr>
-<tr class="even">
-<td align="left">rs2235776</td>
-<td align="right">126</td>
-<td align="left">T</td>
-<td align="right">0.274</td>
-</tr>
-<tr class="odd">
-<td align="left">rs118146573</td>
-<td align="right">126</td>
-<td align="left">A</td>
-<td align="right">0.107</td>
-</tr>
-<tr class="even">
-<td align="left">rs3902354</td>
-<td align="right">126</td>
-<td align="left">C</td>
-<td align="right">0.278</td>
-</tr>
-<tr class="odd">
-<td align="left">rs79236614</td>
-<td align="right">126</td>
-<td align="left">G</td>
-<td align="right">0.071</td>
-</tr>
-<tr class="even">
-<td align="left">rs28680850</td>
-<td align="right">126</td>
-<td align="left">A</td>
-<td align="right">0.389</td>
-</tr>
-<tr class="odd">
-<td align="left">rs78536982</td>
-<td align="right">126</td>
-<td align="left">T</td>
-<td align="right">0.079</td>
-</tr>
-<tr class="even">
-<td align="left">rs62436827</td>
-<td align="right">126</td>
-<td align="left">G</td>
-<td align="right">0.091</td>
-</tr>
-<tr class="odd">
-<td align="left">rs4360309</td>
-<td align="right">126</td>
-<td align="left">C</td>
-<td align="right">0.242</td>
-</tr>
-<tr class="even">
-<td align="left">rs72925845</td>
-<td align="right">126</td>
-<td align="left">A</td>
-<td align="right">0.052</td>
-</tr>
-<tr class="odd">
-<td align="left">rs8102280</td>
-<td align="right">126</td>
-<td align="left">A</td>
-<td align="right">0.048</td>
-</tr>
-<tr class="even">
-<td align="left">rs780093</td>
-<td align="right">126</td>
-<td align="left">T</td>
-<td align="right">0.421</td>
-</tr>
-<tr class="odd">
-<td align="left">rs2954031</td>
-<td align="right">126</td>
-<td align="left">T</td>
-<td align="right">0.377</td>
-</tr>
-<tr class="even">
-<td align="left">rs4588572</td>
-<td align="right">126</td>
-<td align="left">G</td>
-<td align="right">0.460</td>
-</tr>
-<tr class="odd">
-<td align="left">rs11571087</td>
-<td align="right">126</td>
-<td align="left">T</td>
-<td align="right">0.000</td>
-</tr>
-<tr class="even">
-<td align="left">rs12721308</td>
-<td align="right">126</td>
-<td align="left">G</td>
-<td align="right">0.004</td>
-</tr>
-<tr class="odd">
-<td align="left">rs34052647</td>
-<td align="right">126</td>
-<td align="left">A</td>
-<td align="right">0.016</td>
-</tr>
-<tr class="even">
-<td align="left">rs10902456</td>
-<td align="right">126</td>
-<td align="left">T</td>
-<td align="right">0.286</td>
-</tr>
-<tr class="odd">
 <td align="left">rs1042034</td>
-<td align="right">126</td>
+<td align="right">181</td>
 <td align="left">C</td>
-<td align="right">0.234</td>
-</tr>
-<tr class="even">
-<td align="left">rs4841132</td>
-<td align="right">126</td>
-<td align="left">A</td>
-<td align="right">0.179</td>
+<td align="right">0.218</td>
 </tr>
 <tr class="odd">
-<td align="left">rs3208305</td>
-<td align="right">126</td>
+<td align="left">rs10761731</td>
+<td align="right">181</td>
 <td align="left">T</td>
-<td align="right">0.294</td>
+<td align="right">0.356</td>
 </tr>
 <tr class="even">
-<td align="left">rs66462329</td>
-<td align="right">126</td>
-<td align="left">A</td>
-<td align="right">0.238</td>
-</tr>
-<tr class="odd">
-<td align="left">rs2954038</td>
-<td align="right">126</td>
-<td align="left">C</td>
-<td align="right">0.270</td>
-</tr>
-<tr class="even">
-<td align="left">rs2575876</td>
-<td align="right">126</td>
-<td align="left">A</td>
-<td align="right">0.286</td>
-</tr>
-<tr class="odd">
-<td align="left">rs174537</td>
-<td align="right">126</td>
+<td align="left">rs1077835</td>
+<td align="right">181</td>
 <td align="left">G</td>
-<td align="right">0.413</td>
-</tr>
-<tr class="even">
-<td align="left">rs180360</td>
-<td align="right">126</td>
-<td align="left">G</td>
-<td align="right">0.353</td>
+<td align="right">0.390</td>
 </tr>
 <tr class="odd">
-<td align="left">rs3135506</td>
-<td align="right">126</td>
-<td align="left">C</td>
-<td align="right">0.087</td>
-</tr>
-<tr class="even">
-<td align="left">rs662799</td>
-<td align="right">126</td>
-<td align="left">G</td>
-<td align="right">0.139</td>
-</tr>
-<tr class="odd">
-<td align="left">rs35853021</td>
-<td align="right">126</td>
-<td align="left">T</td>
-<td align="right">0.341</td>
-</tr>
-<tr class="even">
-<td align="left">rs8033940</td>
-<td align="right">126</td>
-<td align="left">A</td>
-<td align="right">0.480</td>
-</tr>
-<tr class="odd">
-<td align="left">rs247617</td>
-<td align="right">126</td>
-<td align="left">A</td>
-<td align="right">0.274</td>
-</tr>
-<tr class="even">
 <td align="left">rs11076175</td>
-<td align="right">126</td>
+<td align="right">181</td>
 <td align="left">G</td>
-<td align="right">0.135</td>
-</tr>
-<tr class="odd">
-<td align="left">rs5883</td>
-<td align="right">126</td>
-<td align="left">T</td>
-<td align="right">0.036</td>
+<td align="right">0.169</td>
 </tr>
 <tr class="even">
-<td align="left">rs16942887</td>
-<td align="right">126</td>
-<td align="left">A</td>
-<td align="right">0.159</td>
-</tr>
-<tr class="odd">
-<td align="left">rs1800961</td>
-<td align="right">126</td>
-<td align="left">T</td>
-<td align="right">0.036</td>
-</tr>
-<tr class="even">
-<td align="left">rs12740374</td>
-<td align="right">126</td>
-<td align="left">T</td>
-<td align="right">0.179</td>
-</tr>
-<tr class="odd">
-<td align="left">rs668948</td>
-<td align="right">126</td>
+<td align="left">rs11136341</td>
+<td align="right">181</td>
 <td align="left">G</td>
-<td align="right">0.159</td>
-</tr>
-<tr class="even">
-<td align="left">rs934197</td>
-<td align="right">126</td>
-<td align="left">A</td>
 <td align="right">0.298</td>
 </tr>
 <tr class="odd">
-<td align="left">rs4245791</td>
-<td align="right">126</td>
-<td align="left">C</td>
-<td align="right">0.179</td>
-</tr>
-<tr class="even">
-<td align="left">rs12916</td>
-<td align="right">126</td>
-<td align="left">C</td>
-<td align="right">0.425</td>
-</tr>
-<tr class="odd">
-<td align="left">rs3798168</td>
-<td align="right">126</td>
+<td align="left">rs11216230</td>
+<td align="right">181</td>
 <td align="left">A</td>
-<td align="right">0.159</td>
+<td align="right">0.050</td>
 </tr>
 <tr class="even">
-<td align="left">rs2980869</td>
-<td align="right">126</td>
-<td align="left">T</td>
-<td align="right">0.433</td>
-</tr>
-<tr class="odd">
-<td align="left">rs6511720</td>
-<td align="right">126</td>
-<td align="left">T</td>
-<td align="right">0.099</td>
-</tr>
-<tr class="even">
-<td align="left">rs2074304</td>
-<td align="right">126</td>
-<td align="left">C</td>
-<td align="right">0.044</td>
-</tr>
-<tr class="odd">
-<td align="left">rs7412</td>
-<td align="right">126</td>
-<td align="left">T</td>
-<td align="right">0.071</td>
-</tr>
-<tr class="even">
-<td align="left">rs631106</td>
-<td align="right">126</td>
+<td align="left">rs11220462</td>
+<td align="right">181</td>
 <td align="left">A</td>
-<td align="right">0.341</td>
+<td align="right">0.110</td>
 </tr>
 <tr class="odd">
-<td align="left">rs11902417</td>
-<td align="right">126</td>
-<td align="left">A</td>
-<td align="right">0.254</td>
-</tr>
-<tr class="even">
-<td align="left">rs780094</td>
-<td align="right">126</td>
-<td align="left">T</td>
-<td align="right">0.421</td>
-</tr>
-<tr class="odd">
-<td align="left">rs33951980</td>
-<td align="right">126</td>
-<td align="left">T</td>
-<td align="right">0.071</td>
-</tr>
-<tr class="even">
-<td align="left">rs10096633</td>
-<td align="right">126</td>
-<td align="left">T</td>
-<td align="right">0.119</td>
-</tr>
-<tr class="odd">
-<td align="left">rs60223219</td>
-<td align="right">126</td>
-<td align="left">G</td>
-<td align="right">0.067</td>
-</tr>
-<tr class="even">
-<td align="left">rs28927680</td>
-<td align="right">126</td>
-<td align="left">G</td>
-<td align="right">0.099</td>
-</tr>
-<tr class="odd">
-<td align="left">rs2266788</td>
-<td align="right">126</td>
-<td align="left">G</td>
-<td align="right">0.135</td>
-</tr>
-<tr class="even">
 <td align="left">rs118029212</td>
-<td align="right">126</td>
+<td align="right">181</td>
 <td align="left">T</td>
-<td align="right">0.056</td>
+<td align="right">0.055</td>
+</tr>
+<tr class="even">
+<td align="left">rs118146573</td>
+<td align="right">181</td>
+<td align="left">A</td>
+<td align="right">0.116</td>
 </tr>
 <tr class="odd">
-<td align="left">rs58542926</td>
-<td align="right">126</td>
+<td align="left">rs11869286</td>
+<td align="right">181</td>
+<td align="left">G</td>
+<td align="right">0.464</td>
+</tr>
+<tr class="even">
+<td align="left">rs11902417</td>
+<td align="right">181</td>
+<td align="left">A</td>
+<td align="right">0.235</td>
+</tr>
+<tr class="odd">
+<td align="left">rs1250229</td>
+<td align="right">181</td>
 <td align="left">T</td>
-<td align="right">0.060</td>
+<td align="right">0.196</td>
+</tr>
+<tr class="even">
+<td align="left">rs1260326</td>
+<td align="right">181</td>
+<td align="left">T</td>
+<td align="right">0.414</td>
+</tr>
+<tr class="odd">
+<td align="left">rs12678919</td>
+<td align="right">181</td>
+<td align="left">G</td>
+<td align="right">0.072</td>
 </tr>
 <tr class="even">
 <td align="left">rs12721054</td>
-<td align="right">126</td>
+<td align="right">181</td>
 <td align="left">G</td>
 <td align="right">0.008</td>
 </tr>
 <tr class="odd">
-<td align="left">rs439401</td>
-<td align="right">126</td>
+<td align="left">rs12740374</td>
+<td align="right">181</td>
 <td align="left">T</td>
-<td align="right">0.433</td>
+<td align="right">0.185</td>
+</tr>
+<tr class="even">
+<td align="left">rs12916</td>
+<td align="right">181</td>
+<td align="left">C</td>
+<td align="right">0.392</td>
+</tr>
+<tr class="odd">
+<td align="left">rs13392272</td>
+<td align="right">181</td>
+<td align="left">T</td>
+<td align="right">0.390</td>
+</tr>
+<tr class="even">
+<td align="left">rs1367117</td>
+<td align="right">181</td>
+<td align="left">A</td>
+<td align="right">0.312</td>
+</tr>
+<tr class="odd">
+<td align="left">rs1532085</td>
+<td align="right">181</td>
+<td align="left">A</td>
+<td align="right">0.409</td>
+</tr>
+<tr class="even">
+<td align="left">rs1532624</td>
+<td align="right">181</td>
+<td align="left">A</td>
+<td align="right">0.348</td>
+</tr>
+<tr class="odd">
+<td align="left">rs1564348</td>
+<td align="right">181</td>
+<td align="left">C</td>
+<td align="right">0.265</td>
+</tr>
+<tr class="even">
+<td align="left">rs1689800</td>
+<td align="right">181</td>
+<td align="left">G</td>
+<td align="right">0.326</td>
+</tr>
+<tr class="odd">
+<td align="left">rs16942887</td>
+<td align="right">181</td>
+<td align="left">A</td>
+<td align="right">0.163</td>
+</tr>
+<tr class="even">
+<td align="left">rs17145738</td>
+<td align="right">181</td>
+<td align="left">T</td>
+<td align="right">0.066</td>
+</tr>
+<tr class="odd">
+<td align="left">rs174537</td>
+<td align="right">181</td>
+<td align="left">G</td>
+<td align="right">0.453</td>
+</tr>
+<tr class="even">
+<td align="left">rs174546</td>
+<td align="right">181</td>
+<td align="left">C</td>
+<td align="right">0.459</td>
+</tr>
+<tr class="odd">
+<td align="left">rs1800562</td>
+<td align="right">181</td>
+<td align="left">A</td>
+<td align="right">0.019</td>
+</tr>
+<tr class="even">
+<td align="left">rs1800961</td>
+<td align="right">181</td>
+<td align="left">T</td>
+<td align="right">0.039</td>
+</tr>
+<tr class="odd">
+<td align="left">rs180360</td>
+<td align="right">181</td>
+<td align="left">G</td>
+<td align="right">0.343</td>
+</tr>
+<tr class="even">
+<td align="left">rs181362</td>
+<td align="right">181</td>
+<td align="left">T</td>
+<td align="right">0.365</td>
+</tr>
+<tr class="odd">
+<td align="left">rs1883025</td>
+<td align="right">181</td>
+<td align="left">T</td>
+<td align="right">0.293</td>
+</tr>
+<tr class="even">
+<td align="left">rs2074304</td>
+<td align="right">181</td>
+<td align="left">C</td>
+<td align="right">0.047</td>
+</tr>
+<tr class="odd">
+<td align="left">rs2131925</td>
+<td align="right">181</td>
+<td align="left">G</td>
+<td align="right">0.340</td>
+</tr>
+<tr class="even">
+<td align="left">rs2235776</td>
+<td align="right">181</td>
+<td align="left">T</td>
+<td align="right">0.251</td>
+</tr>
+<tr class="odd">
+<td align="left">rs2238675</td>
+<td align="right">181</td>
+<td align="left">T</td>
+<td align="right">0.119</td>
+</tr>
+<tr class="even">
+<td align="left">rs2266788</td>
+<td align="right">181</td>
+<td align="left">G</td>
+<td align="right">0.110</td>
+</tr>
+<tr class="odd">
+<td align="left">rs2278426</td>
+<td align="right">181</td>
+<td align="left">T</td>
+<td align="right">0.152</td>
+</tr>
+<tr class="even">
+<td align="left">rs2367970</td>
+<td align="right">181</td>
+<td align="left">A</td>
+<td align="right">0.235</td>
+</tr>
+<tr class="odd">
+<td align="left">rs2472386</td>
+<td align="right">181</td>
+<td align="left">A</td>
+<td align="right">0.442</td>
+</tr>
+<tr class="even">
+<td align="left">rs247617</td>
+<td align="right">181</td>
+<td align="left">A</td>
+<td align="right">0.268</td>
+</tr>
+<tr class="odd">
+<td align="left">rs2479409</td>
+<td align="right">181</td>
+<td align="left">G</td>
+<td align="right">0.492</td>
+</tr>
+<tr class="even">
+<td align="left">rs2575876</td>
+<td align="right">181</td>
+<td align="left">A</td>
+<td align="right">0.285</td>
+</tr>
+<tr class="odd">
+<td align="left">rs261334</td>
+<td align="right">181</td>
+<td align="left">G</td>
+<td align="right">0.354</td>
+</tr>
+<tr class="even">
+<td align="left">rs28526159</td>
+<td align="right">181</td>
+<td align="left">C</td>
+<td align="right">0.417</td>
+</tr>
+<tr class="odd">
+<td align="left">rs28680850</td>
+<td align="right">181</td>
+<td align="left">A</td>
+<td align="right">0.345</td>
+</tr>
+<tr class="even">
+<td align="left">rs28927680</td>
+<td align="right">181</td>
+<td align="left">G</td>
+<td align="right">0.102</td>
+</tr>
+<tr class="odd">
+<td align="left">rs2925979</td>
+<td align="right">181</td>
+<td align="left">T</td>
+<td align="right">0.182</td>
+</tr>
+<tr class="even">
+<td align="left">rs2929282</td>
+<td align="right">181</td>
+<td align="left">T</td>
+<td align="right">0.091</td>
+</tr>
+<tr class="odd">
+<td align="left">rs2954029</td>
+<td align="right">181</td>
+<td align="left">T</td>
+<td align="right">0.412</td>
+</tr>
+<tr class="even">
+<td align="left">rs2954031</td>
+<td align="right">181</td>
+<td align="left">T</td>
+<td align="right">0.378</td>
+</tr>
+<tr class="odd">
+<td align="left">rs2954038</td>
+<td align="right">181</td>
+<td align="left">C</td>
+<td align="right">0.243</td>
+</tr>
+<tr class="even">
+<td align="left">rs2980869</td>
+<td align="right">181</td>
+<td align="left">T</td>
+<td align="right">0.461</td>
+</tr>
+<tr class="odd">
+<td align="left">rs3135506</td>
+<td align="right">181</td>
+<td align="left">C</td>
+<td align="right">0.091</td>
+</tr>
+<tr class="even">
+<td align="left">rs3208305</td>
+<td align="right">181</td>
+<td align="left">T</td>
+<td align="right">0.285</td>
+</tr>
+<tr class="odd">
+<td align="left">rs33951980</td>
+<td align="right">181</td>
+<td align="left">T</td>
+<td align="right">0.064</td>
+</tr>
+<tr class="even">
+<td align="left">rs35853021</td>
+<td align="right">181</td>
+<td align="left">T</td>
+<td align="right">0.370</td>
+</tr>
+<tr class="odd">
+<td align="left">rs3757354</td>
+<td align="right">181</td>
+<td align="left">T</td>
+<td align="right">0.273</td>
+</tr>
+<tr class="even">
+<td align="left">rs3764261</td>
+<td align="right">181</td>
+<td align="left">A</td>
+<td align="right">0.282</td>
+</tr>
+<tr class="odd">
+<td align="left">rs3798168</td>
+<td align="right">181</td>
+<td align="left">A</td>
+<td align="right">0.133</td>
+</tr>
+<tr class="even">
+<td align="left">rs3902354</td>
+<td align="right">181</td>
+<td align="left">C</td>
+<td align="right">0.312</td>
+</tr>
+<tr class="odd">
+<td align="left">rs4245791</td>
+<td align="right">181</td>
+<td align="left">C</td>
+<td align="right">0.218</td>
+</tr>
+<tr class="even">
+<td align="left">rs4299376</td>
+<td align="right">181</td>
+<td align="left">G</td>
+<td align="right">0.218</td>
+</tr>
+<tr class="odd">
+<td align="left">rs4360309</td>
+<td align="right">181</td>
+<td align="left">C</td>
+<td align="right">0.273</td>
+</tr>
+<tr class="even">
+<td align="left">rs439401</td>
+<td align="right">181</td>
+<td align="left">T</td>
+<td align="right">0.431</td>
+</tr>
+<tr class="odd">
+<td align="left">rs4420638</td>
+<td align="right">181</td>
+<td align="left">G</td>
+<td align="right">0.105</td>
+</tr>
+<tr class="even">
+<td align="left">rs442177</td>
+<td align="right">181</td>
+<td align="left">G</td>
+<td align="right">0.337</td>
+</tr>
+<tr class="odd">
+<td align="left">rs4660293</td>
+<td align="right">181</td>
+<td align="left">G</td>
+<td align="right">0.160</td>
+</tr>
+<tr class="even">
+<td align="left">rs4731702</td>
+<td align="right">181</td>
+<td align="left">T</td>
+<td align="right">0.420</td>
+</tr>
+<tr class="odd">
+<td align="left">rs4759375</td>
+<td align="right">181</td>
+<td align="left">T</td>
+<td align="right">0.133</td>
+</tr>
+<tr class="even">
+<td align="left">rs4791641</td>
+<td align="right">181</td>
+<td align="left">T</td>
+<td align="right">0.362</td>
+</tr>
+<tr class="odd">
+<td align="left">rs4841132</td>
+<td align="right">181</td>
+<td align="left">A</td>
+<td align="right">0.177</td>
+</tr>
+<tr class="even">
+<td align="left">rs5756931</td>
+<td align="right">181</td>
+<td align="left">C</td>
+<td align="right">0.412</td>
+</tr>
+<tr class="odd">
+<td align="left">rs58542926</td>
+<td align="right">181</td>
+<td align="left">T</td>
+<td align="right">0.069</td>
+</tr>
+<tr class="even">
+<td align="left">rs5880</td>
+<td align="right">181</td>
+<td align="left">C</td>
+<td align="right">0.066</td>
+</tr>
+<tr class="odd">
+<td align="left">rs5883</td>
+<td align="right">181</td>
+<td align="left">T</td>
+<td align="right">0.044</td>
+</tr>
+<tr class="even">
+<td align="left">rs60223219</td>
+<td align="right">181</td>
+<td align="left">G</td>
+<td align="right">0.075</td>
+</tr>
+<tr class="odd">
+<td align="left">rs6029526</td>
+<td align="right">181</td>
+<td align="left">A</td>
+<td align="right">0.464</td>
+</tr>
+<tr class="even">
+<td align="left">rs62436827</td>
+<td align="right">181</td>
+<td align="left">G</td>
+<td align="right">0.088</td>
+</tr>
+<tr class="odd">
+<td align="left">rs629301</td>
+<td align="right">181</td>
+<td align="left">G</td>
+<td align="right">0.202</td>
+</tr>
+<tr class="even">
+<td align="left">rs631106</td>
+<td align="right">181</td>
+<td align="left">A</td>
+<td align="right">0.340</td>
+</tr>
+<tr class="odd">
+<td align="left">rs6511720</td>
+<td align="right">181</td>
+<td align="left">T</td>
+<td align="right">0.108</td>
+</tr>
+<tr class="even">
+<td align="left">rs660240</td>
+<td align="right">181</td>
+<td align="left">T</td>
+<td align="right">0.191</td>
+</tr>
+<tr class="odd">
+<td align="left">rs662799</td>
+<td align="right">181</td>
+<td align="left">G</td>
+<td align="right">0.124</td>
+</tr>
+<tr class="even">
+<td align="left">rs66462329</td>
+<td align="right">181</td>
+<td align="left">A</td>
+<td align="right">0.246</td>
+</tr>
+<tr class="odd">
+<td align="left">rs668948</td>
+<td align="right">181</td>
+<td align="left">G</td>
+<td align="right">0.169</td>
+</tr>
+<tr class="even">
+<td align="left">rs7121538</td>
+<td align="right">181</td>
+<td align="left">C</td>
+<td align="right">0.141</td>
+</tr>
+<tr class="odd">
+<td align="left">rs7134375</td>
+<td align="right">181</td>
+<td align="left">A</td>
+<td align="right">0.417</td>
+</tr>
+<tr class="even">
+<td align="left">rs7134594</td>
+<td align="right">181</td>
+<td align="left">C</td>
+<td align="right">0.489</td>
+</tr>
+<tr class="odd">
+<td align="left">rs72925845</td>
+<td align="right">181</td>
+<td align="left">A</td>
+<td align="right">0.069</td>
+</tr>
+<tr class="even">
+<td align="left">rs737337</td>
+<td align="right">181</td>
+<td align="left">C</td>
+<td align="right">0.191</td>
+</tr>
+<tr class="odd">
+<td align="left">rs7412</td>
+<td align="right">181</td>
+<td align="left">T</td>
+<td align="right">0.069</td>
+</tr>
+<tr class="even">
+<td align="left">rs7499892</td>
+<td align="right">181</td>
+<td align="left">T</td>
+<td align="right">0.185</td>
+</tr>
+<tr class="odd">
+<td align="left">rs7528419</td>
+<td align="right">181</td>
+<td align="left">G</td>
+<td align="right">0.185</td>
+</tr>
+<tr class="even">
+<td align="left">rs780093</td>
+<td align="right">181</td>
+<td align="left">T</td>
+<td align="right">0.403</td>
+</tr>
+<tr class="odd">
+<td align="left">rs780094</td>
+<td align="right">181</td>
+<td align="left">T</td>
+<td align="right">0.403</td>
+</tr>
+<tr class="even">
+<td align="left">rs78536982</td>
+<td align="right">181</td>
+<td align="left">T</td>
+<td align="right">0.064</td>
+</tr>
+<tr class="odd">
+<td align="left">rs79236614</td>
+<td align="right">181</td>
+<td align="left">G</td>
+<td align="right">0.077</td>
+</tr>
+<tr class="even">
+<td align="left">rs8033940</td>
+<td align="right">181</td>
+<td align="left">A</td>
+<td align="right">0.450</td>
+</tr>
+<tr class="odd">
+<td align="left">rs8102280</td>
+<td align="right">181</td>
+<td align="left">A</td>
+<td align="right">0.050</td>
+</tr>
+<tr class="even">
+<td align="left">rs884366</td>
+<td align="right">181</td>
+<td align="left">A</td>
+<td align="right">0.401</td>
+</tr>
+<tr class="odd">
+<td align="left">rs9282541</td>
+<td align="right">181</td>
+<td align="left">A</td>
+<td align="right">0.036</td>
+</tr>
+<tr class="even">
+<td align="left">rs934197</td>
+<td align="right">181</td>
+<td align="left">A</td>
+<td align="right">0.315</td>
+</tr>
+<tr class="odd">
+<td align="left">rs964184</td>
+<td align="right">181</td>
+<td align="left">G</td>
+<td align="right">0.221</td>
+</tr>
+<tr class="even">
+<td align="left">rs9686661</td>
+<td align="right">181</td>
+<td align="left">T</td>
+<td align="right">0.257</td>
+</tr>
+<tr class="odd">
+<td align="left">rs9987289</td>
+<td align="right">181</td>
+<td align="left">A</td>
+<td align="right">0.185</td>
 </tr>
 </tbody>
 </table>
@@ -1453,40 +1066,80 @@ div.tocify {
 <h2><span class="header-section-number">3.1</span> List of SNPS and their effect sizes selected for each trait in Appendix A in proposal</h2>
 <div id="hdl" class="section level3">
 <h3><span class="header-section-number">3.1.1</span> HDL</h3>
-<pre><code>##  [1] &quot;rs2367970&quot;  &quot;rs2472386&quot;  &quot;rs261334&quot;   &quot;rs28526159&quot; &quot;rs7121538&quot; 
-##  [6] &quot;rs7499892&quot;  &quot;rs884366&quot;   &quot;rs11216230&quot; &quot;rs5880&quot;     &quot;rs1077835&quot; 
-## [11] &quot;rs1532624&quot;  &quot;rs2278426&quot;  &quot;rs9282541&quot;  &quot;rs1042034&quot;  &quot;rs4841132&quot; 
-## [16] &quot;rs3208305&quot;  &quot;rs66462329&quot; &quot;rs2954038&quot;  &quot;rs2575876&quot;  &quot;rs174537&quot;  
-## [21] &quot;rs180360&quot;   &quot;rs3135506&quot;  &quot;rs662799&quot;   &quot;rs35853021&quot; &quot;rs8033940&quot; 
-## [26] &quot;rs247617&quot;   &quot;rs11076175&quot; &quot;rs5883&quot;     &quot;rs16942887&quot; &quot;rs1800961&quot; 
-## [31] NA           NA</code></pre>
+<pre><code>##  [1] &quot;rs1042034&quot;  &quot;rs1077835&quot;  &quot;rs11076175&quot; &quot;rs11216230&quot; &quot;rs11869286&quot;
+##  [6] &quot;rs1532085&quot;  &quot;rs1532624&quot;  &quot;rs1689800&quot;  &quot;rs16942887&quot; &quot;rs16942887&quot;
+## [11] &quot;rs174537&quot;   &quot;rs1800961&quot;  &quot;rs1800961&quot;  &quot;rs180360&quot;   &quot;rs181362&quot;  
+## [16] &quot;rs1883025&quot;  &quot;rs2278426&quot;  &quot;rs2367970&quot;  &quot;rs2472386&quot;  &quot;rs247617&quot;  
+## [21] &quot;rs2575876&quot;  &quot;rs261334&quot;   &quot;rs28526159&quot; &quot;rs2925979&quot;  &quot;rs2954038&quot; 
+## [26] &quot;rs3135506&quot;  &quot;rs3208305&quot;  &quot;rs35853021&quot; &quot;rs3764261&quot;  &quot;rs4660293&quot; 
+## [31] &quot;rs4731702&quot;  &quot;rs4759375&quot;  &quot;rs4841132&quot;  &quot;rs5880&quot;     &quot;rs5883&quot;    
+## [36] &quot;rs662799&quot;   &quot;rs66462329&quot; &quot;rs7121538&quot;  &quot;rs7134375&quot;  &quot;rs7134594&quot; 
+## [41] &quot;rs737337&quot;   &quot;rs7499892&quot;  &quot;rs8033940&quot;  &quot;rs884366&quot;   &quot;rs9282541&quot; 
+## [46] &quot;rs9987289&quot;</code></pre>
 </div>
 <div id="ldl" class="section level3">
 <h3><span class="header-section-number">3.1.2</span> LDL</h3>
-<pre><code>##  [1] &quot;rs13392272&quot; &quot;rs2238675&quot;  &quot;rs4791641&quot;  &quot;rs660240&quot;   &quot;rs34052647&quot;
-##  [6] &quot;rs12740374&quot; &quot;rs668948&quot;   &quot;rs934197&quot;   &quot;rs780093&quot;   &quot;rs4245791&quot; 
-## [11] &quot;rs12916&quot;    &quot;rs3798168&quot;  &quot;rs2980869&quot;  &quot;rs6511720&quot;  &quot;rs2074304&quot; 
-## [16] &quot;rs7412&quot;     NA           NA</code></pre>
+<pre><code>##  [1] &quot;rs11136341&quot; &quot;rs11220462&quot; &quot;rs12740374&quot; &quot;rs12916&quot;    &quot;rs13392272&quot;
+##  [6] &quot;rs1367117&quot;  &quot;rs1564348&quot;  &quot;rs1800562&quot;  &quot;rs2074304&quot;  &quot;rs2238675&quot; 
+## [11] &quot;rs2479409&quot;  &quot;rs2980869&quot;  &quot;rs3757354&quot;  &quot;rs3798168&quot;  &quot;rs4245791&quot; 
+## [16] &quot;rs4299376&quot;  &quot;rs4420638&quot;  &quot;rs4791641&quot;  &quot;rs6029526&quot;  &quot;rs629301&quot;  
+## [21] &quot;rs6511720&quot;  &quot;rs6511720&quot;  &quot;rs660240&quot;   &quot;rs668948&quot;   &quot;rs7412&quot;    
+## [26] &quot;rs780093&quot;   &quot;rs934197&quot;</code></pre>
 </div>
 <div id="tg" class="section level3">
 <h3><span class="header-section-number">3.1.3</span> TG</h3>
-<pre><code>##  [1] &quot;rs8102280&quot;   &quot;rs780093&quot;    &quot;rs2954031&quot;   &quot;rs964184&quot;    &quot;rs79236614&quot; 
-##  [6] &quot;rs28680850&quot;  &quot;rs139961185&quot; &quot;rs78536982&quot;  &quot;rs62436827&quot;  &quot;rs4360309&quot;  
-## [11] &quot;rs72925845&quot;  &quot;rs631106&quot;    &quot;rs11902417&quot;  &quot;rs780094&quot;    &quot;rs33951980&quot; 
-## [16] &quot;rs10096633&quot;  &quot;rs60223219&quot;  &quot;rs2954038&quot;   &quot;rs28927680&quot;  &quot;rs2266788&quot;  
-## [21] &quot;rs118029212&quot; &quot;rs58542926&quot;  &quot;rs12721054&quot;  &quot;rs439401&quot;    NA           
-## [26] NA</code></pre>
+<pre><code>##  [1] &quot;rs10096633&quot;  &quot;rs10761731&quot;  &quot;rs118029212&quot; &quot;rs11902417&quot;  &quot;rs1260326&quot;  
+##  [6] &quot;rs12678919&quot;  &quot;rs12721054&quot;  &quot;rs139961185&quot; &quot;rs17145738&quot;  &quot;rs174546&quot;   
+## [11] &quot;rs2131925&quot;   &quot;rs2266788&quot;   &quot;rs28680850&quot;  &quot;rs28927680&quot;  &quot;rs2929282&quot;  
+## [16] &quot;rs2954029&quot;   &quot;rs2954031&quot;   &quot;rs2954038&quot;   &quot;rs33951980&quot;  &quot;rs4360309&quot;  
+## [21] &quot;rs439401&quot;    &quot;rs442177&quot;    &quot;rs5756931&quot;   &quot;rs58542926&quot;  &quot;rs60223219&quot; 
+## [26] &quot;rs62436827&quot;  &quot;rs631106&quot;    &quot;rs72925845&quot;  &quot;rs780093&quot;    &quot;rs780094&quot;   
+## [31] &quot;rs78536982&quot;  &quot;rs79236614&quot;  &quot;rs8102280&quot;   &quot;rs964184&quot;    &quot;rs964184&quot;   
+## [36] &quot;rs9686661&quot;</code></pre>
 </div>
 </div>
 <div id="comparison-of-maf-from-1000-genome-amr-population-clm-and-mxl-and-app-a" class="section level2">
 <h2><span class="header-section-number">3.2</span> Comparison of MAF from 1000 genome AMR population (CLM and MXL) and app A</h2>
+<pre><code>##  [1] &quot;id&quot;            &quot;rsid&quot;          &quot;Effect allele&quot; &quot;EAF&quot;          
+##  [5] &quot;Beta (SE)&quot;     &quot;Chr&quot;           &quot;Trait&quot;         &quot;Author&quot;       
+##  [9] &quot;beta.units&quot;    &quot;significance&quot;  &quot;eur&quot;           &quot;Lead.SNP&quot;     
+## [13] &quot;Effect.size&quot;   &quot;Lead.trait&quot;    &quot;beta.&quot;         &quot;beta&quot;</code></pre>
+<pre><code>##          rsid Effect allele         beta             Author Trait
+## 1  rs10096633           A/G -0.004444444             Zubair    TG
+## 7   rs1042034           A/G -0.060000000             Zubair   HDL
+## 10 rs10761731             T -0.132222222          Teslovich    TG
+## 13  rs1077835             A  0.170000000 Weissglas-Volkov D   HDL
+## 18 rs11076175           A/G  0.153333333             Zubair   HDL
+## 19 rs11136341             G  0.077777778          Teslovich   LDL</code></pre>
+<pre><code>## 
+##           Below JE               Ko A          Teslovich 
+##                 20                 12                 40 
+## Weissglas-Volkov D             Zubair 
+##                  4                 41</code></pre>
+<pre><code>##          rsid Effect allele        beta    Author Trait
+## 10 rs10761731             T -0.13222222 Teslovich    TG
+## 19 rs11136341             G  0.07777778 Teslovich   LDL
+## 22 rs11220462             A  0.10833333 Teslovich   LDL
+## 33 rs11869286             G -0.02666667 Teslovich   HDL
+## 38  rs1260326             T  0.48666667 Teslovich    TG
+## 41 rs12678919             G -0.75777778 Teslovich    TG</code></pre>
+<pre><code>##         rsid   EAF Effect allele
+## 1 rs10096633 0.124             C
+## 2  rs1042034 0.218             G
+## 3 rs10761731 0.356             A
+## 4  rs1077835 0.390             T
+## 5 rs11076175 0.169             A
+## 6 rs11136341 0.298             A</code></pre>
+<pre><code>## [1] &quot;rsid&quot;            &quot;Effect allele.x&quot; &quot;beta&quot;            &quot;Author&quot;         
+## [5] &quot;Trait&quot;           &quot;EAF&quot;             &quot;Effect allele.y&quot;</code></pre>
 <table>
 <thead>
 <tr class="header">
 <th align="left">rsid</th>
-<th align="right">EAF.appa</th>
 <th align="left">allele.appa</th>
 <th align="right">beta</th>
+<th align="left">Author</th>
+<th align="left">trait</th>
 <th align="right">maf.amr</th>
 <th align="left">allele.amr</th>
 </tr>
@@ -1494,767 +1147,1325 @@ div.tocify {
 <tbody>
 <tr class="odd">
 <td align="left">rs10096633</td>
-<td align="right">0.160</td>
 <td align="left">A/G</td>
 <td align="right">-0.0044444</td>
-<td align="right">0.119</td>
+<td align="left">Zubair</td>
+<td align="left">TG</td>
+<td align="right">0.124</td>
 <td align="left">C</td>
 </tr>
 <tr class="even">
 <td align="left">rs1042034</td>
-<td align="right">0.770</td>
 <td align="left">A/G</td>
 <td align="right">-0.0600000</td>
-<td align="right">0.234</td>
+<td align="left">Zubair</td>
+<td align="left">HDL</td>
+<td align="right">0.218</td>
 <td align="left">G</td>
 </tr>
 <tr class="odd">
-<td align="left">rs1077835</td>
-<td align="right">0.380</td>
-<td align="left">A</td>
-<td align="right">0.1700000</td>
-<td align="right">0.413</td>
+<td align="left">rs10761731</td>
 <td align="left">T</td>
+<td align="right">-0.1322222</td>
+<td align="left">Teslovich</td>
+<td align="left">TG</td>
+<td align="right">0.356</td>
+<td align="left">A</td>
 </tr>
 <tr class="even">
-<td align="left">rs10902456</td>
-<td align="right">0.730</td>
-<td align="left">G</td>
-<td align="right">NA</td>
-<td align="right">0.286</td>
-<td align="left">G</td>
+<td align="left">rs1077835</td>
+<td align="left">A</td>
+<td align="right">0.1700000</td>
+<td align="left">Weissglas-Volkov D</td>
+<td align="left">HDL</td>
+<td align="right">0.390</td>
+<td align="left">T</td>
 </tr>
 <tr class="odd">
 <td align="left">rs11076175</td>
-<td align="right">0.790</td>
 <td align="left">A/G</td>
 <td align="right">0.1533333</td>
-<td align="right">0.135</td>
+<td align="left">Zubair</td>
+<td align="left">HDL</td>
+<td align="right">0.169</td>
 <td align="left">A</td>
 </tr>
 <tr class="even">
+<td align="left">rs11136341</td>
+<td align="left">G</td>
+<td align="right">0.0777778</td>
+<td align="left">Teslovich</td>
+<td align="left">LDL</td>
+<td align="right">0.298</td>
+<td align="left">A</td>
+</tr>
+<tr class="odd">
 <td align="left">rs11216230</td>
-<td align="right">NA</td>
 <td align="left">A</td>
 <td align="right">0.2200000</td>
-<td align="right">0.056</td>
+<td align="left">Ko A</td>
+<td align="left">HDL</td>
+<td align="right">0.050</td>
+<td align="left">G</td>
+</tr>
+<tr class="even">
+<td align="left">rs11220462</td>
+<td align="left">A</td>
+<td align="right">0.1083333</td>
+<td align="left">Teslovich</td>
+<td align="left">LDL</td>
+<td align="right">0.110</td>
 <td align="left">G</td>
 </tr>
 <tr class="odd">
 <td align="left">rs118029212</td>
-<td align="right">0.060</td>
 <td align="left">A/G</td>
 <td align="right">-0.0055556</td>
-<td align="right">0.056</td>
+<td align="left">Zubair</td>
+<td align="left">TG</td>
+<td align="right">0.055</td>
 <td align="left">C</td>
 </tr>
 <tr class="even">
 <td align="left">rs118146573</td>
-<td align="right">NA</td>
 <td align="left">A</td>
 <td align="right">0.2000000</td>
-<td align="right">0.107</td>
+<td align="left">Ko A</td>
+<td align="left">TC</td>
+<td align="right">0.116</td>
 <td align="left">G</td>
 </tr>
 <tr class="odd">
-<td align="left">rs11902417</td>
-<td align="right">0.250</td>
-<td align="left">A/G</td>
-<td align="right">-0.0022222</td>
-<td align="right">0.254</td>
+<td align="left">rs11869286</td>
+<td align="left">G</td>
+<td align="right">-0.0266667</td>
+<td align="left">Teslovich</td>
+<td align="left">HDL</td>
+<td align="right">0.464</td>
 <td align="left">G</td>
 </tr>
 <tr class="even">
+<td align="left">rs11902417</td>
+<td align="left">A/G</td>
+<td align="right">-0.0022222</td>
+<td align="left">Zubair</td>
+<td align="left">TG</td>
+<td align="right">0.235</td>
+<td align="left">G</td>
+</tr>
+<tr class="odd">
 <td align="left">rs1250229</td>
-<td align="right">NA</td>
 <td align="left">C</td>
 <td align="right">0.0012778</td>
-<td align="right">0.194</td>
+<td align="left">Below JE</td>
+<td align="left">TC</td>
+<td align="right">0.196</td>
+<td align="left">T</td>
+</tr>
+<tr class="even">
+<td align="left">rs1260326</td>
+<td align="left">T</td>
+<td align="right">0.4866667</td>
+<td align="left">Teslovich</td>
+<td align="left">TG</td>
+<td align="right">0.414</td>
 <td align="left">T</td>
 </tr>
 <tr class="odd">
+<td align="left">rs12678919</td>
+<td align="left">G</td>
+<td align="right">-0.7577778</td>
+<td align="left">Teslovich</td>
+<td align="left">TG</td>
+<td align="right">0.072</td>
+<td align="left">A</td>
+</tr>
+<tr class="even">
 <td align="left">rs12721054</td>
-<td align="right">0.980</td>
 <td align="left">A/G</td>
 <td align="right">0.0061111</td>
+<td align="left">Zubair</td>
+<td align="left">TG</td>
 <td align="right">0.008</td>
 <td align="left">A</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">rs12740374</td>
-<td align="right">0.210</td>
 <td align="left">A/C</td>
 <td align="right">-0.4388889</td>
-<td align="right">0.179</td>
+<td align="left">Zubair</td>
+<td align="left">LDL</td>
+<td align="right">0.185</td>
+<td align="left">G</td>
+</tr>
+<tr class="even">
+<td align="left">rs12916</td>
+<td align="left">A/G</td>
+<td align="right">-0.1822222</td>
+<td align="left">Zubair</td>
+<td align="left">LDL</td>
+<td align="right">0.392</td>
+<td align="left">T</td>
+</tr>
+<tr class="odd">
+<td align="left">rs13392272</td>
+<td align="left">T</td>
+<td align="right">0.0052778</td>
+<td align="left">Below JE</td>
+<td align="left">LDL</td>
+<td align="right">0.390</td>
+<td align="left">C</td>
+</tr>
+<tr class="even">
+<td align="left">rs1367117</td>
+<td align="left">A</td>
+<td align="right">0.2250000</td>
+<td align="left">Teslovich</td>
+<td align="left">LDL</td>
+<td align="right">0.312</td>
 <td align="left">G</td>
 </tr>
 <tr class="odd">
-<td align="left">rs12916</td>
-<td align="right">0.630</td>
-<td align="left">A/G</td>
-<td align="right">-0.1822222</td>
-<td align="right">0.425</td>
-<td align="left">T</td>
-</tr>
-<tr class="even">
-<td align="left">rs13392272</td>
-<td align="right">0.387</td>
-<td align="left">T</td>
-<td align="right">0.0052778</td>
-<td align="right">0.369</td>
-<td align="left">C</td>
-</tr>
-<tr class="odd">
 <td align="left">rs138534124</td>
-<td align="right">0.925</td>
 <td align="left">T</td>
 <td align="right">0.0082222</td>
+<td align="left">Below JE</td>
+<td align="left">TC</td>
 <td align="right">NA</td>
 <td align="left">NA</td>
 </tr>
 <tr class="even">
 <td align="left">rs139961185</td>
-<td align="right">NA</td>
 <td align="left">A</td>
 <td align="right">1.4400000</td>
+<td align="left">Ko A</td>
+<td align="left">TG</td>
 <td align="right">NA</td>
 <td align="left">NA</td>
 </tr>
 <tr class="odd">
+<td align="left">rs1532085</td>
+<td align="left">A</td>
+<td align="right">0.0805556</td>
+<td align="left">Teslovich</td>
+<td align="left">HDL</td>
+<td align="right">0.409</td>
+<td align="left">A</td>
+</tr>
+<tr class="even">
 <td align="left">rs1532624</td>
-<td align="right">0.430</td>
 <td align="left">A</td>
 <td align="right">0.2300000</td>
-<td align="right">0.361</td>
+<td align="left">Weissglas-Volkov D</td>
+<td align="left">HDL</td>
+<td align="right">0.348</td>
+<td align="left">G</td>
+</tr>
+<tr class="odd">
+<td align="left">rs1564348</td>
+<td align="left">C</td>
+<td align="right">-0.0311111</td>
+<td align="left">Teslovich</td>
+<td align="left">LDL</td>
+<td align="right">0.265</td>
+<td align="left">A</td>
+</tr>
+<tr class="even">
+<td align="left">rs1689800</td>
+<td align="left">G</td>
+<td align="right">-0.0261111</td>
+<td align="left">Teslovich</td>
+<td align="left">HDL</td>
+<td align="right">0.326</td>
+<td align="left">T</td>
+</tr>
+<tr class="odd">
+<td align="left">rs16942887</td>
+<td align="left">A</td>
+<td align="right">0.0705556</td>
+<td align="left">Teslovich</td>
+<td align="left">HDL</td>
+<td align="right">0.163</td>
 <td align="left">G</td>
 </tr>
 <tr class="even">
 <td align="left">rs16942887</td>
-<td align="right">0.160</td>
 <td align="left">A/G</td>
 <td align="right">0.0655556</td>
-<td align="right">0.159</td>
+<td align="left">Zubair</td>
+<td align="left">HDL</td>
+<td align="right">0.163</td>
 <td align="left">G</td>
 </tr>
 <tr class="odd">
+<td align="left">rs17145738</td>
+<td align="left">T</td>
+<td align="right">-0.5177778</td>
+<td align="left">Teslovich</td>
+<td align="left">TG</td>
+<td align="right">0.066</td>
+<td align="left">C</td>
+</tr>
+<tr class="even">
 <td align="left">rs174537</td>
-<td align="right">0.480</td>
 <td align="left">A/C</td>
 <td align="right">-0.0422222</td>
-<td align="right">0.413</td>
+<td align="left">Zubair</td>
+<td align="left">HDL</td>
+<td align="right">0.453</td>
 <td align="left">G</td>
+</tr>
+<tr class="odd">
+<td align="left">rs174546</td>
+<td align="left">T</td>
+<td align="right">0.2122222</td>
+<td align="left">Teslovich</td>
+<td align="left">TG</td>
+<td align="right">0.459</td>
+<td align="left">C</td>
+</tr>
+<tr class="even">
+<td align="left">rs1800562</td>
+<td align="left">A</td>
+<td align="right">-0.1233333</td>
+<td align="left">Teslovich</td>
+<td align="left">LDL</td>
+<td align="right">0.019</td>
+<td align="left">G</td>
+</tr>
+<tr class="odd">
+<td align="left">rs1800961</td>
+<td align="left">A/G</td>
+<td align="right">-0.1400000</td>
+<td align="left">Zubair</td>
+<td align="left">HDL</td>
+<td align="right">0.039</td>
+<td align="left">C</td>
 </tr>
 <tr class="even">
 <td align="left">rs1800961</td>
-<td align="right">0.040</td>
-<td align="left">A/G</td>
-<td align="right">-0.1400000</td>
-<td align="right">0.036</td>
+<td align="left">T</td>
+<td align="right">-0.1044444</td>
+<td align="left">Teslovich</td>
+<td align="left">HDL</td>
+<td align="right">0.039</td>
 <td align="left">C</td>
 </tr>
 <tr class="odd">
 <td align="left">rs180360</td>
-<td align="right">0.700</td>
 <td align="left">A/G</td>
 <td align="right">-0.0766667</td>
-<td align="right">0.353</td>
+<td align="left">Zubair</td>
+<td align="left">HDL</td>
+<td align="right">0.343</td>
 <td align="left">T</td>
 </tr>
 <tr class="even">
+<td align="left">rs181362</td>
+<td align="left">T</td>
+<td align="right">-0.0255556</td>
+<td align="left">Teslovich</td>
+<td align="left">HDL</td>
+<td align="right">0.365</td>
+<td align="left">G</td>
+</tr>
+<tr class="odd">
+<td align="left">rs1883025</td>
+<td align="left">T</td>
+<td align="right">-0.0522222</td>
+<td align="left">Teslovich</td>
+<td align="left">HDL</td>
+<td align="right">0.293</td>
+<td align="left">G</td>
+</tr>
+<tr class="even">
 <td align="left">rs2074304</td>
-<td align="right">0.950</td>
 <td align="left">C/G</td>
 <td align="right">0.3772222</td>
-<td align="right">0.044</td>
+<td align="left">Zubair</td>
+<td align="left">LDL</td>
+<td align="right">0.047</td>
 <td align="left">G</td>
 </tr>
 <tr class="odd">
+<td align="left">rs2131925</td>
+<td align="left">G</td>
+<td align="right">-0.2744444</td>
+<td align="left">Teslovich</td>
+<td align="left">TG</td>
+<td align="right">0.340</td>
+<td align="left">G</td>
+</tr>
+<tr class="even">
 <td align="left">rs2235776</td>
-<td align="right">NA</td>
 <td align="left">C</td>
 <td align="right">0.0014444</td>
-<td align="right">0.274</td>
+<td align="left">Below JE</td>
+<td align="left">TC</td>
+<td align="right">0.251</td>
 <td align="left">C</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">rs2238675</td>
-<td align="right">0.887</td>
 <td align="left">C</td>
 <td align="right">0.0069444</td>
-<td align="right">0.099</td>
+<td align="left">Below JE</td>
+<td align="left">LDL</td>
+<td align="right">0.119</td>
 <td align="left">C</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">rs2238675</td>
-<td align="right">0.887</td>
 <td align="left">C</td>
 <td align="right">0.0091111</td>
-<td align="right">0.099</td>
+<td align="left">Below JE</td>
+<td align="left">TC</td>
+<td align="right">0.119</td>
 <td align="left">C</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">rs2266788</td>
-<td align="right">0.880</td>
 <td align="left">A/G</td>
 <td align="right">-0.0072222</td>
-<td align="right">0.135</td>
+<td align="left">Zubair</td>
+<td align="left">TG</td>
+<td align="right">0.110</td>
 <td align="left">C</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">rs2278426</td>
-<td align="right">0.300</td>
 <td align="left">?</td>
 <td align="right">0.1400000</td>
-<td align="right">0.187</td>
-<td align="left">G</td>
-</tr>
-<tr class="even">
-<td align="left">rs2367970</td>
-<td align="right">0.776</td>
-<td align="left">G</td>
-<td align="right">0.0053889</td>
-<td align="right">0.270</td>
+<td align="left">Weissglas-Volkov D</td>
+<td align="left">HDL</td>
+<td align="right">0.152</td>
 <td align="left">G</td>
 </tr>
 <tr class="odd">
+<td align="left">rs2367970</td>
+<td align="left">G</td>
+<td align="right">0.0053889</td>
+<td align="left">Below JE</td>
+<td align="left">HDL</td>
+<td align="right">0.235</td>
+<td align="left">G</td>
+</tr>
+<tr class="even">
 <td align="left">rs2472386</td>
-<td align="right">0.436</td>
 <td align="left">A</td>
 <td align="right">0.0048889</td>
-<td align="right">0.468</td>
+<td align="left">Below JE</td>
+<td align="left">HDL</td>
+<td align="right">0.442</td>
+<td align="left">C</td>
+</tr>
+<tr class="odd">
+<td align="left">rs247617</td>
+<td align="left">A/C</td>
+<td align="right">0.1727778</td>
+<td align="left">Zubair</td>
+<td align="left">HDL</td>
+<td align="right">0.268</td>
 <td align="left">C</td>
 </tr>
 <tr class="even">
-<td align="left">rs247617</td>
-<td align="right">0.300</td>
-<td align="left">A/C</td>
-<td align="right">0.1727778</td>
-<td align="right">0.274</td>
-<td align="left">C</td>
+<td align="left">rs2479409</td>
+<td align="left">G</td>
+<td align="right">0.1116667</td>
+<td align="left">Teslovich</td>
+<td align="left">LDL</td>
+<td align="right">0.492</td>
+<td align="left">G</td>
 </tr>
 <tr class="odd">
 <td align="left">rs2575876</td>
-<td align="right">0.260</td>
 <td align="left">A/G</td>
 <td align="right">-0.0494444</td>
-<td align="right">0.286</td>
+<td align="left">Zubair</td>
+<td align="left">HDL</td>
+<td align="right">0.285</td>
 <td align="left">G</td>
 </tr>
 <tr class="even">
 <td align="left">rs261334</td>
-<td align="right">0.384</td>
 <td align="left">G</td>
 <td align="right">0.0052222</td>
-<td align="right">0.369</td>
+<td align="left">Below JE</td>
+<td align="left">HDL</td>
+<td align="right">0.354</td>
 <td align="left">C</td>
 </tr>
 <tr class="odd">
 <td align="left">rs28526159</td>
-<td align="right">0.618</td>
 <td align="left">T</td>
 <td align="right">0.0042778</td>
-<td align="right">0.456</td>
+<td align="left">Below JE</td>
+<td align="left">HDL</td>
+<td align="right">0.417</td>
 <td align="left">C</td>
 </tr>
 <tr class="even">
 <td align="left">rs28680850</td>
-<td align="right">NA</td>
 <td align="left">A</td>
 <td align="right">1.2600000</td>
-<td align="right">0.389</td>
+<td align="left">Ko A</td>
+<td align="left">TG</td>
+<td align="right">0.345</td>
 <td align="left">G</td>
 </tr>
 <tr class="odd">
 <td align="left">rs28927680</td>
-<td align="right">0.860</td>
 <td align="left">C/G</td>
 <td align="right">-0.0055556</td>
-<td align="right">0.099</td>
+<td align="left">Zubair</td>
+<td align="left">TG</td>
+<td align="right">0.102</td>
 <td align="left">G</td>
 </tr>
 <tr class="even">
-<td align="left">rs2954031</td>
-<td align="right">0.612</td>
-<td align="left">G</td>
-<td align="right">0.0054444</td>
-<td align="right">0.377</td>
-<td align="left">G</td>
+<td align="left">rs2925979</td>
+<td align="left">T</td>
+<td align="right">-0.0250000</td>
+<td align="left">Teslovich</td>
+<td align="left">HDL</td>
+<td align="right">0.182</td>
+<td align="left">A</td>
 </tr>
 <tr class="odd">
-<td align="left">rs2954038</td>
-<td align="right">0.750</td>
-<td align="left">A/C</td>
-<td align="right">0.0472222</td>
-<td align="right">0.270</td>
-<td align="left">C</td>
-</tr>
-<tr class="even">
-<td align="left">rs2954038</td>
-<td align="right">0.750</td>
-<td align="left">A/C</td>
-<td align="right">-0.0027778</td>
-<td align="right">0.270</td>
-<td align="left">C</td>
-</tr>
-<tr class="odd">
-<td align="left">rs2980869</td>
-<td align="right">0.430</td>
-<td align="left">A/G</td>
-<td align="right">-0.1605556</td>
-<td align="right">0.433</td>
-<td align="left">C</td>
-</tr>
-<tr class="even">
-<td align="left">rs3135506</td>
-<td align="right">0.880</td>
-<td align="left">C/G</td>
-<td align="right">0.1016667</td>
-<td align="right">0.087</td>
-<td align="left">G</td>
-</tr>
-<tr class="odd">
-<td align="left">rs3208305</td>
-<td align="right">0.690</td>
-<td align="left">A/T</td>
-<td align="right">-0.0761111</td>
-<td align="right">0.294</td>
+<td align="left">rs2929282</td>
+<td align="left">T</td>
+<td align="right">0.2850000</td>
+<td align="left">Teslovich</td>
+<td align="left">TG</td>
+<td align="right">0.091</td>
 <td align="left">A</td>
 </tr>
 <tr class="even">
-<td align="left">rs33951980</td>
-<td align="right">0.070</td>
-<td align="left">A/G</td>
-<td align="right">-0.0050000</td>
-<td align="right">0.071</td>
-<td align="left">C</td>
+<td align="left">rs2954029</td>
+<td align="left">T</td>
+<td align="right">-0.3133333</td>
+<td align="left">Teslovich</td>
+<td align="left">TG</td>
+<td align="right">0.412</td>
+<td align="left">A</td>
 </tr>
 <tr class="odd">
-<td align="left">rs34052647</td>
-<td align="right">0.960</td>
+<td align="left">rs2954031</td>
 <td align="left">G</td>
-<td align="right">NA</td>
-<td align="right">0.016</td>
+<td align="right">0.0054444</td>
+<td align="left">Below JE</td>
+<td align="left">TG</td>
+<td align="right">0.378</td>
 <td align="left">G</td>
 </tr>
 <tr class="even">
+<td align="left">rs2954038</td>
+<td align="left">A/C</td>
+<td align="right">0.0472222</td>
+<td align="left">Zubair</td>
+<td align="left">HDL</td>
+<td align="right">0.243</td>
+<td align="left">C</td>
+</tr>
+<tr class="odd">
+<td align="left">rs2954038</td>
+<td align="left">A/C</td>
+<td align="right">-0.0027778</td>
+<td align="left">Zubair</td>
+<td align="left">TG</td>
+<td align="right">0.243</td>
+<td align="left">C</td>
+</tr>
+<tr class="even">
+<td align="left">rs2980869</td>
+<td align="left">A/G</td>
+<td align="right">-0.1605556</td>
+<td align="left">Zubair</td>
+<td align="left">LDL</td>
+<td align="right">0.461</td>
+<td align="left">C</td>
+</tr>
+<tr class="odd">
+<td align="left">rs3135506</td>
+<td align="left">C/G</td>
+<td align="right">0.1016667</td>
+<td align="left">Zubair</td>
+<td align="left">HDL</td>
+<td align="right">0.091</td>
+<td align="left">G</td>
+</tr>
+<tr class="even">
+<td align="left">rs3208305</td>
+<td align="left">A/T</td>
+<td align="right">-0.0761111</td>
+<td align="left">Zubair</td>
+<td align="left">HDL</td>
+<td align="right">0.285</td>
+<td align="left">A</td>
+</tr>
+<tr class="odd">
+<td align="left">rs33951980</td>
+<td align="left">A/G</td>
+<td align="right">-0.0050000</td>
+<td align="left">Zubair</td>
+<td align="left">TG</td>
+<td align="right">0.064</td>
+<td align="left">C</td>
+</tr>
+<tr class="even">
 <td align="left">rs35853021</td>
-<td align="right">0.370</td>
 <td align="left">A/C</td>
 <td align="right">0.0683333</td>
-<td align="right">0.341</td>
+<td align="left">Zubair</td>
+<td align="left">HDL</td>
+<td align="right">0.370</td>
+<td align="left">G</td>
+</tr>
+<tr class="odd">
+<td align="left">rs3757354</td>
+<td align="left">T</td>
+<td align="right">-0.0794444</td>
+<td align="left">Teslovich</td>
+<td align="left">LDL</td>
+<td align="right">0.273</td>
+<td align="left">G</td>
+</tr>
+<tr class="even">
+<td align="left">rs3764261</td>
+<td align="left">A</td>
+<td align="right">0.1883333</td>
+<td align="left">Teslovich</td>
+<td align="left">HDL</td>
+<td align="right">0.282</td>
 <td align="left">G</td>
 </tr>
 <tr class="odd">
 <td align="left">rs3798168</td>
-<td align="right">0.150</td>
 <td align="left">A/C</td>
 <td align="right">-0.1816667</td>
-<td align="right">0.159</td>
+<td align="left">Zubair</td>
+<td align="left">LDL</td>
+<td align="right">0.133</td>
 <td align="left">G</td>
 </tr>
 <tr class="even">
 <td align="left">rs3902354</td>
-<td align="right">NA</td>
 <td align="left">A</td>
 <td align="right">0.1500000</td>
-<td align="right">0.278</td>
+<td align="left">Ko A</td>
+<td align="left">TC</td>
+<td align="right">0.312</td>
 <td align="left">G</td>
 </tr>
 <tr class="odd">
 <td align="left">rs4245791</td>
-<td align="right">0.790</td>
 <td align="left">A/G</td>
 <td align="right">-0.1844444</td>
-<td align="right">0.179</td>
+<td align="left">Zubair</td>
+<td align="left">LDL</td>
+<td align="right">0.218</td>
 <td align="left">C</td>
 </tr>
 <tr class="even">
+<td align="left">rs4299376</td>
+<td align="left">G</td>
+<td align="right">0.1527778</td>
+<td align="left">Teslovich</td>
+<td align="left">LDL</td>
+<td align="right">0.218</td>
+<td align="left">G</td>
+</tr>
+<tr class="odd">
 <td align="left">rs4360309</td>
-<td align="right">NA</td>
 <td align="left">T</td>
 <td align="right">1.3500000</td>
-<td align="right">0.242</td>
+<td align="left">Ko A</td>
+<td align="left">TG</td>
+<td align="right">0.273</td>
+<td align="left">C</td>
+</tr>
+<tr class="even">
+<td align="left">rs439401</td>
+<td align="left">A/G</td>
+<td align="right">-0.0016667</td>
+<td align="left">Zubair</td>
+<td align="left">TG</td>
+<td align="right">0.431</td>
+<td align="left">T</td>
+</tr>
+<tr class="odd">
+<td align="left">rs4420638</td>
+<td align="left">G</td>
+<td align="right">0.3966667</td>
+<td align="left">Teslovich</td>
+<td align="left">LDL</td>
+<td align="right">0.105</td>
+<td align="left">A</td>
+</tr>
+<tr class="even">
+<td align="left">rs442177</td>
+<td align="left">G</td>
+<td align="right">-0.1250000</td>
+<td align="left">Teslovich</td>
+<td align="left">TG</td>
+<td align="right">0.337</td>
 <td align="left">C</td>
 </tr>
 <tr class="odd">
-<td align="left">rs439401</td>
-<td align="right">0.470</td>
-<td align="left">A/G</td>
-<td align="right">-0.0016667</td>
-<td align="right">0.433</td>
+<td align="left">rs4660293</td>
+<td align="left">G</td>
+<td align="right">-0.0266667</td>
+<td align="left">Teslovich</td>
+<td align="left">HDL</td>
+<td align="right">0.160</td>
+<td align="left">A</td>
+</tr>
+<tr class="even">
+<td align="left">rs4731702</td>
 <td align="left">T</td>
+<td align="right">0.0327778</td>
+<td align="left">Teslovich</td>
+<td align="left">HDL</td>
+<td align="right">0.420</td>
+<td align="left">C</td>
+</tr>
+<tr class="odd">
+<td align="left">rs4759375</td>
+<td align="left">T</td>
+<td align="right">0.0477778</td>
+<td align="left">Teslovich</td>
+<td align="left">HDL</td>
+<td align="right">0.133</td>
+<td align="left">C</td>
 </tr>
 <tr class="even">
 <td align="left">rs4791641</td>
-<td align="right">NA</td>
 <td align="left">C</td>
 <td align="right">0.0011667</td>
-<td align="right">0.329</td>
+<td align="left">Below JE</td>
+<td align="left">LDL</td>
+<td align="right">0.362</td>
 <td align="left">C</td>
 </tr>
 <tr class="odd">
 <td align="left">rs4841132</td>
-<td align="right">0.170</td>
 <td align="left">A/G</td>
 <td align="right">-0.1000000</td>
-<td align="right">0.179</td>
+<td align="left">Zubair</td>
+<td align="left">HDL</td>
+<td align="right">0.177</td>
 <td align="left">A</td>
 </tr>
 <tr class="even">
+<td align="left">rs5756931</td>
+<td align="left">C</td>
+<td align="right">-0.0855556</td>
+<td align="left">Teslovich</td>
+<td align="left">TG</td>
+<td align="right">0.412</td>
+<td align="left">T</td>
+</tr>
+<tr class="odd">
 <td align="left">rs58542926</td>
-<td align="right">0.050</td>
 <td align="left">A/G</td>
 <td align="right">-0.0050000</td>
-<td align="right">0.060</td>
+<td align="left">Zubair</td>
+<td align="left">TG</td>
+<td align="right">0.069</td>
 <td align="left">C</td>
-</tr>
-<tr class="odd">
-<td align="left">rs5880</td>
-<td align="right">NA</td>
-<td align="left">C</td>
-<td align="right">0.2900000</td>
-<td align="right">0.067</td>
-<td align="left">G</td>
 </tr>
 <tr class="even">
-<td align="left">rs5883</td>
-<td align="right">0.050</td>
-<td align="left">A/G</td>
-<td align="right">0.1266667</td>
-<td align="right">0.036</td>
+<td align="left">rs5880</td>
 <td align="left">C</td>
+<td align="right">0.2900000</td>
+<td align="left">Ko A</td>
+<td align="left">HDL</td>
+<td align="right">0.066</td>
+<td align="left">G</td>
 </tr>
 <tr class="odd">
+<td align="left">rs5883</td>
+<td align="left">A/G</td>
+<td align="right">0.1266667</td>
+<td align="left">Zubair</td>
+<td align="left">HDL</td>
+<td align="right">0.044</td>
+<td align="left">C</td>
+</tr>
+<tr class="even">
 <td align="left">rs60223219</td>
-<td align="right">0.920</td>
 <td align="left">A/G</td>
 <td align="right">0.0050000</td>
-<td align="right">0.067</td>
+<td align="left">Zubair</td>
+<td align="left">TG</td>
+<td align="right">0.075</td>
 <td align="left">A</td>
+</tr>
+<tr class="odd">
+<td align="left">rs6029526</td>
+<td align="left">A</td>
+<td align="right">0.0772222</td>
+<td align="left">Teslovich</td>
+<td align="left">LDL</td>
+<td align="right">0.464</td>
+<td align="left">T</td>
 </tr>
 <tr class="even">
 <td align="left">rs62436827</td>
-<td align="right">NA</td>
 <td align="left">G</td>
 <td align="right">1.4900000</td>
-<td align="right">0.091</td>
+<td align="left">Ko A</td>
+<td align="left">TG</td>
+<td align="right">0.088</td>
 <td align="left">A</td>
 </tr>
 <tr class="odd">
-<td align="left">rs631106</td>
-<td align="right">0.410</td>
-<td align="left">A/C</td>
-<td align="right">-0.0016667</td>
-<td align="right">0.341</td>
+<td align="left">rs629301</td>
+<td align="left">G</td>
+<td align="right">-0.3138889</td>
+<td align="left">Teslovich</td>
+<td align="left">LDL</td>
+<td align="right">0.202</td>
 <td align="left">C</td>
 </tr>
 <tr class="even">
+<td align="left">rs631106</td>
+<td align="left">A/C</td>
+<td align="right">-0.0016667</td>
+<td align="left">Zubair</td>
+<td align="left">TG</td>
+<td align="right">0.340</td>
+<td align="left">C</td>
+</tr>
+<tr class="odd">
 <td align="left">rs6511720</td>
-<td align="right">0.100</td>
+<td align="left">T</td>
+<td align="right">-0.3883333</td>
+<td align="left">Teslovich</td>
+<td align="left">LDL</td>
+<td align="right">0.108</td>
+<td align="left">G</td>
+</tr>
+<tr class="even">
+<td align="left">rs6511720</td>
 <td align="left">A/C</td>
 <td align="right">-0.3727778</td>
-<td align="right">0.099</td>
+<td align="left">Zubair</td>
+<td align="left">LDL</td>
+<td align="right">0.108</td>
 <td align="left">G</td>
 </tr>
 <tr class="odd">
 <td align="left">rs660240</td>
-<td align="right">0.793</td>
 <td align="left">C</td>
 <td align="right">0.0099444</td>
-<td align="right">0.187</td>
+<td align="left">Below JE</td>
+<td align="left">LDL</td>
+<td align="right">0.191</td>
 <td align="left">A</td>
 </tr>
 <tr class="even">
 <td align="left">rs662799</td>
-<td align="right">0.860</td>
 <td align="left">A/G</td>
 <td align="right">0.0766667</td>
-<td align="right">0.139</td>
+<td align="left">Zubair</td>
+<td align="left">HDL</td>
+<td align="right">0.124</td>
 <td align="left">G</td>
 </tr>
 <tr class="odd">
 <td align="left">rs66462329</td>
-<td align="right">0.270</td>
 <td align="left">A/G</td>
 <td align="right">0.0555556</td>
-<td align="right">0.238</td>
+<td align="left">Zubair</td>
+<td align="left">HDL</td>
+<td align="right">0.246</td>
 <td align="left">G</td>
 </tr>
 <tr class="even">
 <td align="left">rs668948</td>
-<td align="right">0.770</td>
 <td align="left">A/G</td>
 <td align="right">0.2488889</td>
-<td align="right">0.159</td>
+<td align="left">Zubair</td>
+<td align="left">LDL</td>
+<td align="right">0.169</td>
 <td align="left">G</td>
 </tr>
 <tr class="odd">
 <td align="left">rs7121538</td>
-<td align="right">NA</td>
 <td align="left">C</td>
 <td align="right">0.0014444</td>
-<td align="right">0.111</td>
+<td align="left">Below JE</td>
+<td align="left">HDL</td>
+<td align="right">0.141</td>
 <td align="left">A</td>
+</tr>
+<tr class="even">
+<td align="left">rs7134375</td>
+<td align="left">A</td>
+<td align="right">0.0222222</td>
+<td align="left">Teslovich</td>
+<td align="left">HDL</td>
+<td align="right">0.417</td>
+<td align="left">C</td>
+</tr>
+<tr class="odd">
+<td align="left">rs7134594</td>
+<td align="left">C</td>
+<td align="right">-0.0244444</td>
+<td align="left">Teslovich</td>
+<td align="left">HDL</td>
+<td align="right">0.489</td>
+<td align="left">C</td>
 </tr>
 <tr class="even">
 <td align="left">rs72925845</td>
-<td align="right">NA</td>
 <td align="left">?</td>
 <td align="right">1.6400000</td>
-<td align="right">0.052</td>
+<td align="left">Ko A</td>
+<td align="left">TG</td>
+<td align="right">0.069</td>
 <td align="left">G</td>
 </tr>
 <tr class="odd">
+<td align="left">rs737337</td>
+<td align="left">C</td>
+<td align="right">-0.0355556</td>
+<td align="left">Teslovich</td>
+<td align="left">HDL</td>
+<td align="right">0.191</td>
+<td align="left">T</td>
+</tr>
+<tr class="even">
 <td align="left">rs7412</td>
-<td align="right">0.050</td>
 <td align="left">A/G</td>
 <td align="right">-0.9394444</td>
-<td align="right">0.071</td>
+<td align="left">Zubair</td>
+<td align="left">LDL</td>
+<td align="right">0.069</td>
 <td align="left">C</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">rs7499892</td>
-<td align="right">0.773</td>
 <td align="left">C</td>
 <td align="right">0.0135000</td>
-<td align="right">0.143</td>
+<td align="left">Below JE</td>
+<td align="left">HDL</td>
+<td align="right">0.185</td>
 <td align="left">C</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">rs7528419</td>
-<td align="right">0.792</td>
 <td align="left">A</td>
 <td align="right">0.0095556</td>
-<td align="right">0.179</td>
-<td align="left">A</td>
-</tr>
-<tr class="even">
-<td align="left">rs780093</td>
-<td align="right">0.356</td>
-<td align="left">T</td>
-<td align="right">0.0060000</td>
-<td align="right">0.421</td>
+<td align="left">Below JE</td>
+<td align="left">TC</td>
+<td align="right">0.185</td>
 <td align="left">A</td>
 </tr>
 <tr class="odd">
 <td align="left">rs780093</td>
-<td align="right">0.330</td>
 <td align="left">A/G</td>
 <td align="right">0.1461111</td>
-<td align="right">0.421</td>
+<td align="left">Zubair</td>
+<td align="left">LDL</td>
+<td align="right">0.403</td>
 <td align="left">A</td>
 </tr>
 <tr class="even">
+<td align="left">rs780093</td>
+<td align="left">T</td>
+<td align="right">0.0060000</td>
+<td align="left">Below JE</td>
+<td align="left">TG</td>
+<td align="right">0.403</td>
+<td align="left">A</td>
+</tr>
+<tr class="odd">
 <td align="left">rs780094</td>
-<td align="right">0.340</td>
 <td align="left">A/G</td>
 <td align="right">0.0033333</td>
-<td align="right">0.421</td>
+<td align="left">Zubair</td>
+<td align="left">TG</td>
+<td align="right">0.403</td>
 <td align="left">A</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">rs78536982</td>
-<td align="right">NA</td>
 <td align="left">T</td>
 <td align="right">1.3800000</td>
-<td align="right">0.079</td>
+<td align="left">Ko A</td>
+<td align="left">TG</td>
+<td align="right">0.064</td>
 <td align="left">C</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">rs79236614</td>
-<td align="right">NA</td>
 <td align="left">?</td>
 <td align="right">1.8900000</td>
-<td align="right">0.071</td>
+<td align="left">Ko A</td>
+<td align="left">TG</td>
+<td align="right">0.077</td>
 <td align="left">C</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">rs8033940</td>
-<td align="right">0.510</td>
 <td align="left">A/G</td>
 <td align="right">0.0661111</td>
-<td align="right">0.480</td>
+<td align="left">Zubair</td>
+<td align="left">HDL</td>
+<td align="right">0.450</td>
 <td align="left">G</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">rs8102280</td>
-<td align="right">0.956</td>
 <td align="left">G</td>
 <td align="right">0.0140000</td>
-<td align="right">0.048</td>
+<td align="left">Below JE</td>
+<td align="left">TG</td>
+<td align="right">0.050</td>
 <td align="left">G</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">rs884366</td>
-<td align="right">NA</td>
 <td align="left">G</td>
 <td align="right">0.0011667</td>
-<td align="right">0.425</td>
+<td align="left">Below JE</td>
+<td align="left">HDL</td>
+<td align="right">0.401</td>
 <td align="left">C</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">rs9282541</td>
-<td align="right">0.110</td>
 <td align="left">A</td>
 <td align="right">0.3700000</td>
-<td align="right">0.048</td>
+<td align="left">Weissglas-Volkov D</td>
+<td align="left">HDL</td>
+<td align="right">0.036</td>
+<td align="left">C</td>
+</tr>
+<tr class="even">
+<td align="left">rs934197</td>
+<td align="left">A/G</td>
+<td align="right">0.2250000</td>
+<td align="left">Zubair</td>
+<td align="left">LDL</td>
+<td align="right">0.315</td>
+<td align="left">G</td>
+</tr>
+<tr class="odd">
+<td align="left">rs964184</td>
+<td align="left">G</td>
+<td align="right">0.0057222</td>
+<td align="left">Below JE</td>
+<td align="left">TC</td>
+<td align="right">0.221</td>
+<td align="left">G</td>
+</tr>
+<tr class="even">
+<td align="left">rs964184</td>
+<td align="left">C</td>
+<td align="right">0.9416667</td>
+<td align="left">Teslovich</td>
+<td align="left">TG</td>
+<td align="right">0.221</td>
+<td align="left">G</td>
+</tr>
+<tr class="odd">
+<td align="left">rs964184</td>
+<td align="left">G</td>
+<td align="right">1.8900000</td>
+<td align="left">Ko A</td>
+<td align="left">TG</td>
+<td align="right">0.221</td>
+<td align="left">G</td>
+</tr>
+<tr class="even">
+<td align="left">rs9686661</td>
+<td align="left">T</td>
+<td align="right">0.1427778</td>
+<td align="left">Teslovich</td>
+<td align="left">TG</td>
+<td align="right">0.257</td>
 <td align="left">C</td>
 </tr>
 <tr class="odd">
-<td align="left">rs934197</td>
-<td align="right">0.270</td>
-<td align="left">A/G</td>
-<td align="right">0.2250000</td>
-<td align="right">0.298</td>
-<td align="left">G</td>
-</tr>
-<tr class="even">
-<td align="left">rs964184</td>
-<td align="right">0.248</td>
-<td align="left">G</td>
-<td align="right">0.0057222</td>
-<td align="right">0.238</td>
-<td align="left">G</td>
-</tr>
-<tr class="odd">
-<td align="left">rs964184</td>
-<td align="right">NA</td>
-<td align="left">G</td>
-<td align="right">1.8900000</td>
-<td align="right">0.238</td>
-<td align="left">G</td>
-</tr>
-<tr class="even">
-<td align="left">NA</td>
-<td align="right">NA</td>
-<td align="left">NA</td>
-<td align="right">NA</td>
-<td align="right">NA</td>
-<td align="left">NA</td>
-</tr>
-<tr class="odd">
-<td align="left">NA</td>
-<td align="right">NA</td>
-<td align="left">NA</td>
-<td align="right">NA</td>
-<td align="right">NA</td>
-<td align="left">NA</td>
+<td align="left">rs9987289</td>
+<td align="left">A</td>
+<td align="right">-0.0672222</td>
+<td align="left">Teslovich</td>
+<td align="left">HDL</td>
+<td align="right">0.185</td>
+<td align="left">A</td>
 </tr>
 </tbody>
 </table>
 </div>
-<div id="snps-with-power-0.8" class="section level2">
-<h2><span class="header-section-number">3.3</span> SNPS with power &gt; 0.8</h2>
-<div id="hdl-related-snps" class="section level3">
-<h3><span class="header-section-number">3.3.1</span> HDL-related SNPS</h3>
+</div>
+<div id="snps-with-power-0.8" class="section level1">
+<h1><span class="header-section-number">4</span> SNPS with power &gt; 0.8</h1>
+<p><strong>NOTE</strong>: All beta below are in mmol/L units.</p>
+<div id="hdl-related-snps" class="section level2">
+<h2><span class="header-section-number">4.1</span> HDL-related SNPS</h2>
 <table>
 <thead>
 <tr class="header">
 <th></th>
 <th align="left">rsid</th>
+<th align="left">Author</th>
+<th align="left">trait</th>
 <th align="right">beta</th>
-<th align="right">EAF.appa</th>
 <th align="right">maf.amr</th>
 <th align="right">pwr.hdl</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td>3</td>
+<td>4</td>
 <td align="left">rs1077835</td>
+<td align="left">Weissglas-Volkov D</td>
+<td align="left">HDL</td>
 <td align="right">0.1700000</td>
-<td align="right">0.38</td>
-<td align="right">0.413</td>
-<td align="right">0.9915527</td>
+<td align="right">0.390</td>
+<td align="right">0.9920275</td>
 </tr>
 <tr class="even">
 <td>5</td>
 <td align="left">rs11076175</td>
+<td align="left">Zubair</td>
+<td align="left">HDL</td>
 <td align="right">0.1533333</td>
-<td align="right">0.79</td>
-<td align="right">0.135</td>
-<td align="right">0.9085120</td>
+<td align="right">0.169</td>
+<td align="right">0.8573634</td>
 </tr>
 <tr class="odd">
-<td>17</td>
+<td>24</td>
 <td align="left">rs1532624</td>
+<td align="left">Weissglas-Volkov D</td>
+<td align="left">HDL</td>
 <td align="right">0.2300000</td>
-<td align="right">0.43</td>
-<td align="right">0.361</td>
-<td align="right">0.9999734</td>
+<td align="right">0.348</td>
+<td align="right">0.9999317</td>
 </tr>
 <tr class="even">
-<td>27</td>
-<td align="left">rs2278426</td>
-<td align="right">0.1400000</td>
-<td align="right">0.30</td>
-<td align="right">0.187</td>
-<td align="right">0.9223936</td>
+<td>47</td>
+<td align="left">rs247617</td>
+<td align="left">Zubair</td>
+<td align="left">HDL</td>
+<td align="right">0.1727778</td>
+<td align="right">0.268</td>
+<td align="right">0.9809291</td>
 </tr>
 <tr class="odd">
-<td>30</td>
-<td align="left">rs247617</td>
-<td align="right">0.1727778</td>
-<td align="right">0.30</td>
-<td align="right">0.274</td>
-<td align="right">0.9865517</td>
+<td>66</td>
+<td align="left">rs3764261</td>
+<td align="left">Teslovich</td>
+<td align="left">HDL</td>
+<td align="right">0.1883333</td>
+<td align="right">0.282</td>
+<td align="right">0.9939031</td>
 </tr>
 <tr class="even">
-<td>76</td>
+<td>82</td>
+<td align="left">rs5880</td>
+<td align="left">Ko A</td>
+<td align="left">HDL</td>
+<td align="right">0.2900000</td>
+<td align="right">0.066</td>
+<td align="right">0.9667371</td>
+</tr>
+<tr class="odd">
+<td>111</td>
 <td align="left">rs9282541</td>
+<td align="left">Weissglas-Volkov D</td>
+<td align="left">HDL</td>
 <td align="right">0.3700000</td>
-<td align="right">0.11</td>
-<td align="right">0.048</td>
-<td align="right">0.9999828</td>
+<td align="right">0.036</td>
+<td align="right">0.9528192</td>
 </tr>
 </tbody>
 </table>
 </div>
-<div id="ldl-related-snps" class="section level3">
-<h3><span class="header-section-number">3.3.2</span> LDL-related SNPs</h3>
+<div id="ldl-related-snps" class="section level2">
+<h2><span class="header-section-number">4.2</span> LDL-related SNPs</h2>
 <table>
 <thead>
 <tr class="header">
 <th></th>
 <th align="left">rsid</th>
+<th align="left">Author</th>
+<th align="left">trait</th>
 <th align="right">beta</th>
-<th align="right">EAF.appa</th>
 <th align="right">maf.amr</th>
 <th align="right">pwr.ldl</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td>12</td>
+<td>17</td>
 <td align="left">rs12740374</td>
+<td align="left">Zubair</td>
+<td align="left">LDL</td>
 <td align="right">-0.4388889</td>
-<td align="right">0.21</td>
-<td align="right">0.179</td>
-<td align="right">0.9915410</td>
+<td align="right">0.185</td>
+<td align="right">0.9855749</td>
 </tr>
 <tr class="even">
-<td>65</td>
+<td>73</td>
+<td align="left">rs4420638</td>
+<td align="left">Teslovich</td>
+<td align="left">LDL</td>
+<td align="right">0.3966667</td>
+<td align="right">0.105</td>
+<td align="right">0.8408536</td>
+</tr>
+<tr class="odd">
+<td>87</td>
+<td align="left">rs629301</td>
+<td align="left">Teslovich</td>
+<td align="left">LDL</td>
+<td align="right">-0.3138889</td>
+<td align="right">0.202</td>
+<td align="right">0.8655494</td>
+</tr>
+<tr class="even">
+<td>89</td>
+<td align="left">rs6511720</td>
+<td align="left">Teslovich</td>
+<td align="left">LDL</td>
+<td align="right">-0.3883333</td>
+<td align="right">0.108</td>
+<td align="right">0.8344702</td>
+</tr>
+<tr class="odd">
+<td>90</td>
+<td align="left">rs6511720</td>
+<td align="left">Zubair</td>
+<td align="left">LDL</td>
+<td align="right">-0.3727778</td>
+<td align="right">0.108</td>
+<td align="right">0.8035964</td>
+</tr>
+<tr class="even">
+<td>100</td>
 <td align="left">rs7412</td>
+<td align="left">Zubair</td>
+<td align="left">LDL</td>
 <td align="right">-0.9394444</td>
-<td align="right">0.05</td>
-<td align="right">0.071</td>
-<td align="right">0.9987384</td>
+<td align="right">0.069</td>
+<td align="right">0.9999365</td>
 </tr>
 </tbody>
 </table>
 </div>
-<div id="tg-related-snps" class="section level3">
-<h3><span class="header-section-number">3.3.3</span> TG-related SNPs</h3>
-<p>rsid beta EAF.appa maf.amr pwr.tg —– —– ——— ——– ——-</p>
+<div id="tg-related-snps" class="section level2">
+<h2><span class="header-section-number">4.3</span> TG-related SNPs</h2>
+<table>
+<thead>
+<tr class="header">
+<th></th>
+<th align="left">rsid</th>
+<th align="left">Author</th>
+<th align="left">trait</th>
+<th align="right">beta</th>
+<th align="right">maf.amr</th>
+<th align="right">pwr.tg</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>14</td>
+<td align="left">rs1260326</td>
+<td align="left">Teslovich</td>
+<td align="left">TG</td>
+<td align="right">0.4866667</td>
+<td align="right">0.414</td>
+<td align="right">0.9091886</td>
+</tr>
+<tr class="even">
+<td>52</td>
+<td align="left">rs28680850</td>
+<td align="left">Ko A</td>
+<td align="left">TG</td>
+<td align="right">1.2600000</td>
+<td align="right">0.345</td>
+<td align="right">1.0000000</td>
+</tr>
+<tr class="odd">
+<td>71</td>
+<td align="left">rs4360309</td>
+<td align="left">Ko A</td>
+<td align="left">TG</td>
+<td align="right">1.3500000</td>
+<td align="right">0.273</td>
+<td align="right">1.0000000</td>
+</tr>
+<tr class="even">
+<td>86</td>
+<td align="left">rs62436827</td>
+<td align="left">Ko A</td>
+<td align="left">TG</td>
+<td align="right">1.4900000</td>
+<td align="right">0.088</td>
+<td align="right">0.9999394</td>
+</tr>
+<tr class="odd">
+<td>98</td>
+<td align="left">rs72925845</td>
+<td align="left">Ko A</td>
+<td align="left">TG</td>
+<td align="right">1.6400000</td>
+<td align="right">0.069</td>
+<td align="right">0.9999133</td>
+</tr>
+<tr class="even">
+<td>106</td>
+<td align="left">rs78536982</td>
+<td align="left">Ko A</td>
+<td align="left">TG</td>
+<td align="right">1.3800000</td>
+<td align="right">0.064</td>
+<td align="right">0.9963615</td>
+</tr>
+<tr class="odd">
+<td>107</td>
+<td align="left">rs79236614</td>
+<td align="left">Ko A</td>
+<td align="left">TG</td>
+<td align="right">1.8900000</td>
+<td align="right">0.077</td>
+<td align="right">0.9999997</td>
+</tr>
+<tr class="even">
+<td>114</td>
+<td align="left">rs964184</td>
+<td align="left">Teslovich</td>
+<td align="left">TG</td>
+<td align="right">0.9416667</td>
+<td align="right">0.221</td>
+<td align="right">0.9996776</td>
+</tr>
+<tr class="odd">
+<td>115</td>
+<td align="left">rs964184</td>
+<td align="left">Ko A</td>
+<td align="left">TG</td>
+<td align="right">1.8900000</td>
+<td align="right">0.221</td>
+<td align="right">1.0000000</td>
+</tr>
+</tbody>
+</table>
 </div>
-<div id="all-sufficiently-powered-snps" class="section level3">
-<h3><span class="header-section-number">3.3.4</span> All sufficiently powered SNPs</h3>
+<div id="all-sufficiently-powered-snps" class="section level2">
+<h2><span class="header-section-number">4.4</span> All sufficiently powered SNPs</h2>
 <table>
 <thead>
 <tr class="header">
 <th align="left">rsid</th>
+<th align="left">Author</th>
+<th align="left">trait</th>
 <th align="right">beta</th>
-<th align="right">EAF.appa</th>
 <th align="right">maf.amr</th>
 <th align="right">pwr.hdl</th>
 <th align="right">pwr.ldl</th>
@@ -2264,175 +2475,227 @@ div.tocify {
 <tbody>
 <tr class="odd">
 <td align="left">rs1077835</td>
+<td align="left">Weissglas-Volkov D</td>
+<td align="left">HDL</td>
 <td align="right">0.1700000</td>
-<td align="right">0.38</td>
-<td align="right">0.413</td>
-<td align="right">0.9915527</td>
-<td align="right">0.5188785</td>
-<td align="right">0.2055431</td>
+<td align="right">0.390</td>
+<td align="right">0.9920275</td>
+<td align="right">0.5227709</td>
+<td align="right">0.2070960</td>
 </tr>
 <tr class="even">
 <td align="left">rs11076175</td>
+<td align="left">Zubair</td>
+<td align="left">HDL</td>
 <td align="right">0.1533333</td>
-<td align="right">0.79</td>
-<td align="right">0.135</td>
-<td align="right">0.9085120</td>
-<td align="right">0.3299453</td>
-<td align="right">0.1377981</td>
+<td align="right">0.169</td>
+<td align="right">0.8573634</td>
+<td align="right">0.2873864</td>
+<td align="right">0.1239967</td>
 </tr>
 <tr class="odd">
-<td align="left">rs12740374</td>
-<td align="right">-0.4388889</td>
-<td align="right">0.21</td>
-<td align="right">0.179</td>
+<td align="left">rs1260326</td>
+<td align="left">Teslovich</td>
+<td align="left">TG</td>
+<td align="right">0.4866667</td>
+<td align="right">0.414</td>
 <td align="right">1.0000000</td>
-<td align="right">0.9915410</td>
-<td align="right">0.6907120</td>
+<td align="right">0.9999458</td>
+<td align="right">0.9091886</td>
 </tr>
 <tr class="even">
-<td align="left">rs1532624</td>
-<td align="right">0.2300000</td>
-<td align="right">0.43</td>
-<td align="right">0.361</td>
-<td align="right">0.9999734</td>
-<td align="right">0.7909981</td>
-<td align="right">0.3468553</td>
+<td align="left">rs12740374</td>
+<td align="left">Zubair</td>
+<td align="left">LDL</td>
+<td align="right">-0.4388889</td>
+<td align="right">0.185</td>
+<td align="right">1.0000000</td>
+<td align="right">0.9855749</td>
+<td align="right">0.6492002</td>
 </tr>
 <tr class="odd">
-<td align="left">rs2278426</td>
-<td align="right">0.1400000</td>
-<td align="right">0.30</td>
-<td align="right">0.187</td>
-<td align="right">0.9223936</td>
-<td align="right">0.3450314</td>
-<td align="right">0.1427849</td>
+<td align="left">rs1532624</td>
+<td align="left">Weissglas-Volkov D</td>
+<td align="left">HDL</td>
+<td align="right">0.2300000</td>
+<td align="right">0.348</td>
+<td align="right">0.9999317</td>
+<td align="right">0.7596093</td>
+<td align="right">0.3253016</td>
 </tr>
 <tr class="even">
 <td align="left">rs247617</td>
+<td align="left">Zubair</td>
+<td align="left">HDL</td>
 <td align="right">0.1727778</td>
-<td align="right">0.30</td>
-<td align="right">0.274</td>
-<td align="right">0.9865517</td>
-<td align="right">0.4865002</td>
-<td align="right">0.1929283</td>
+<td align="right">0.268</td>
+<td align="right">0.9809291</td>
+<td align="right">0.4608558</td>
+<td align="right">0.1832888</td>
 </tr>
 <tr class="odd">
-<td align="left">rs7412</td>
-<td align="right">-0.9394444</td>
-<td align="right">0.05</td>
-<td align="right">0.071</td>
+<td align="left">rs28680850</td>
+<td align="left">Ko A</td>
+<td align="left">TG</td>
+<td align="right">1.2600000</td>
+<td align="right">0.345</td>
 <td align="right">1.0000000</td>
-<td align="right">0.9987384</td>
-<td align="right">0.8037562</td>
+<td align="right">1.0000000</td>
+<td align="right">1.0000000</td>
 </tr>
 <tr class="even">
-<td align="left">rs9282541</td>
-<td align="right">0.3700000</td>
-<td align="right">0.11</td>
-<td align="right">0.048</td>
-<td align="right">0.9999828</td>
-<td align="right">0.8040426</td>
-<td align="right">0.3565351</td>
-</tr>
-</tbody>
-</table>
-<table>
-<thead>
-<tr class="header">
-<th></th>
-<th align="left">Trait</th>
-<th align="left">rsid</th>
-<th align="left">Author</th>
-<th align="right">Chr</th>
-<th align="left">Gene</th>
-<th align="left">Effect allele</th>
-<th align="right">beta</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>38</td>
+<td align="left">rs3764261</td>
+<td align="left">Teslovich</td>
 <td align="left">HDL</td>
-<td align="left">rs1077835</td>
-<td align="left">Weissglas-Volkov D</td>
-<td align="right">15</td>
-<td align="left">LOC101928635, LIPC</td>
-<td align="left">A</td>
-<td align="right">0.1700000</td>
+<td align="right">0.1883333</td>
+<td align="right">0.282</td>
+<td align="right">0.9939031</td>
+<td align="right">0.5404425</td>
+<td align="right">0.2142529</td>
+</tr>
+<tr class="odd">
+<td align="left">rs4360309</td>
+<td align="left">Ko A</td>
+<td align="left">TG</td>
+<td align="right">1.3500000</td>
+<td align="right">0.273</td>
+<td align="right">1.0000000</td>
+<td align="right">1.0000000</td>
+<td align="right">1.0000000</td>
 </tr>
 <tr class="even">
-<td>39</td>
-<td align="left">HDL</td>
-<td align="left">rs1532624</td>
-<td align="left">Weissglas-Volkov D</td>
-<td align="right">16</td>
-<td align="left">CETP</td>
-<td align="left">A</td>
-<td align="right">0.2300000</td>
-</tr>
-<tr class="odd">
-<td>41</td>
-<td align="left">HDL</td>
-<td align="left">rs2278426</td>
-<td align="left">Weissglas-Volkov D</td>
-<td align="right">19</td>
-<td align="left">DOCK6, C19orf80</td>
-<td align="left">?</td>
-<td align="right">0.1400000</td>
-</tr>
-<tr class="even">
-<td>42</td>
-<td align="left">HDL</td>
-<td align="left">rs9282541</td>
-<td align="left">Weissglas-Volkov D</td>
-<td align="right">9</td>
-<td align="left">ABCA1</td>
-<td align="left">A</td>
-<td align="right">0.3700000</td>
-</tr>
-<tr class="odd">
-<td>55</td>
-<td align="left">HDL</td>
-<td align="left">rs247617</td>
-<td align="left">Zubair</td>
-<td align="right">16</td>
-<td align="left">CETP*</td>
-<td align="left">A</td>
-<td align="right">0.1727778</td>
-</tr>
-<tr class="even">
-<td>56</td>
-<td align="left">HDL</td>
-<td align="left">rs11076175</td>
-<td align="left">Zubair</td>
-<td align="right">16</td>
-<td align="left">CETP*</td>
-<td align="left">A</td>
-<td align="right">0.1533333</td>
-</tr>
-<tr class="odd">
-<td>60</td>
+<td align="left">rs4420638</td>
+<td align="left">Teslovich</td>
 <td align="left">LDL</td>
-<td align="left">rs12740374</td>
-<td align="left">Zubair</td>
-<td align="right">1</td>
-<td align="left">SORT1</td>
-<td align="left">A</td>
-<td align="right">-0.4388889</td>
+<td align="right">0.3966667</td>
+<td align="right">0.105</td>
+<td align="right">0.9999957</td>
+<td align="right">0.8408536</td>
+<td align="right">0.3867804</td>
+</tr>
+<tr class="odd">
+<td align="left">rs5880</td>
+<td align="left">Ko A</td>
+<td align="left">HDL</td>
+<td align="right">0.2900000</td>
+<td align="right">0.066</td>
+<td align="right">0.9667371</td>
+<td align="right">0.4175205</td>
+<td align="right">0.1676104</td>
 </tr>
 <tr class="even">
-<td>70</td>
+<td align="left">rs62436827</td>
+<td align="left">Ko A</td>
+<td align="left">TG</td>
+<td align="right">1.4900000</td>
+<td align="right">0.088</td>
+<td align="right">1.0000000</td>
+<td align="right">1.0000000</td>
+<td align="right">0.9999394</td>
+</tr>
+<tr class="odd">
+<td align="left">rs629301</td>
+<td align="left">Teslovich</td>
 <td align="left">LDL</td>
+<td align="right">-0.3138889</td>
+<td align="right">0.202</td>
+<td align="right">0.9999986</td>
+<td align="right">0.8655494</td>
+<td align="right">0.4102231</td>
+</tr>
+<tr class="even">
+<td align="left">rs6511720</td>
+<td align="left">Teslovich</td>
+<td align="left">LDL</td>
+<td align="right">-0.3883333</td>
+<td align="right">0.108</td>
+<td align="right">0.9999944</td>
+<td align="right">0.8344702</td>
+<td align="right">0.3811783</td>
+</tr>
+<tr class="odd">
+<td align="left">rs6511720</td>
+<td align="left">Zubair</td>
+<td align="left">LDL</td>
+<td align="right">-0.3727778</td>
+<td align="right">0.108</td>
+<td align="right">0.9999825</td>
+<td align="right">0.8035964</td>
+<td align="right">0.3561960</td>
+</tr>
+<tr class="even">
+<td align="left">rs72925845</td>
+<td align="left">Ko A</td>
+<td align="left">TG</td>
+<td align="right">1.6400000</td>
+<td align="right">0.069</td>
+<td align="right">1.0000000</td>
+<td align="right">1.0000000</td>
+<td align="right">0.9999133</td>
+</tr>
+<tr class="odd">
 <td align="left">rs7412</td>
 <td align="left">Zubair</td>
-<td align="right">19</td>
-<td align="left">APOC1</td>
-<td align="left">A</td>
+<td align="left">LDL</td>
 <td align="right">-0.9394444</td>
+<td align="right">0.069</td>
+<td align="right">1.0000000</td>
+<td align="right">0.9999365</td>
+<td align="right">0.9055373</td>
+</tr>
+<tr class="even">
+<td align="left">rs78536982</td>
+<td align="left">Ko A</td>
+<td align="left">TG</td>
+<td align="right">1.3800000</td>
+<td align="right">0.064</td>
+<td align="right">1.0000000</td>
+<td align="right">1.0000000</td>
+<td align="right">0.9963615</td>
+</tr>
+<tr class="odd">
+<td align="left">rs79236614</td>
+<td align="left">Ko A</td>
+<td align="left">TG</td>
+<td align="right">1.8900000</td>
+<td align="right">0.077</td>
+<td align="right">1.0000000</td>
+<td align="right">1.0000000</td>
+<td align="right">0.9999997</td>
+</tr>
+<tr class="even">
+<td align="left">rs9282541</td>
+<td align="left">Weissglas-Volkov D</td>
+<td align="left">HDL</td>
+<td align="right">0.3700000</td>
+<td align="right">0.036</td>
+<td align="right">0.9528192</td>
+<td align="right">0.3886147</td>
+<td align="right">0.1575229</td>
+</tr>
+<tr class="odd">
+<td align="left">rs964184</td>
+<td align="left">Teslovich</td>
+<td align="left">TG</td>
+<td align="right">0.9416667</td>
+<td align="right">0.221</td>
+<td align="right">1.0000000</td>
+<td align="right">1.0000000</td>
+<td align="right">0.9996776</td>
+</tr>
+<tr class="even">
+<td align="left">rs964184</td>
+<td align="left">Ko A</td>
+<td align="left">TG</td>
+<td align="right">1.8900000</td>
+<td align="right">0.221</td>
+<td align="right">1.0000000</td>
+<td align="right">1.0000000</td>
+<td align="right">1.0000000</td>
 </tr>
 </tbody>
 </table>
-</div>
+<pre><code>## [1] 23</code></pre>
 </div>
 </div>
 <div id="references" class="section level1 unnumbered">
@@ -2469,7 +2732,7 @@ $(document).ready(function () {
   (function () {
     var script = document.createElement("script");
     script.type = "text/javascript";
-    script.src  = "https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
     document.getElementsByTagName("head")[0].appendChild(script);
   })();
 </script>

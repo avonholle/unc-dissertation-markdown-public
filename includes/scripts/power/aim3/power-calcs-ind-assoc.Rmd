@@ -17,6 +17,7 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, results="hide")
+
 library(knitr)
 library(plyr)
 
@@ -81,29 +82,112 @@ To get minor allele frequencies for the AMR populuation in 1000 genomes, used th
 
 Note: if beta were in mg/dL they were converted to mmol/L for power calcs below
 
-```{r, results='markup'}
+```{r, results='markup', eval=FALSE}
 
-# read in snps from appendix a
+# read in snps from appendix a and get beta
 # at ~\Documents\dissertation\unc-dissertation-markdown\includes\table-data
 
-appa.snps = read_excel("~/dissertation/unc-dissertation-markdown/includes/table-data/Copy of Full_list_lipids_known_loci_02102017-annotated.xlsx")
+appa.snps = read_excel("~/GitHub/unc-dissertation-markdown/includes/table-data/Copy of Full_list_lipids_known_loci_02102017-annotated.xlsx")
 #head(appa.snps)
 
 appa.snps = appa.snps[appa.snps$significance=="gw_sig",] # only genome-wide significant
 col.num1 = which(colnames(appa.snps) %in% "Beta (SE)")
-
 colnames(appa.snps)[col.num1] = "beta"
-table(appa.snps$beta.units)
+
+table(appa.snps$Author)
 head(appa.snps)
 
 appa.snps = within(appa.snps, {
   EAF = round(as.numeric(EAF), 3)
-  beta = round(as.numeric(beta), 3)
+  beta = round(as.numeric(beta), 5)
+#  beta = ifelse(Author %in% c("Teslovich", "Willer", "Tada"), 1/beta, beta )
   beta = ifelse(beta.units=="mg", beta/18, beta) # convert mg/dl to mmol/l
 })
 
+# TO DO: ask Misa about the inverse transform of the coefficients. why? and 
+# for my power calcs is it ok for me to convert back by taking inverse of beta?
+head(appa.snps)
+
 kable(appa.snps[,c("rsid", "Effect allele", "EAF", "beta", "Chr")])
 #write.csv(appa.snps[,c("snp2")], file='../table-data/snps-for-spsmart.csv')
+```
+
+```{r, results='markup'}
+
+# read in snps from appendix a and get beta
+# this list of snps has evolved and now includes snps from HL population
+# changes here from the prior chunk reflect this situation
+
+setwd("~/GitHub/unc-dissertation-markdown-p2/includes/scripts/paper3/longleaf/")
+load(file="vars.Rdata") # has following data frames: df1, df.allele, out.1, out.2, tot.rsid
+
+# df.allele has  beta and effect allele from create-list-snps-for-vcf.R
+# has snps from both HL and European snps that generalize to HL population.
+
+# note: non-hl snps that generalize have betas that are inverse normal transformed 
+# for Tada, Willer and TEslovich
+# TO DO: need to get effect sizes for Tada and Willer so I can add to snp list
+
+# see notes in 'Supplementary Table S6', etc... in "Copy of SOL_Lipids_Suppl_Tables_061617.xlsx". I only have effect sizes for Teslovich (n=61) so will look at at those snps for now.
+#file at "~/GitHub/unc-dissertation-markdown/includes/table-data/teslovich-snps.xlsx"
+
+# untransformed Teslovich effect sizes
+setwd("~/GitHub/unc-dissertation-markdown/includes/table-data/")
+tes = read.csv(file="teslovich-snps.csv", header=T)
+head(tes)
+
+colnames(df.allele)
+appa.snps. = df.allele[c("rsid", "Effect allele", "EAF", "Beta (SE)", "Chr", "Trait", 
+                        "Author", "beta.units", "significance", "eur")]
+head(appa.snps.)
+colnames(appa.snps.)
+colnames(tes)
+
+# make a unique identifier for the hl and other snps
+appa.snps.$id = with(appa.snps., paste0(rsid, "-", Trait)); head(appa.snps.$id)
+tes$id = with(tes, paste0(Lead.SNP, "-", Lead.trait)); head(tes$id)
+
+# change beta from inverse normal transformed for the TEslovich to untransformed values
+appa.snps = merge(appa.snps.,
+                  tes[c("Lead.SNP", "Effect.size", "Lead.trait", "id")],
+                  by = 'id',
+                  all.x=T)
+
+table(appa.snps$Author)
+nrow(appa.snps)
+appa.snps = unique(appa.snps)
+nrow(appa.snps)
+appa.snps[1:20, c("rsid", "Author", "Beta (SE)", "Effect.size", "Trait", "eur")]
+
+head(df.allele[df.allele$Author=="Teslovich", c("rsid", "Trait", "Beta (SE)")])
+table(appa.snps$eur)
+
+appa.snps$beta. = ifelse(appa.snps$eur==1,
+                         appa.snps$Effect.size,
+                         ifelse(appa.snps$eur==0,
+                                appa.snps$"Beta (SE)", NA)) # if HL snps then units not transformed, 
+# if Eur snps that generalize then they need origin values in original units -- only have Teslovich for now...
+
+head(appa.snps)
+
+# colnames(appa.snps)[4] = "beta"
+appa.snps$beta = as.numeric(as.character(appa.snps$beta.))
+class(appa.snps$beta) # check
+summary(appa.snps$beta)
+
+# Now either the effect size is missing if non-HL and not Teslovich or
+# has no transformation (so I can do power calcs)
+appa.snps$beta = ifelse(appa.snps$beta.units=="mg", 
+                        appa.snps$beta/18, appa.snps$beta) # convert mg/dl to mmol/l -- my power calcs are in mmol
+
+appa.snps = appa.snps[!(is.na(appa.snps$beta)==T),] # take out any rows with missing effects
+head(appa.snps)
+table(appa.snps$Author)
+
+#kable(appa.snps)
+write.csv(appa.snps[,c("rsid")],
+          file='~/GitHub/unc-dissertation-markdown/includes/table-data/snps-for-spsmart-rev.csv')
+
 ```
 
 ### MAF from 1000 G AMR population for selected snps above
@@ -114,15 +198,19 @@ Exported .csv file from 1000 genomes AMR population contains minor allele freque
 ```{r}
 # 1. go to http://spsmart.cesga.es/  
 # 2. then input snps from .csv file above into program to get allele freq in AMR from 1000 genomes data 2011
-# 3. then save as .csv file to following location
-maf.amr = read.table("~/dissertation/unc-dissertation-markdown/includes/scripts/power/aim3/sps-download.csv", sep=";", header=T, skip=1)
+# 3. click on downloads tab in the final results section
+# 4. then save as .csv file to following location
+maf.amr = read.table("~/GitHub/unc-dissertation-markdown/includes/scripts/power/aim3/sps-download.csv", sep=";", header=T)
 head(maf.amr)
+dim(maf.amr) # original list of snps was 117 -- this has 107, missing 10.
+
 ```
 
 
 ```{r, results='markup'}
 select.c = colnames(maf.amr) %in% c("SNP", "N", "MA", "MAF")
-kable(maf.amr[maf.amr$population=="Population Set 1", select.c],
+
+kable(maf.amr[select.c],
       row.names = F)
 ```
 
@@ -139,8 +227,12 @@ The following information will assess which of these SNPs have enough power to d
 ## List of SNPS and their effect sizes selected for each trait in Appendix A in proposal
 
 ```{r}
+
+#appa.snps[appa.snps$Trait=="HDL" & appa.snps$rsid=="rs247617",] # checking
+
 # get list of snps by trait (Appendix A)
 head(appa.snps)
+dim(appa.snps)
 hdl.snps = appa.snps[appa.snps$Trait=="HDL", "rsid"]
 ldl.snps = appa.snps[appa.snps$Trait=="LDL", "rsid"]
 tg.snps = appa.snps[appa.snps$Trait=="TG", "rsid"]
@@ -169,23 +261,29 @@ tg.snps = appa.snps[appa.snps$Trait=="TG", "rsid"]
 # Merge 2 data frames together
 
 #head(appa.snps)
-
-b.snps = appa.snps[,c("rsid", "EAF", "Effect allele", "beta")]
+colnames(appa.snps)
+b.snps = appa.snps[,c("rsid", "Effect allele", "beta", "Author", "Trait")]
+head(b.snps)
+table(b.snps$Author)
+head(b.snps[b.snps$Author=="Teslovich",])
 #colnames(b.snps)
 
 # redo amr data
 #head(maf.amr)
-maf.amr2 = maf.amr[maf.amr$population=="Population Set 1",
-                   c("SNP", "MAF", "reference")]
+maf.amr2 = maf.amr[c("SNP", "MAF", "reference")]
 colnames(maf.amr2) = c("rsid", "EAF", "Effect allele")
+head(maf.amr2)
+
 #head(maf.amr2)
 
 # merge appa and amr by snp id
 maf = merge(b.snps, maf.amr2, by="rsid", all.x=T)
+
+colnames(maf)
 #head(maf)
-colnames(maf) = c("rsid", "EAF.appa", "allele.appa", "beta",
-                  "maf.amr", "allele.amr")
-maf$EAF.appa = round(as.numeric(maf$EAF.appa),4)
+
+colnames(maf) = c("rsid", "allele.appa", "beta", "Author", "trait", "maf.amr", "allele.amr")
+#maf$EAF.appa = round(as.numeric(maf$EAF.appa),4)
 #head(maf)
 
 kable(maf)
@@ -217,12 +315,12 @@ maf = within(maf, {
   sd.tc = 1.4 # sd approx based on slcs sample
 
   # set variance based on maf from 1000 g AMR
-  var = 2*EAF.appa*(1-EAF.appa)
+  var = 2*maf.amr*(1-maf.amr)
   
   # set effect size to one from app A
   # for a change in lipid (mg/dL) for a one unit change
   # in additive model
-  es = as.numeric(beta)
+  es = as.numeric(as.character(beta))
   
   # set h2 for hdl
   h2.hdl = (es^2)*var/(sd.hdl^2)
@@ -252,36 +350,40 @@ maf = within(maf, {
 })
 
 head(maf)
+colnames(maf)
 
-sub=maf[c("rsid", 'beta', 'EAF.appa', 'maf.amr', 'pwr.hdl', 'pwr.ldl', 'pwr.tg')]
-sub
+sub=maf[c("rsid", "Author", "trait", 'beta',  'maf.amr', 'pwr.hdl', 'pwr.ldl', 'pwr.tg')]
+table(sub$Author)
+head(sub[sub$Author=="Ko A",])
 
 ```
 
-## SNPS with power > 0.8
+# SNPS with power > 0.8
 
-### HDL-related SNPS
+**NOTE**: All beta below are in mmol/L units.
+
+## HDL-related SNPS
 ```{r, results='markup'}
-# any power estimates exceeding 0.8 (by trait specific effect)?
+# any power estimates exceeding 0.9 (by trait specific effect)?
 kable(sub[sub$rsid %in% hdl.snps & sub$pwr.hdl>0.8 & !(is.na(sub$pwr.hdl)),
           !(colnames(sub) %in% c("pwr.ldl",'pwr.tg'))]
       )
 ```
 
-### LDL-related SNPs
+## LDL-related SNPs
 ```{r, results='markup'}
 kable(sub[sub$rsid %in% ldl.snps & sub$pwr.ldl>0.8 & !(is.na(sub$pwr.ldl)),
           !(colnames(sub) %in% c("pwr.hdl",'pwr.tg'))]
       )
 ```
 
-### TG-related SNPs
+## TG-related SNPs
 ```{r, results='markup'}
 kable(sub[sub$rsid %in% tg.snps & sub$pwr.tg>0.8 & !(is.na(sub$pwr.tg)), 
     !(colnames(sub) %in% c("pwr.ldl",'pwr.hdl'))])
 ```
 
-### All sufficiently powered SNPs
+## All sufficiently powered SNPs
 ```{r, results='markup'}
 
 snp.sig = sub[ (sub$pwr.tg>0.8 & sub$rsid %in% tg.snps | 
@@ -289,6 +391,11 @@ snp.sig = sub[ (sub$pwr.tg>0.8 & sub$rsid %in% tg.snps |
                  sub$pwr.ldl>0.8 & sub$rsid %in% ldl.snps) & complete.cases(sub),]
 
 kable(snp.sig, row.names=F )
+
+# write to a file for later use -- for example, m3 table 4
+setwd("~/GitHub/unc-dissertation-markdown-p2/includes/scripts/paper3")
+save(snp.sig, file="sig-snps.Rdata")
+
 ```
 
 ```{r, results='markup'}
@@ -298,11 +405,13 @@ kable(snp.sig, row.names=F )
 #head(appa.snps)
 #colnames(appa.snps)
 appa.snps$`Effect allele` = substr(appa.snps$`Effect allele`,1,1)
-table.sig.snp = appa.snps[(appa.snps$rsid %in% snp.sig$rsid), c("Trait", "rsid", "Author", "Chr", 
-                                                    "Gene   ", "Effect allele", "beta")]
-write.csv(table.sig.snp, file="~/dissertation/unc-dissertation-markdown/includes/scripts/power/aim3/sig-snp.csv",
+
+table.sig.snp = appa.snps[(appa.snps$rsid %in% snp.sig$rsid), c("Trait", "rsid", "Author", "Chr", "Effect allele", "beta")]
+nrow(table.sig.snp)
+write.csv(table.sig.snp,
+          file="~/GitHub/unc-dissertation-markdown/includes/scripts/power/aim3/sig-snp.csv",
           row.names = F)
-kable(table.sig.snp)
+#kable(table.sig.snp)
 ```
 
 
