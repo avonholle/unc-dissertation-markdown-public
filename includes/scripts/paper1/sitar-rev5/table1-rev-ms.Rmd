@@ -1,0 +1,184 @@
+---
+title: "Table 1 -- Dissertation manuscript 1, rev"
+author: "Ann Von Holle"
+date: '`r format(Sys.time(), "%d %B, %Y")`'
+output:
+  pdf_document:
+    toc: no
+header-includes: \usepackage{hyperref, booktabs, longtable, float}\hypersetup{colorlinks=true,
+  linkcolor=blue,filecolor=magenta,urlcolor=cyan}
+classoption: landscape
+---
+
+```{r setup-table1, include=FALSE}
+options(width=90)
+knitr::opts_chunk$set(fig.width=8, fig.height=8,
+                      echo=FALSE, warning=FALSE,
+                      message=FALSE, 
+                      results='hide',
+                      comment=NA)
+
+require(knitr)
+require(tableone)
+require(htmlTable)
+require(Hmisc) 
+require(ggplot2)
+require(reshape2)
+require(mice)
+require(kableExtra)
+require(dplyr)
+
+```
+
+
+<!-- NOTES:
+1. This is the source document for this project. I will treat this document as a plain text Markdown file to create Word docs, pdfs and html files. This document will be downloaded in plain text format so any formatting such as bullet points, font changes, bolding, header choices will not be saved. However, please add comments or edits as you see fit. I can clean up later.
+
+2. Any text below preceded by an @ symbol is a placeholder for a citation.
+
+3. To indicate formatting in plain text use the following notation.
+Sections in this document start with a # symbol. Section 1 headings start with #, section 2 headings start with ##, etc..
+**bold**
+*italic*
+$latex formula$
+
+4. If you want to see what the text below looks like after formatting, you can cut and paste in https://stackedit.io/editor OR you can go to the web page with a recent version of updates in html format: html format or Word .docx format.
+
+5. Used google code at following link to create heading numbering: http://stackoverflow.com/questions/12389088/google-docs-drive-number-the-headings
+
+6. Can edit this file at https://docs.google.com/document/d/1UI7c676DO4_ItDheW9PGy3yBsRTh1l_EPDOGlo3sIkA/edit?usp=sharing 
+
+END OF NOTES
+-->
+
+```{r}
+
+# read in SAS  data using haven package -- no label option
+setwd("~/")
+
+# read in data from descriptive_statistics.Rmd
+load("merged-data.Rdata") # has merge1.rev data frame (full 2017 release w/ ses)
+nrow(merge1.rev) # 1471
+
+summary(merge1.rev$GestatnlAg)
+
+names(merge1.rev)
+
+catvars = c('Sex')
+contvars = c("GestatnlAg", "v368c", "MATAGE", "MthrsTTyoe")
+timevars = c('DysbbdaM1m', 'DysbbdaM2m', 'DysbbdaM3m', 'DysbbdaM4m', 'DysbbdaM5m')
+length(contvars)
+
+merge2 = merge1.rev[c(catvars, contvars, "ID_v1", timevars)]
+nrow(merge2)
+
+newnames =  c("Gest age (weeks)",
+              "Graffar Index",
+              "Maternal age",
+              "Maternal educ (years)")
+
+colnames(merge2)[which(colnames(merge2) %in% contvars)] = newnames
+
+head(merge1.rev[contvars])
+sapply(merge1.rev[contvars], class)
+
+merge2 = merge2[is.na(merge2$Sex)==F,] # omit missing sex of child value
+nrow(merge2) # 1412
+names(merge2)
+head(merge2$ID_v1)
+ids = merge2$ID_v1
+
+# export ids so I can subset the file used to describe graffar indices in Descriptive2.Rmd
+save(ids, file = "ms1-ids.Rdata")
+
+levels(factor(merge2$Sex))
+merge2$Sex.f = factor(merge2$Sex, labels=c("Male",
+                                           "Female"))
+
+```
+
+```{r}
+# function to make tables
+makedtable = function(by.var){
+  
+    # by.var="Sex" # debug
+    t1 = CreateTableOne(vars = newnames, 
+                        data=merge2,
+                        factorVars = catvars, 
+                        strata=by.var, 
+                        test=FALSE); t1
+    
+    t1.overall =CreateTableOne(vars = newnames, 
+                        data=merge2,
+                        factorVars = catvars, 
+                        test=FALSE); t1.overall
+    
+    
+    #print(t1, nonnorma=contvars, type='html')
+    
+    tab1.mat <- print(t1, nonnormal = newnames,
+                      quote = FALSE, noSpaces = TRUE, printToggle = FALSE,
+                      contDigits=1)
+    
+    tab1.overall.mat <- print(t1.overall, 
+                              nonnormal = newnames,
+                              quote = FALSE, noSpaces = TRUE,
+                              printToggle = FALSE, contDigits = 1)
+    
+    t1.tot = cbind(tab1.mat, tab1.overall.mat)
+    #head(t1.tot)
+    # Run this for a pdf document
+
+    # get rid of underscore characters in rownames. won't work in this chunk without changing
+    #rownames(t1.tot)
+    t1.tot.pdf = t1.tot; t1.tot.pdf
+    
+    rownames(t1.tot.pdf) = gsub("_", "\\_", rownames(t1.tot), fixed = T)
+    #rownames(t1.tot.test)
+    list1 = list(t1.tot, t1.tot.pdf)
+    return(list1)
+}
+
+# export table 1 for interim slides, 2017-11
+setwd("~/GitHub/unc-dissertation-markdown-p2/includes/scripts/presentations/interim-meeting")
+#setwd("~/dissertation/unc-dissertation-markdown-p2/includes/scripts/presentations/interim-meeting")
+table1 = makedtable("Sex.f")[[2]]
+save(table1, file="table1.Rda")
+
+t1 = data.frame(makedtable("Sex.f")[[2]])
+t1$char = c("n",
+            "Gestational age (weeks)",
+            "Graffar Index",
+            "Maternal age (years)",
+            "Maternal Education (years)")
+
+t1
+
+# export for manuscript papers
+save(t1, file="~/GitHub/unc-dissertation-markdown-p2/includes/scripts/paper1/sitar-rev5/t1dat.Rdata")
+#save(t1, file="~/dissertation/unc-dissertation-markdown-p2/includes/scripts/paper1/sitar-rev5/t1dat.Rdata")
+
+```
+
+\colorlet{vlg}{gray!20}
+
+```{r, results='asis'} 
+
+# colnames(t1)
+
+kable(t1[c("char", "Male", "Female", "Overall")], 
+      booktabs=T, escape=F,
+      format="latex",
+#      format="html",
+      row.names = F,
+      col.names =  c("Characteristic", "Male", "Female", "Total"),
+      caption="Descriptive statistics of sociodemographic characteristics, median [IQR]") %>%
+  kable_styling(latex_options = c("striped"), stripe_color="vlg", 
+      font_size = 12) %>%
+#  kable_styling(latex_options = "striped", "scale_down", full_width=F) %>%
+  column_spec(column=1, width = "20em") %>%
+  column_spec(column=2, width = "8em") %>%
+  column_spec(column=1, width = "8em") %>%
+  column_spec(column=3, width = "8em") 
+
+```

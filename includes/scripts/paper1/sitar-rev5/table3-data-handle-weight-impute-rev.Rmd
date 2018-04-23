@@ -1,0 +1,244 @@
+---
+title: "table3-data-handle-weight-impute-rev. Incorporates addl full data from 20171201 data release"
+author: "Ann Von Holle"
+date: "July 3, 2017"
+output: html_document
+---
+
+```{r setup-t3-impute, include=FALSE}
+knitr::opts_chunk$set(fig.width=8, fig.height=8,
+                      echo=T, warning=T,
+                      message=T, 
+                      results='markup',
+                      comment=NA)
+
+require(tableone)
+require(htmlTable)
+require(Hmisc) 
+require(ggplot2)
+require(reshape2)
+require(nlme)
+require(splines)
+require(sitar)
+require(foreach)
+require(data.table)
+require(mice)
+```
+
+```{r data-handle-wt2, echo=F, results='hide'}
+# read in data from descriptive_statistics.Rmd
+
+# Data handling section
+
+# read in data
+setwd("~/")
+
+# impute phenotype data
+
+# year 1 cohort data
+# bring in phenotype data from descriptive_statistics.Rmd
+load("merged-data.Rdata") # data frame is merge1.rev
+str(merge1.rev)
+dim(merge1.rev) # 1471 by 76
+
+merge1 = merge1.rev
+nrow(merge1.rev)
+
+colnames(merge1)[1]="id"
+
+merge1$DysbbdaM0m = 0 # set up baseline time value
+names(merge1)
+
+wt.vars = c("Wgh.gr..aB",  "Wg.gr..a1M",
+                                "Wg.gr..a2M",  "Wg.gr..a3M",  "Wg.gr..a4M",
+                                "Wg.gr..a5M")
+
+days.vars = c("DysbbdaM0m", "DysbbdaM1m",  "DysbbdaM2m",
+              "DysbbdaM3m",  "DysbbdaM4m", "DysbbdaM5m")
+
+wfl = c("wfl.0", "wfl.1", "wfl.2", "wfl.3", "wfl.4", "wfl.5")
+
+```
+
+
+
+```{r}
+
+# Load in bf data.
+# See 3/7/2018 email
+
+bf = read.csv(file="~/../Dropbox/unc.grad.school/dissertation/data/m2/breastfeeding/bfvars_Mar6_2018.csv")
+
+# mom1mam: age at first bottle (months) (n=1730)
+# edad1mam: age at first bottle (months) (days) (n=1730)
+# weanmnth: age when weaned from breast milk (months) (n=1117)
+# edadultpecho: age when weaned from breast milk (day) (n=1705)
+
+# look at age at first bottle (in months), mom1mam
+# and age when weaned from breastmilk (weanmnth), weanmnth
+
+str(bf)
+summary(bf)
+
+```
+
+
+
+
+```{r}
+# read in data
+setwd("~/")
+
+# Note: currently using predictive mean matching for all variables. The other methods for prediction currently not working, including in example given in documentation (see below). Will wait to see if there is a bug and if it's fixed.
+
+wfl = c("wfl.0", "wfl.1", "wfl.2", "wfl.3", "wfl.4", "wfl.5")
+ht = c("Hgh.cm..aB",
+                     "Hg.cm..a1M", "Hg.cm..a2M",
+                     "Hg.cm..a3M", "Hg.cm..a4M",
+                     "Hg.cm..a5M")
+colnames(merge1)
+
+#merge1$milkcode = NA # for now just treat milkcode as missing and omit from analyses until I get full version.
+names(merge1)
+nrow(merge1)
+
+vars.test = c( "id", "T1137",
+                                      "T1131",
+                                      "MATAGE", 
+                                      #"milkcode",
+                                      "v401",
+                                     "v368c",
+                                      "Sex", "MthrsTTyoe", "GestatnlAg", 
+                                      'HDLchlstrl', 'LDLChlstrl', 'trg.mg.dL.' 
+              # 'graffar.index'
+              )
+              
+
+vars.test %in% names(merge1)
+
+# attach breastfeeding to merge1 data frame
+nrow(merge1)
+dat1 = merge(merge1,
+             bf,
+             by=c("id"),
+             all.x=T)
+nrow(bf)
+nrow(dat1)
+names(dat1)
+
+
+merge1.sub = subset(dat1, select= c( "id", "T1137",
+                                      "T1131",
+                                      "MATAGE", 
+                                      #"milkcode",
+                                      "stillbf6", "weanmnth",
+                                      "v401",
+                                      "v368c", # this is revised graffar index
+                                      "Sex", "MthrsTTyoe", "GestatnlAg", 
+                                      'HDLchlstrl', 'LDLChlstrl', 'trg.mg.dL.', 
+                                      #"graffar.index",
+                                      wt.vars,
+                                      ht,
+                                      wfl,
+                                      days.vars)  )
+
+#merge1.sub = merge(merge1.sub, gv, by = "id")
+colnames(merge1.sub)
+nrow(merge1.sub) # 1471
+
+merge1.sub[merge1.sub==999] = NA # convert 999 for any numeric variable to missing
+merge1.sub[merge1.sub==999.999] = NA # convert 999 for any numeric variable to missing
+# check values for variables that are more factors and less numeric
+# will change method of imputation. Skipping for now. Bug in mice package?
+# colnames(merge1.sub)
+# levels(factor(merge1.sub$R.momsmoke))
+
+merge1.sub[order(merge1.sub$T1137),"T1137"] # check... there are quite a few 999.999 measures. Need to convert to NA
+
+# 
+# merge1.sub$R.momsmoke = factor(merge1.sub$R.momsmoke, 
+#                                 labels=c("No", "Yes")) # will not as binary later, but will not use factors when imputing below. Leads to error message.
+# merge1.sub[,graffar.vars] = lapply(merge1.sub[,graffar.vars],
+#                                    factor)
+
+# see https://stats.stackexchange.com/questions/99334/fast-missing-data-imputation-in-r-for-big-data-that-is-more-sophisticated-than-s
+ini <- mice(merge1.sub, maxit=0, pri=F)
+#pred <- ini$pred
+#pred
+
+# see https://stats.stackexchange.com/questions/55925/the-leading-minor-of-order-1-is-not-positive-definite-error-using-2l-norm-in-m
+# this fixed an error I was getting with 'leading minor of order xxx' in mice
+pred<-quickpred(merge1.sub)
+
+# having some problems....
+
+pred[,c("id", wt.vars, days.vars, ht, wfl)] <- 0 # variables you do not want to use as predictors but want to have in the dataset, can't add them later.
+meth <- ini$meth
+
+meth[c("id", wt.vars, days.vars, ht, wfl, "Sex", 'HDLchlstrl', 'LDLChlstrl', 'trg.mg.dL.')] <- "" #choose a prediction method for imputing your variables. Here I don't want these variables to be imputed, so I choose "" (empty, no method).
+# NOTE: this can turn out badly in terms of the nlme estimation if you impute the time dependent outcome variables.
+meth
+
+# take out people with missing Sex variable, 8. sample size reduced from 888 to 882
+merge1.sub = merge1.sub[!(is.na(merge1.sub$Sex)),]
+nrow(merge1.sub) # 1412
+
+# run imputation
+# ----------------------------------------------------
+# IMPORTANT: cannot have pri=F option or it won't work.
+# also seems like you have to have pringFlag=F for it to work.
+# See page 294 of 'R: data analysis and visualization
+# ISBN 1786460483, 9781786460486
+
+merge1.sub[merge1.sub$id==98,]
+
+# Test imputation process here.......
+# ----------------------------------------------
+# imptest <- mice(merge1.sub, m=2, printFlag=F, pred=pred, method=meth, seed=54321)
+# class(imp)
+# 
+# long1 <- complete(imptest, action='long', include=TRUE)
+# class(long1)
+# names(long1)
+# table(long1$.imp)
+
+# NOTE: the more iterations (m=), the longer it takes for the model to converge.
+imp <- mice(merge1.sub, m=100, printFlag=F, pred=pred, method=meth, seed=54321) # NOTE: for current version of analyses, 
+# doesn't matter how many imputations there are because no imputation.
+
+# check values from imputation
+test =  complete(imp, action="long", include=TRUE)
+#head(test[test$.imp==2,])
+summary(test[test$.imp==2,])
+nrow(test[test$.imp==2,])
+str(test[test$.imp==2,])
+#head(test[test$.imp==0,])
+
+# check some values for imputation
+test =  complete(imp, action="long", include=TRUE)
+summary(test[test$.imp==1,])  # check
+
+imp$method # Note: gest age and mother's education have no missing so not imputed
+table(merge1.sub$MthrsTTyoe)
+
+#save(imp, graffar.vars, wt.vars, days.vars, file="imp-dat-rev.Rdata")
+save(imp,  wt.vars, days.vars, file="imp-dat-rev.Rdata")
+
+```
+
+
+```{r, eval=FALSE}
+# test part to look at potential bug when using other means beside pmm for prediction in mi.
+str(nhanes2)
+head(nhanes2)
+
+imp <- mice(nhanes2, printFlat=T, pri=F, me = c("pmm", "pmm", "pmm", "pmm"))
+
+
+ini <- mice(nhanes2, maxit=0, pri=F, printFlag = T)
+ini$method
+imp.test = mice(nhanes2, printFlag = T, pri=F)
+test =  complete(imp.test, action="long", include=TRUE)
+
+
+```

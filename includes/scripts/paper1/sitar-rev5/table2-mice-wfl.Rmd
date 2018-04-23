@@ -1,0 +1,912 @@
+---
+title: "Table 2, WFL trajectories -- SITAR parameter estimates. Use mice for estimates. Uses full infancy cohort in preventive trial."
+author: "Ann Von Holle"
+date: '`r format(Sys.time(), "%d %B, %Y")`'
+output:
+  html_document:
+    number_sections: yes
+    toc: yes
+    toc_depth: 3
+    toc_float: no
+  pdf_document:
+    number_sections: yes
+    toc: yes
+    toc_depth: 3
+header-includes: \usepackage{hyperref, booktabs, longtable, float}\hypersetup{colorlinks=true,
+  linkcolor=blue,filecolor=magenta,urlcolor=cyan}
+classoption: landscape
+bibliography: ../../../bib/lit-review.bib
+---
+
+# Introduction
+
+Potential title: Sociodemographic predictors of early infant growth between 0 and 5 months in a Chilean infancy cohort.
+
+This set of analyses estimates the association between sociodemographic characteristics and early infant growth.
+
+
+## Methods description
+
+
+```{r setup1, include=FALSE}
+knitr::opts_chunk$set(fig.width=8, fig.height=8,
+                      echo=FALSE, warning=FALSE,
+                      message=FALSE, 
+                      results='hide',
+                      comment=NA)
+```
+
+```{r}
+set.seed(4321)
+require(knitr)
+require(tableone)
+require(htmlTable)
+require(Hmisc) 
+require(ggplot2)
+require(reshape2)
+require(nlme)
+require(splines)
+require(sitar)
+require(foreach)
+require(data.table)
+require(mice)
+require(kableExtra)
+require(glmnet)
+require(plyr)
+require(selectiveInference)
+
+
+```
+
+
+<!-- Read in imputed data, imp -->
+
+```{r, child='../table3-data-handle-weight-impute-rev.Rmd', eval=F}
+
+```
+
+
+
+```{r}
+
+# for analyses see 
+#1) https://stackoverflow.com/questions/24872668/multiple-imputation-of-longitudinal-data-in-mice-and-statistical-analyses-of-obj and
+#2) https://stackoverflow.com/questions/26667162/perform-operation-on-each-imputed-dataset-in-rs-mice
+  
+# read in data
+setwd("~/")
+getwd()
+load("imp-dat-rev.Rdata") # contains the imp object from mice package in table3-data-handle-weight-impute-rev.Rmd
+class(imp)
+length(imp)
+
+long1 <- complete(imp, action='long', include=TRUE)
+names(long1)
+long1.orig = long1[long1$.imp==0,]
+long1.orig$mat.bmi = with(long1.orig, T1137/(T1131/100)^2)
+summary(long1.orig$mat.bmi)
+nrow(long1.orig)
+names(long1.orig)
+
+levels(factor(long1.orig$Sex))
+
+num.imp = length(table(long1$.imp))-1 # number of imputations
+
+
+# make a list of data frames by imputation number
+imp.data <- as.list(1:num.imp)
+for(i in 1:num.imp){
+  imp.data[[i]] <- complete(imp, action=i)
+}
+
+# add bmi variable: T1137 (mother's self-reported prepregnancy weight (kg)) divided by
+# T1131 ( mother's measured height when child was 10 yrs) (cm)
+# mat.bmi = T1137/(T1131/100)
+nrow(imp.data[[1]])
+nrow(imp.data[[4]]) # 1412
+
+
+
+#long1.orig = long1.orig[((abs(scale(long1.orig$matbmi)) < 2.5))==T, ]
+length(imp.data)
+
+for(i in 1:num.imp){
+  imp.data[[i]]$mat.bmi = imp.data[[i]]$mat.bmi = with(imp.data[[i]], T1137/(T1131/100)^2)
+  #imp.data[[i]] = imp.data[[i]][((abs(scale(imp.data[[i]]$mat.bmi)) < 5))==T, ]
+  # remove any bmi >  2sd
+  # NOTE: may need to fix this
+}
+
+nrow(imp.data[[3]])
+summary(imp.data[[3]][colnames(imp.data[[3]]) %in% c('mat.bmi', 'T1137', 'T1131')])
+
+# get the observed data from the mids object
+mat <- complete(imp, 'long', inc=TRUE)
+orig.dat = mat[mat$.imp==0,]
+dim(orig.dat)
+
+names(imp.data[[1]])
+head(imp.data[[1]])
+nrow(imp.data[[1]])
+
+```
+
+
+```{r}
+
+# data handling
+
+convert = function(x) {
+
+             #x = x[sample(nrow(x), 200),] # debug. select 200 people
+
+              wt = c("Wgh.gr..aB",  "Wg.gr..a1M",
+                     "Wg.gr..a2M",  "Wg.gr..a3M",  "Wg.gr..a4M",
+                     "Wg.gr..a5M")
+              
+                            
+              wfl = c("wfl.0", "wfl.1", "wfl.2", "wfl.3", "wfl.4", "wfl.5")
+              
+              ht = c("Hgh.cm..aB",
+                     "Hg.cm..a1M", "Hg.cm..a2M",
+                     "Hg.cm..a3M", "Hg.cm..a4M", 
+                     "Hg.cm..a5M")
+              
+                            
+              # convert the wt, ht and wfl columns to numeric
+              body.cols = which((colnames(x)) %in% c(wt, ht, wfl))
+              x[, body.cols] = apply(x[, body.cols], 2, 
+                                     function(x) as.numeric(as.character(x)))
+              
+              covs.sub = c(#"T1137", "T1131",
+                           #"mat.bmi",
+                           #"R.momsmoke" ,
+                           "MATAGE", "milkcode",
+                           "v401", "v368c", #"actua.ses.q26", 'graffar.index',
+                           "MthrsTTyoe", "GestatnlAg"
+                           )
+
+              # transform weight data to long style data frame
+              sub.wt = melt(x[,c("id", wt)],
+                                   id.vars = c("id"))
+              sub.wt$value = sub.wt$value/1000 # transform from g to kg
+              colnames(sub.wt)[3]="value.wt"
+              head(sub.wt)
+              nrow(sub.wt)
+
+              # transform wf, data to long style data frame
+              sub.wfl = melt(x[c("id", wfl)],
+                                   id.vars = c("id"))
+              colnames(sub.wfl)[3]="value.wfl"
+              head(sub.wfl)
+              
+
+              # transform height data to long style data frame
+              sub.ht = melt(x[c("id", ht)],
+                                   id.vars = c("id"))
+              colnames(sub.ht)[3]="value.ht"
+              head(sub.ht)
+               
+              # get time to anthropometric measure
+              x$DysbbdaM0m = 0
+              
+              sub.time = melt(x[,c("id", 
+                                               'DysbbdaM0m',
+                                               "DysbbdaM1m",  "DysbbdaM2m",
+                                               "DysbbdaM3m",  "DysbbdaM4m",  
+                                               "DysbbdaM5m")],
+                                   id.vars = c("id"))
+              
+              head(sub.time)
+              
+              sub.time = within(sub.time, {
+                time = ifelse(variable == 'DysbbdaM0m', 0,
+                              ifelse(variable == 'DysbbdaM1m', 1, 
+                                     ifelse(variable == 'DysbbdaM2m', 2,
+                                            ifelse(variable == 'DysbbdaM3m', 3, 
+                                                   ifelse(variable == 'DysbbdaM4m', 4, 
+                                                          ifelse(variable == 'DysbbdaM5m', 5, NA) 
+                              )))))
+              })
+              
+              summary(sub.time)
+              colnames(sub.time)[3] = 'time2'
+              summary(sub.time)
+              
+              
+              
+              # create time variables for merging
+              
+              sub.wt = within(sub.wt, {
+                time = ifelse(variable == 'Wgh.gr..aB', 0,
+                              ifelse(variable == 'Wg.gr..a1M', 1, 
+                                     ifelse(variable == 'Wg.gr..a2M', 2,
+                                            ifelse(variable == 'Wg.gr..a3M', 3, 
+                                                   ifelse(variable == 'Wg.gr..a4M', 4, 
+                                                          ifelse(variable == 'Wg.gr..a5M', 5, NA) 
+                              )))))
+              })
+              
+              sub.ht = within(sub.ht, {
+                time = ifelse(variable == 'Hgh.cm..aB', 0,
+                              ifelse(variable == 'Hg.cm..a1M', 1, 
+                                     ifelse(variable == 'Hg.cm..a2M', 2,
+                                            ifelse(variable == 'Hg.cm..a3M', 3, 
+                                                   ifelse(variable == 'Hg.cm..a4M', 4, 
+                                                          ifelse(variable == 'Hg.cm..a5M', 5, NA) 
+                              )))))
+              })
+              
+              sub.wfl = within(sub.wfl, {
+                time = ifelse(variable == 'wfl.0', 0,
+                              ifelse(variable == 'wfl.1', 1, 
+                                     ifelse(variable == 'wfl.2', 2,
+                                            ifelse(variable == 'wfl.3', 3, 
+                                                   ifelse(variable == 'wfl.4', 4, 
+                                                          ifelse(variable == 'wfl.5', 5, NA) 
+                              )))))
+              })
+              
+              # Merge all data frames together
+              # ----------------------------------------------
+              
+              dat.m = merge(sub.wt[,c(-2)], 
+                               sub.time[,c("id", "time", "time2")],
+                               by=c("id", "time"))
+              
+              dat.m = merge(dat.m,
+                               sub.ht[,c(-2)],
+                               by=c("id", "time"))
+              
+              dat.m = merge(dat.m,
+                               sub.wfl[,c(-2)],
+                               by=c("id", "time"))
+              
+              dat.m = merge(dat.m, 
+                               x[colnames(x) %in% c('Sex','id', covs.sub)],
+                               by=c("id"))
+              
+              #dat.m[dat.m$id %in% c(709),]
+              
+#              dat.m = dat.m[complete.cases(dat.m),] # did not impute the outcome or sex variable so exclude those. 
+              
+              dat.m$time2 = round(dat.m$time2/30, digits=1) # convert time2 to months
+              return(dat.m) 
+
+                   }
+```
+
+```{r}
+
+# convert data from wide to long by time -- create a time to measurement and outcome measurement variable
+
+long1.orig2 = lapply(list(long1.orig), convert)[[1]]
+
+length(unique(long1.orig2$id)) # 1412
+summary(long1.orig2)
+
+# get starting values
+myknots=c(1.1, 2.1, 4.1) # 3 knots at 1.1, 2.1, and 4.1 (mean times)
+
+```
+
+
+```{r, eval=F}
+
+# Note: takes several minutes so unless there is a change to this section, just use the saved data frame in next chunk.
+
+# analyses, based on fit statistics from table3-w-fcns.pdf
+# best fit was alpha and beta , sex-specific curve
+
+
+fitnlme.f.r6 <- function(age,s1,s2,s3,s4, salpha0, sbeta0){
+  splinecoefs <- as.matrix(cbind(s1,s2,s3,s4))
+  as.vector(salpha0 + t(matrix(rep(1,4),ncol=4) %*%
+    t(splinecoefs*as.matrix(ns((age-sbeta0),
+                               knots=myknots,
+                               Boundary.knots=(mybounds))))))
+  }
+
+
+# Extract random effects a
+# ---------------------------------------------------------
+# NOTE: you only need to run this once because I am not imputing any outcome variables, or sex of child variable -- the only variables used to get the random effects from the nlme model
+
+df1 = long1.orig2
+nrow(df1)
+length(unique(df1$id)) # 1412
+
+#  x = temp.dat
+df1$log.value = log(df1$value.wfl)
+summary(df1$log.value)
+
+# starting values
+func.starts = function(df){
+    starts.r = coef(lm(log.value ~ ns(time2, knots=myknots, Bound=mybounds), 
+            data=df))
+    return(starts.r)
+}
+
+# sex specific curves
+
+func.6.strat = function(df){
+   tryCatch({ # tryCatch function will return a missing value for iterations that don't work
+
+  # df = df1 # debugging
+  starts.r = func.starts(df)
+  
+  temp.dat.g = groupedData(log.value ~ time2 | id, data=df) # set up grouped data object for plotting
+  
+#  df = temp.dat
+  # df$log.value=log(df$value.wt)
+
+  sim.wt.r6 <-
+    nlme(log.value ~ fitnlme.f.r6(time2,s1,s2,s3,s4,alpha0,beta0),
+    data=df,
+    na.action = na.omit,
+    fixed = alpha0 + s1+s2+s3+s4 ~ Sex,
+    random = alpha0 + beta0  ~ 1 | id,
+    start =   c( rbind(starts.r, rep(0,length(starts.r)))) # according to appendix A2 code from Beath 2008 paper
+  )
+},
+  error = function(err) {return()} # return NULL on error
+)
+}
+
+sim.wfl.r6.strat = func.6.strat(df1)
+
+      # 2. extract out random effects ----------------------
+      
+      re.vals = random.effects(sim.wfl.r6.strat)
+      re.vals.df = data.frame(re.vals)
+      re.vals.df$id = rownames(re.vals.df)
+      colnames(re.vals.df)
+      head(re.vals.df)
+      nrow(re.vals.df) # 1412
+  summary(re.vals.df)
+  
+      # read in data
+      setwd("~/")
+
+      save(re.vals.df, file="re-wfl-rev.Rdata") # save this so I don't have to re-run when debugging. takes  a long time.
+```
+
+```{r merge-re}
+# read in sitar growth re data
+setwd("~/")
+
+load("re-wfl-rev.Rdata") # has re.vals.df, list of imputation data frames
+nrow(re.vals.df) # 1412
+```
+
+
+```{r}
+
+# --------------------------------------------------------------------------
+# --------------------------------------------------------------------------
+# Do analyses across imputed data frame with random effects from step abvove
+# --------------------------------------------------------------------------
+# --------------------------------------------------------------------------
+
+# list of exposures and outcomes
+covs = c("MATAGE",
+         "MthrsTTyoe",
+         "v368c") #"graffar.index")
+
+outs = c("alpha0", "beta0"); outs
+
+
+```
+
+
+```{r, eval=F}
+# Distribution of random effects
+
+#names.l = names(forms)
+#names.l[20] # check
+
+# check some values before starting run through imputations
+  dat.1 = data.frame(imp.fit[[1]])
+  names(dat.1)
+
+  summary(dat.1[c("alpha0", "beta0", "beta1")]) # description of random effects for the first imputation data set
+  
+  hist(dat.1[c("alpha0", "beta0", "beta1")])
+  class(dat.1)
+  colnames(dat.1)
+```
+
+```{r}
+# data handling
+re.vals.merge = merge(re.vals.df, long1.orig, by = "id")
+
+# make factors
+re.vals.merge$Sex.f = factor(re.vals.merge$Sex,
+                                   labels=c("male", "female"))
+colnames(re.vals.merge)[2] = "alpha0"
+head(colnames(re.vals.merge))
+nrow(re.vals.merge)
+class(re.vals.merge)
+dim(re.vals.merge)
+head(re.vals.merge)
+
+sd = c('MATAGE', 'MthrsTTyoe', "v368c", "GestatnlAg")
+
+re.vals.merge2 = re.vals.merge[complete.cases(re.vals.merge[sd])==T,]
+nrow(re.vals.merge2) # 1366 (1366/1412 = 97% non-missing)
+
+x=re.vals.merge2
+
+sapply(x[sd], summary)
+  
+n=nrow(x) # 1412
+```
+
+
+
+```{r, lasso-func}
+
+elastic = function(j, o, i) {
+  
+  # j = "female"; o="beta0"; i="all" ; # for debugging
+  x=re.vals.merge2; #names(re.vals.merge)
+  n=nrow(x) # 1366 complete cases of 1412, 97% non-missing
+  sd = c('MATAGE', 'MthrsTTyoe', "v368c", "GestatnlAg")
+  
+  #  hist(x[sd]) # estimating ci for these terms for lasso not working...
+  # solution: just add point estimate for lasso est and omit lasso ci estimates.
+     if (j=="both") {x = x} else {x = x[x$Sex.f==j,]}
+  
+        # Center and scale the sociodemographic variables prior to lasso operation
+          xvars = scale(x[,sd], center=T, scale=F)
+          summary(xvars)
+          y = scale(x[o], center=T, scale=F) # see page 6 of 'A significance test for the lasso' by Lockhart et al.
+          summary(y)
+          
+        # see http://www.knigge.us/vignettes/sil.html for template of following code
+          
+        # get lambda via cross-validation
+      
+         glm.mod = cv.glmnet(x=as.matrix(xvars), y=as.matrix(y), alpha=1,
+                             standardize=F,
+                             family="gaussian")
+         lambda.cv = glm.mod$lambda.min
+         
+         # any variables reduced to zero?
+         lambda.idx <- which(lambda.cv == glm.mod$lambda)
+         theta.hat.cv <- glm.mod$glmnet.fit$beta[,lambda.idx]
+         # determine active variables and fit glm using only "selected" variables
+         active.vars <- which(theta.hat.cv != 0)
+         x.act <- xvars[, active.vars]
+
+         # Do post-selection inference (testing + confidence intervals)
+         # ----------------------------------------
+         
+         # estimate sigma---the standard deviation of the noise
+        sigma.hat <- estimateSigma(as.matrix(xvars), as.matrix(y))$sigmahat
+          
+        # regularized OLS models
+        gfit = glmnet(x=as.matrix(xvars), y=as.matrix(y), standardize = F, alpha=1)
+        
+        # fix a value lambda according to the cross validation lambda (computed above)
+        n = dim(xvars)[1]
+        lambda.fix <- lambda.cv * n * 1.0
+        
+        # extract glmnet parameter vector according to fixed lambda
+        theta.fix <- coef(gfit, x=as.matrix(xvars), y=as.matrix(y),
+                          s = lambda.fix/n, exact = TRUE)
+
+        # compute post-selective corrections
+        out <- fixedLassoInf(xvars, y, theta.fix[-1], lambda.fix, 
+                             alpha=0.05,
+                             sigma = sigma.hat)
+        out; names(out)
+
+        dat.1 = data.frame(vars = names(out$vars),
+                           sex = j,
+                           covs = "all",
+                           outcome = o,
+                           lasso.coef = theta.fix[c(as.numeric(active.vars)+1)],
+                           coef = out$coef0,
+                           p.val = out$pv,
+                           lci = out$ci[,1],
+                           uci = out$ci[,2])
+        
+        return(dat.1)
+}
+
+          
+```
+
+
+```{r}
+
+# function to run univariable analyses (and adjust for milkcode when I get it)
+
+# stratifying all analyses by sex of child or pooling depending on j value
+
+s1.noadj = function(j, o, i) {
+  # j="female"; o="beta1"; i="GestatnlAg" ; # for debugging
+
+    x=re.vals.merge2
+    if (j=="both") {x = x} else {x = x[x$Sex.f==j,] }
+    n=nrow(x) # 1366 complete cases of 1412
+    y=x[o]     
+    
+        xvars = x[i]
+        y = x[o]
+
+        m1 = coef(summary(lm(as.matrix(y) ~ as.matrix(xvars))))
+        m1
+        lci = m1[2,1] - 1.96*m1[2,2]
+        uci = m1[2,1] + 1.96*m1[2,2]
+        
+          # make a data frame with coef, p-value and sd
+          dat.1 = data.frame(vars=i, sex=j,  covs=i, outcome=o,
+                             lasso.coef=m1[2,1], # this isn't the lasso, but doing this for table formatting below
+                             coef=m1[2,1],
+                             p.val=m1[2,4], lci=lci, uci=uci)
+    
+          return(dat.1)
+}
+
+```
+
+```{r, eval=T}
+# only run this if data or code for s1 changes. Takes several minutes to run.
+
+j = c("male", "female", "both")
+o = c("alpha0", "beta0")
+i = "all" # this option is the default. No iterating through each predictor to determine best set for each predictor. More useful in causal framework.
+#i = covs
+
+# get adjusted values
+combos = expand.grid(j, o, i) # get all unique combos of sex, outcome and exp variables
+combos
+nrow(combos)
+
+
+list.0 = mapply(elastic, 
+                j = as.character(combos[,1]), 
+                o = as.character(combos[,2]),
+                i = as.character(combos[,3]),
+                SIMPLIFY = F)
+
+list.0[[1]]
+
+# get unadjusted values
+i = c( 'GestatnlAg', covs)
+combos = expand.grid(j, o, i) # get all unique combos of sex, outcome and exp variables
+combos
+nrow(combos)
+
+list.1 = mapply(s1.noadj,
+                j = as.character(combos[,1]),
+                o = as.character(combos[,2]),
+                i = as.character(combos[,3]),
+                SIMPLIFY = F)
+list.1[[2]]
+
+# This chunk takes too long. Run this chunk once, save data and load in next chunk.
+setwd("~/GitHub/unc-dissertation-markdown-p2/includes/scripts/paper1")
+#setwd("~/dissertation/unc-dissertation-markdown-p2/includes/scripts/paper1")
+save(list.0, list.1, file="table2-wfl-rev.Rdata")
+
+```
+
+
+```{r}
+setwd("~/GitHub/unc-dissertation-markdown-p2/includes/scripts/paper1")
+#setwd("~/dissertation/unc-dissertation-markdown-p2/includes/scripts/paper1")
+load("table2-wfl-rev.Rdata") # load the list.0 and list.1 data frame
+```
+
+
+```{r}
+# NOTE: This chunk for all covariates evaluated in lasso together
+# =====================================================================
+
+# Note: list is nested first by gender, then formula type. there are two gender and 14 formulas,
+
+# then the lists are nested by mice object and a data frame with pooled coefficients.
+# I need to go into each list and take out the pooled coefficents data frame.
+
+df.ad = do.call(rbind.fill, list.0)
+
+df.ad
+
+df.unad = do.call(rbind.data.frame, list.1)
+df.unad
+
+
+# More data handling
+# ----------------------------------------------
+
+df.ad$covs="adj"
+df.ad$cov.names = df.ad$vars
+
+df.unad$covs="unadj"
+df.unad$cov.names = df.unad$vars
+
+```
+
+```{r}
+
+# data handling function
+
+data.handle = function(df) {
+
+df = within(df, {
+
+  adjusted.pvals = p.adjust(p.val, method='fdr')
+  sig.val = ifelse(p.adjust(p.val, method='fdr')<0.05,1,0)
+    
+  coef = ifelse(outcome=="beta0", lasso.coef*30, lasso.coef*100)
+  lci = ifelse(outcome=="beta0", lci*30, lci*100)
+  uci = ifelse(outcome=="beta0", uci*30, uci*100)
+  
+  est.ci = paste0(formatC(coef, format = "e", digits = 2), " (", 
+                  formatC(lci, format = "e", digits = 2), ", ", 
+                  formatC(uci, format = "e", digits = 2), ")")
+  
+  est.ci.bold = ifelse(
+    sig.val==1, paste0("<b>", formatC(coef, format = "e", digits = 2), " (", 
+                  formatC(lci, format = "e", digits = 2), ", ", 
+                  formatC(uci, format = "e", digits = 2), ")</b>"),
+    paste0(formatC(coef, format = "e", digits = 2), " (", 
+                  formatC(lci, format = "e", digits = 2), ", ", 
+                  formatC(uci, format = "e", digits = 2), ")"))
+    
+  est.ci.bold2 = ifelse(
+    sig.val==1, paste0(formatC(coef, format = "e", digits = 2), " (", 
+                  formatC(lci, format = "e", digits = 2), ", ", 
+                  formatC(uci, format = "e", digits = 2), ")*"),
+    paste0(formatC(coef, format = "e", digits = 2), " (", 
+                  formatC(lci, format = "e", digits = 2), ", ", 
+                  formatC(uci, format = "e", digits = 2), ")")) # this is for latex table
+
+  val.ci = paste0(formatC(coef, format = "f", digits = 2), " (", 
+                  formatC(lci, format = "f", digits = 2), ", ", 
+                  formatC(uci, format = "f", digits = 2), ")")
+    
+  est.ci.bold3 = ifelse(
+    sig.val==1, paste0("**", val.ci, "**"), val.ci)
+  
+    cov.names.f  = factor(cov.names, 
+                          levels= c("GestatnlAg",
+                                    "MATAGE",
+                                    "MthrsTTyoe",
+                                    "v368c"),
+                          labels = c("Gest age",
+                                     "Maternal age",
+                                     "Mother's total yr educ",
+                                     "Graffar Index"))
+    
+      
+  # see awesome_table_in_pdf-1.pdf
+  est.ci.bold4 = ifelse(sig.val==1,
+                        paste0(text_spec( paste0(val.ci), 'latex', bold=T)),
+                        val.ci)
+  
+  
+})
+
+return(df)
+
+}
+```
+
+```{r}
+
+names(df.ad)
+
+df.ad = data.handle(df.ad)
+head(df.ad)
+df.ad[df.ad$sig.val==1,]
+
+levels(factor(df.ad$cov.names))
+levels(factor(df.ad$cov.names.f))
+
+df.unad = data.handle(df.unad)
+head(df.unad)
+
+```
+
+
+```{r}
+
+# Make table with results
+# -------------------------------
+head(df.ad)
+names(df.ad)
+
+both.df = rbind.fill(df.ad, df.unad)
+levels(both.df$sex)
+
+
+levels(factor(both.df$covs)) # have to fix the levels
+both.df$covs = factor(both.df$covs, levels=c("unadj", "adj"))
+levels(factor(both.df$covs)) # check
+levels(both.df$cov.names.f)
+
+
+tabledat.bysex = dcast(both.df[both.df$sex %in% c("male", "female"),],
+                       cov.names.f ~ sex + covs + outcome, 
+                    value.var='est.ci.bold3')
+tabledat.bysex
+
+tabledat.pooled = dcast(both.df[both.df$sex %in% c("both"),],
+                       cov.names.f ~ covs + outcome, 
+                    value.var='est.ci.bold3')
+
+tabledat.pooled2 = dcast(both.df[both.df$sex %in% c("both"),],
+                       cov.names.f ~ covs + outcome, 
+                    value.var='est.ci.bold4')
+
+tabledat.all = dcast(both.df,
+                       cov.names.f ~ sex + covs + outcome, 
+                    value.var='est.ci.bold4')
+
+save(tabledat.all, file="tablewfl.Rdata") # output to tables-ms.Rmd
+
+
+```
+
+# Results stratified by sex of child
+
+
+```{r, results='asis', eval=TRUE}
+
+# names(tabledat.bysex)
+
+kable(tabledat.bysex, booktabs=T,
+#      format="latex",
+      format="html",
+      col.names =  c("Characteristic", 
+                     rep(c("Size", "Tempo"), 4)),
+      caption='WFL outcome association with SITAR parameters, stratified by gender') %>%
+  kable_styling(bootstrap_options = c("striped")) %>%
+#  kable_styling(latex_options = "striped", "scale_down", full_width=F) %>%
+  add_header_above(c(" ", 
+                     "Unadjusted"=2, "Adjusted"=2, 
+                     "Unadjusted"=2, "Adjusted"=2))  %>%
+  add_header_above(c("",  "Males"=4, "Females"=4))  %>%
+  column_spec(column=1, width = "12em") %>%
+  column_spec(column=2, width = "10em") %>%
+  column_spec(column=3, width = "10em") %>%
+  column_spec(column=4, width = "10em") %>%
+  column_spec(column=5, width = "10em") %>%
+  column_spec(column=6, width = "10em") %>%
+  column_spec(column=7, width = "10em") %>%
+  column_spec(column=8, width = "10em") %>%
+  column_spec(column=9, width = "10em") %>%
+  add_footnote(c("Bold values indicate significance at FDR of 0.05"),
+               notation = "symbol")
+
+```
+
+```{r}
+
+# The error bars overlapped, so use position_dodge to move them horizontally
+pd <- position_dodge(0.5) # move them .05 to the left and right
+
+df2.2 = both.df
+names(df2.2)
+
+df2.2[df2.2$outcome.f=="Tempo" & df2.2$covs=="adj" & df2.2$cov.names.f=="Mother's total yr educ",]
+
+# see https://stackoverflow.com/questions/37174316/how-to-fit-long-text-into-ggplot2-facet-titles for following function.
+# Helper function for string wrapping. 
+# Default 20 character target width.
+swr = function(string, nwrap=10) {
+  paste(strwrap(string, width=nwrap), collapse="\n")
+}
+swr = Vectorize(swr)
+#df2$exposure.f2 = swr(df2$exposure.f)
+df2.2$cov.names.f2 = swr(df2.2$cov.names.f)
+levels(factor(df2.2$cov.names.f2)) # check
+
+levels(df2.2$outcome)
+df2.2$outcome.f = factor(df2.2$outcome, labels=c("Size", "Tempo"))
+levels(df2.2$outcome.f)
+
+#df2.2[df2.2$covs=="adj", c("outcome", "sex", "cov.names.f2", "coef", "lci", "uci")]
+
+alpha0.wfl = ggplot(df2.2[df2.2$covs=="adj" & df2.2$outcome=="alpha0",], 
+       aes(x=outcome.f, y=coef, group=sex, colour=sex)) +
+  facet_grid(cov.names.f2 ~ outcome.f, scale='free') +# label_parsed allows greek symbols in the strip text
+    geom_errorbar(aes(ymin=lci, ymax=uci), width=.1, position=pd, size=1.5) +
+    geom_point(position=pd, size=5) +
+    theme_bw(base_size=15) +
+  ylab("Percent") +
+  xlab("Exposure") +
+  ggtitle("Size") +
+  scale_colour_discrete("Sex of child") +
+  theme(#axis.text.x = element_text(angle = 45, hjust = 1),
+        axis.text.x = element_blank(),
+       strip.text.y = element_text(size = 10, colour = "blue"),
+       legend.position = "bottom") +
+  guides(colour = guide_legend(override.aes = list(size=3, alpha=1)),
+         linetype = guide_legend(override.aes = list(size = 3))) +
+  geom_hline(yintercept = 0, color="blue", lty=3, lwd=1) 
+
+alpha0.wfl
+
+# put beta0 on different plot as scale is different...
+# -------------------------------------------
+
+beta.wfl = ggplot(df2.2[df2.2$covs=="adj" & df2.2$outcome == "beta0",], 
+       aes(x=outcome.f, y=coef, group=sex, colour=sex)) +
+  facet_grid(cov.names.f2 ~ outcome.f, scale='free') +# label_parsed allows greek symbols in the strip text
+    geom_errorbar(aes(ymin=lci, ymax=uci), width=.1, position=pd, size=1.5) +
+    geom_point(position=pd, size=4) +
+    theme_bw(base_size=15) +
+  ylab("Percent") +
+  xlab("Exposure") +
+  scale_colour_discrete("Sex of child") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+       strip.text.y = element_text(size = 10, colour = "blue"),
+       legend.position = "bottom") +
+  guides(colour = guide_legend(override.aes = list(size=3, alpha=1)),
+         linetype = guide_legend(override.aes = list(size = 3))) +
+  geom_hline(yintercept = 0, color="blue", lty=3, lwd=1) 
+
+beta.wfl
+
+```
+
+NOTE: Small black dots are the lasso parameter estimates.
+
+
+
+```{r}
+
+# export figure for interim slides, 2017-11
+setwd("~/GitHub/unc-dissertation-markdown-p2/includes/scripts/presentations/interim-meeting/figures")
+#setwd("~/dissertation/unc-dissertation-markdown-p2/includes/scripts/presentations/interim-meeting/figures")
+
+png(file="aim1-fig1-alpha-wfl.png", height=6, width=6, units='in', res=300)
+  alpha0.wfl +
+    theme(legend.position = "right")
+dev.off()
+
+png(file="aim1-fig1-beta-wfl.png", height=6, width=6, units='in', res=300)
+  beta.wfl +
+    theme(legend.position = "right")
+dev.off()
+
+```
+
+---
+
+# Results with no stratification by sex of child
+
+Pooling data across sex of child is feasible for these analyses because the random growth effects were obtained from the NLME in the first step of analyses, allowing the growth curve to vary across sex of child. Pooling of the data occurs at the second step of simple linear regression with the random effects as outcomes and maternal characteristics as predictors. Pooling also allows greater power as the sample size is larger.
+
+A sample interpretation for the effects below is as follows: A one unit change in maternal age is associated with a 0.0019 change in the size parameter indicating that older maternal age is associated with larger size, in terms of weight, at birth.
+
+
+```{r, results='asis', eval=TRUE}
+# names(tabledat.pooled)
+
+kable(tabledat.pooled, booktabs=T,
+#      format="latex",
+      format="html",
+      col.names =  c("Characteristic", 
+                     c( "Size", "Tempo", "Size", "Tempo")),
+      caption='WFL outcome association with SITAR parameters, pooled across sex of child') %>%
+  kable_styling(bootstrap_options = c("striped")) %>%
+#  kable_styling(latex_options = "striped", "scale_down", full_width=F) %>%
+  add_header_above(c("",  "Unadjusted"=2, "Adjusted"=2))  %>%
+  column_spec(column=1, width = "10em") %>%
+  column_spec(column=2, width = "8em") %>%
+  column_spec(column=3, width = "8em") %>%
+  column_spec(column=4, width = "8em") %>%
+  column_spec(column=5, width = "8em") %>%
+  add_footnote(c("Bold values indicate significance at FDR of 0.05"),
+  notation = "symbol")
+
+```
+
+
+# References

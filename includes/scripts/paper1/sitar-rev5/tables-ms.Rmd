@@ -1,0 +1,373 @@
+---
+author: "Ann Von Holle"
+date: '`r format(Sys.time(), "%d %B, %Y")`'
+header-includes:
+   - \usepackage{color, booktabs, pdflscape, graphicx, float, longtable, lscape}
+output:
+  pdf_document:
+    keep_tex: true
+geometry: "left=0.5cm, right=0.5cm, top=1cm, bottom=1.5cm"
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r opts-wt, include=FALSE}
+
+# classoption: landscape
+
+knitr::opts_chunk$set(fig.width=8, fig.height=8,
+                      echo=FALSE, warning=FALSE,
+                      message=FALSE, 
+                      results='hide',
+                      comment=NA)
+
+#knitr::opts_chunk$set(root.dir = "~GitHub/unc-dissertation-markdown-p2/includes/scripts/paper1/sitar-rev5")
+
+knitr::opts_chunk$set(root.dir = "~dissertation/unc-dissertation-markdown-p2/includes/scripts/paper1/sitar-rev5")
+
+```
+
+```{r}
+require(knitr)
+require(kableExtra)
+require(tableone)
+```
+
+# Tables
+
+<!-- Run the programs to get data for manuscript tables -->
+
+```{r, child = "../Descriptive2.Rmd", eval=F}
+# This file produces the description of the graffar variables used to make the graffar index, table.graffar data frame from ../Dropbox/unc.grad.school/dissertation/data/20171201/graffar-details.Rdata")
+```
+
+```{r, child = "table1-rev-ms.Rmd", eval=F}
+```
+
+```{r, child = "table2-mice.Rmd", eval=F}
+```
+
+```{r, child = "table2-mice-ht.Rmd", eval=F}
+```
+
+```{r, child = "table2-mice-wfl.Rmd", eval=F}
+```
+
+```{r readdat, results='markup'}
+
+# NOTE: if the programs from which the data are changed, need to re-run
+
+load(file="t1dat.Rdata") # from table1-rev-ms.Rmd
+t1dat = t1
+
+load(file="tablewt.Rdata") # from table2-mice.Rmd
+wtdat2 = tabledat.all2
+
+load(file="tableht.Rdata") # from table2-mice-ht.Rmd
+htdat = tabledat.all
+
+load(file="tablewfl.Rdata") # from table2-mice-wfl.Rmd
+wfldat = tabledat.all
+
+```
+
+\colorlet{vlg}{gray!20}
+
+
+```{r, results='asis'} 
+
+# colnames(t1dat)
+
+kable(t1dat[c("char", "Male", "Female", "Overall")], 
+      booktabs=T, escape=F,
+      format="latex",
+      row.names = F,
+      col.names =  c("Characteristic", "Male", "Female", "Total"),
+      caption="(MS1 Table1) Descriptive statistics of sociodemographic characteristics, median [IQR]") %>%
+  kable_styling(latex_options = c("striped", "HOLD_position"), stripe_color="vlg", 
+      font_size = 12) %>%
+  column_spec(column=1, width = "20em") %>%
+  column_spec(column=2, width = "8em") %>%
+  column_spec(column=1, width = "8em") %>%
+  column_spec(column=3, width = "8em") 
+
+```
+
+\clearpage
+\newpage
+
+\begin{landscape}
+
+```{r, results="markup", eval=T}
+
+#names(wtdat)
+#levels(factor(wtdat$cov.names.f))
+wtdat2$cov.names.f = factor(wtdat2$cov.names.f, labels=c("Gest age",
+                                                       "Maternal age", 
+                                                       "Maternal education",
+                                                       "Graffar Index$^d$"))
+
+kable(wtdat2, booktabs=T,
+      format="latex", escape=F,
+      col.names =  c("Characteristic", 
+                     rep(c("Size", "Tempo", "Velocity"), 6)),
+      caption="(MS1: Table 2) Sociodemographic predictors and association with weight SITAR growth parameters$^{a,b}$, stratified by sex of child in the Santiago Longitudinal Study, 1991-1996") %>%
+  kable_styling(latex_options = c("striped", "HOLD_position", "scale_down"), 
+                stripe_color="vlg") %>%
+  add_header_above(c(" ", 
+                     "Unadjusted"=3, "Adjusted$^c$"=3, 
+                     "Unadjusted"=3, "Adjusted$^c$"=3,
+                     "Unadjusted"=3, "Adjusted$^c$"=3), escape=F)  %>%
+  add_header_above(c("",  "Males"=6,
+                     "Females"=6,
+                     "Total" = 6))  %>%
+  column_spec(column=1, width = "5em") %>%
+  column_spec(column=2, width = "3.3em") %>%
+  column_spec(column=3, width = "3.3em") %>%
+  column_spec(column=4, width = "3.3em") %>%
+  column_spec(column=5, width = "3.3em") %>%
+  column_spec(column=6, width = "3.3em") %>%
+  column_spec(column=7, width = "3.3em") %>%
+  column_spec(column=8, width = "3.3em") %>%
+  column_spec(column=9, width = "3.3em") %>%
+  column_spec(column=10, width = "3.3em") %>%
+  column_spec(column=11, width = "3.3em") %>%
+  column_spec(column=12, width = "3.3em") %>%
+  column_spec(column=13, width = "3.3em") %>%
+  column_spec(column=14, width = "3.3em") %>%
+  column_spec(column=15, width = "3.3em") %>%
+  column_spec(column=16, width = "3.3em") %>%
+  column_spec(column=17, width = "3.3em") %>%
+  column_spec(column=18, width = "3.3em") %>%
+  column_spec(column=19, width = "3.3em") %>%
+  add_footnote(c("Size units are percentage change in log(weight) from average, tempo units are time (days), velocity units in percent change from average.",
+                 "Bold values indicate significance at FDR = 0.05",
+                 "Adjusted linear regression models only include non-zero coefficients from lasso regression models that include all covariates in full model.",
+                 "Higher Graffar index values indicate lower socioeconomic status."
+                 ),
+               notation = "alphabet")
+
+```
+
+\clearpage
+\newpage
+
+
+
+\colorlet{vlg}{gray!20}
+
+```{r , results='asis'} 
+
+# colnames(tabledat.all)
+htdat$cov.names.f = factor(htdat$cov.names.f, labels=c("Gest age",
+                                                       "Maternal age", 
+                                                       "Maternal education",
+                                                       "Graffar Index$^d$"))
+
+kable(htdat, booktabs=T, escape=F,
+      format="latex",
+      col.names =  c("Characteristic", 
+                     rep(c("Tempo", "Velocity"),6)),
+      caption="(MS1 Table 3) Sociodemographic predictors and association with length SITAR growth parameters$^{a,b}$, stratified by sex of child in the Santiago Longitudinal Study, 1991-1996") %>%
+  kable_styling(latex_options = c("HOLD_position", "striped"), stripe_color="vlg", 
+      font_size = 9, full_width = F) %>%
+  add_header_above(c(" ",
+                     rep(c("Unadjusted"=2, "Adjusted$^c$"=2),3)), escape=F)  %>%
+  add_header_above(c("", "Males"=4, "Females"=4,
+                     "Both"=4))  %>%
+  column_spec(column=1, width = "8em") %>%
+  column_spec(column=2, width = "4em") %>%
+  column_spec(column=3, width = "4em") %>%
+  column_spec(column=4, width = "4em") %>%
+  column_spec(column=5, width = "4em") %>%
+  column_spec(column=6, width = "4em") %>%
+  column_spec(column=7, width = "4em") %>%
+  column_spec(column=8, width = "4em") %>%
+  column_spec(column=9, width = "4em") %>%
+  column_spec(column=10, width = "4em") %>%
+  column_spec(column=11, width = "4em") %>%
+  column_spec(column=12, width = "4em") %>%
+  column_spec(column=13, width = "4em") %>%
+  add_footnote(c("Size units are percentage change in log(length) from average, tempo units are time (days), velocity units in percent change from average.",
+                 "Bold values indicate significance at FDR = 0.05",
+                 "Adjusted linear regression models only include non-zero coefficients from lasso regression models that include all covariates in full model.",
+                 "Higher Graffar index values indicate lower socioeconomic status."
+                 ),
+               notation = "alphabet")
+
+```
+
+\clearpage
+\newpage
+
+
+
+```{r, results='asis'} 
+
+#colnames(wfldat)
+wfldat$cov.names.f = factor(wfldat$cov.names.f, labels=c("Gest age",
+                                                       "Maternal age", 
+                                                       "Maternal education",
+                                                       "Graffar Index$^d$"))
+
+kable(wfldat, booktabs=T, escape=F,
+      format="latex",
+      col.names =  c("Characteristic", 
+                     rep(c("Size", "Tempo"), 6)),
+      caption="(MS1 Table 4) Sociodemographic predictors and association with weight-for-length (WFL) SITAR growth parameters$^{a,b}$, stratified by sex of child in the Santiago Longitudinal Study, 1991-1996") %>%
+  kable_styling(latex_options = c("HOLD_position", "striped"), stripe_color="vlg", 
+      font_size = 9, full_width = F) %>%
+  add_header_above(c(" ", rep(c("Unadjusted"=2, "Adjusted$^c$"=2),3)), escape=F) %>%
+  add_header_above(c("",  
+                     "Males"=4,
+                     "Females"=4,
+                     "Both"=4))  %>%
+  column_spec(column=1, width = "8em") %>%
+  column_spec(column=2, width = "4em") %>%
+  column_spec(column=3, width = "4em") %>%
+  column_spec(column=4, width = "4em") %>%
+  column_spec(column=5, width = "4em") %>%
+  column_spec(column=6, width = "4em") %>%
+  column_spec(column=7, width = "4em") %>%
+  column_spec(column=8, width = "4em") %>%
+  column_spec(column=9, width = "4em") %>%
+  column_spec(column=10, width = "4em") %>%
+  column_spec(column=11, width = "4em") %>%
+  column_spec(column=12, width = "4em") %>%
+  column_spec(column=13, width = "4em") %>%
+  add_footnote(c("Size units are percentage change in log(WFL) from average, tempo units are time (days), velocity units in percent change from average.",
+                 "Bold values indicate significance at FDR = 0.05",
+                 "Adjusted linear regression models only include non-zero coefficients from lasso regression models that include all covariates in full model.",
+                 "Higher Graffar index values indicate lower socioeconomic status."
+                 ),
+               notation = "alphabet")
+
+```
+
+
+\end{landscape}
+
+\clearpage
+\newpage
+
+
+
+
+```{r}
+setwd("~/")
+load( file="../Dropbox/unc.grad.school/dissertation/data/20171201/graffar-details.Rdata") # has yr0.dat data frame (and yr0.dat.table) with first year graffar info from ../Descriptive2.Rmd
+```
+
+```{r}
+
+nrow(yr0.dat.table) # 1541
+
+# get ids from people in analysis for ms1, see table1-rev-ms.Rmd
+setwd("~")
+load(file="ms1-ids.Rdata") # had ids variable
+length(ids)  # 1412
+names(yr0.dat.table)
+colnames(yr0.dat.table)[which(colnames(yr0.dat.table) %in% c("ID_v1"))] = "id"
+colnames(yr0.dat.table)
+
+yr0.dat.table = yr0.dat.table[yr0.dat.table$id %in% ids,]
+
+nrow(yr0.dat.table) # check, now 1412
+names(yr0.dat.table) = c(new.names, "id")
+
+table.graffar = print(CreateTableOne(data = yr0.dat.table[new.names],
+                                     factorVars = new.names),
+                      showAllLevels = TRUE)
+
+```
+
+
+<!-- \setcounter{table}{0} -->
+<!-- \renewcommand{\thetable}{A\arabic{table}} -->
+
+
+```{r, results='markup'}
+
+rn.g = rownames(table.graffar)
+#table.graffar2 = data.frame(table.graffar)
+table.graffar3 = cbind(rn.g, table.graffar)
+
+kable(table.graffar3,  
+        booktabs=T, 
+        row.names = F,
+        escape=T,
+        format="latex",
+        longtable=T,
+      caption="Appendix: Description of items used for Graffar index",
+        col.names = c("Graffar item", "Scale", "n(%)")) %>%
+  kable_styling(latex_options = c("HOLD_position", "striped", "scale_down", "repeat_header"),
+                stripe_color="vlg") %>%
+  column_spec(1, width = "20em")
+
+```
+
+
+<!-- NOTE: commented this part out for the dissertation formatting -->
+
+<!-- see https://tex.stackexchange.com/questions/118606/numbering-tables-a1-a2-etc-in-latex -->
+
+<!-- \begin{landscape} -->
+
+<!-- \setcounter{table}{0} -->
+<!-- \renewcommand{\thetable}{A\arabic{table}} -->
+
+<!-- ```{r, results='markup'} -->
+<!-- ## Nonlinear mixed effects model fit evaluation: BIC for all evaluated models -->
+
+
+<!-- # load the data from /model-fit/fit-summary.Rmd -->
+<!-- # for bic -->
+
+<!-- load(file="../../bic-fit.Rdata") # t2 data frame -->
+
+<!-- vars.t = c("traj", "model.id", "model.description", "bic.bold2") -->
+<!-- t2.sub = t2[vars.t] -->
+
+<!-- kable(t2.sub, -->
+<!--       format="latex", -->
+<!--       #longtable=T, -->
+<!--       escape=F, -->
+<!--       booktabs=T,  -->
+<!--       caption="Nonlinear mixed effects model fit evaluation: BIC for all evaluated models", -->
+<!--       col.names=c("Trajectory type", "Model ID", "Model description", "BIC$^a$")) %>% -->
+<!--     collapse_rows(col=1) %>% -->
+<!--   kable_styling(latex_options=c("striped"), stripe_color="vlg",  -->
+<!--       font_size = 9, full_width = F) %>% # "repeat_header" "scale_down", -->
+<!--   footnote(alphabet="Bold values indicate lowest value within a trajectory evaluation.") -->
+
+
+<!-- ``` -->
+
+
+
+<!-- \clearpage -->
+<!-- \newpage -->
+
+
+
+<!-- ```{r, results='markup', eval=T} -->
+<!-- ## Model variance and covariance for random effects of all evaluated models -->
+
+<!-- # load the data from /model-fit/fit-summary.Rmd -->
+<!-- load(file="../../vc-fit.Rdata") # vc.all data  -->
+
+<!-- kable(vc.all[c("traj", "model.id", "model description", "names", "Variance", "StdDev", "Corr")], -->
+<!--       format="latex", -->
+<!--       booktabs=T, escape=F, -->
+<!--       col.names=c("Trajectory type", "Model id", "Model type", "random effect", "Variance", "SD", "Correlation"), -->
+<!--       caption="Model variance and covariance for random effects of all evaluated models", -->
+<!--       longtable=T, -->
+<!--       row.names=F) %>% -->
+<!--     kable_styling(latex_options=c("striped", "repeat_header"), stripe_color="vlg",  -->
+<!--       font_size = 8) %>% -->
+<!--   collapse_rows(col=c(1:3))#, latex_hline=c("major")) -->
+
+<!-- ``` -->
+
+<!-- \end{landscape} -->
+

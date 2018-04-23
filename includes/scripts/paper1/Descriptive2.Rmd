@@ -1,0 +1,370 @@
+---
+title: "Descriptives for 2017 data set with SES variables, 20171201 release"
+author: "Ann Von Holle"
+date: '`r format(Sys.time(), "%d %B, %Y")`'
+output:
+  html_document:
+    number_sections: yes
+    toc: yes
+    toc_depth: '2'
+  pdf_document:
+    number_sections: yes
+    toc: yes
+    toc_depth: 3
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup-Desc, include=FALSE}
+
+# see http://kbroman.org/knitr_knutshell/pages/Rmarkdown.html
+knitr::opts_chunk$set(fig.width=12, fig.height=8,
+                      echo=FALSE, warning=FALSE,
+                      message=FALSE, 
+                      results='hide',
+                      comment=NA,
+                      tidy=T)
+
+require("sas7bdat")
+require("haven")
+require("knitr")
+require("kableExtra")
+require("Hmisc")
+require("foreign")
+require('stargazer')
+require(tableone)
+```
+
+<!-- Note: based on Descriptive.R from epid 718 class in Fall 2014 -->
+
+# Descriptive statistics for the analysis variables
+
+*Note*: This is the entire infancy cohort.
+
+
+```{r}
+setwd("~/")
+setwd("../Dropbox/unc.grad.school/dissertation/data/20171201")
+
+# use haven to read in data
+mydata <- read_sav("NSEall_socioeconomic_0yr.sav")
+
+head(mydata)
+summary(mydata)
+attributes(mydata)
+str(mydata)
+names(mydata)
+```
+
+
+
+```{r}
+
+setwd("~/")
+setwd("../Dropbox/unc.grad.school/dissertation/data/20171201")
+# read in data and get labels to associate with data for Hmisc
+
+# load data base as list
+# See http://www.r-bloggers.com/migrating-from-spss-to-r-rstats/
+
+# this has the graffar variables
+yr0 <- read.spss("NSEall_socioeconomic_0yr.sav",
+                      to.data.frame=FALSE, 
+                      use.value.labels=FALSE) # outputs a list
+data.frame(names(yr0))
+
+# copy all variable labels in separated list
+yr0vars <- attr(yr0, "variable.labels");
+yr0vars
+
+# NOTE label for v368c: "New Calculated Graffar del. v321,v323,v367"
+yr0vars["v368c"]
+
+data.frame(yr0vars) # no  descriptive labels in this data set, unlike 2014 data set. does have notes
+# graffar
+summary(yr0$v368c) # use this variable for graffar (omits 
+# v321 (occupation)
+# v323 (retirement and health insurance)
+# v367 (necessity of sharing a bed) 
+
+# Look at missing for other graffar variables
+graffar.vars = c("v306", "v315", "v317", "v328", "v330",
+                 "v335", "v341", "v342", "v344", "v351", "v401")
+graffar.vars2 = c("v306", "v315", "v317", "v328", "v330",
+                 "v335", "v341", "v342", "v344", "v351")
+sapply(data.frame(yr0)[graffar.vars], summary)
+nrow(data.frame(yr0)) # 1541 total (with only 29 missing for v351. Seems ok to treat as not missing for >99% of sample)
+
+
+
+```
+
+
+```{r}
+
+#names(data.frame(yr0))
+
+# Print off a description of the factors going into the Graffar Index for this paper
+yr0.dat = data.frame(yr0)[c(graffar.vars2, "ID_v1")]
+dim(yr0.dat) # 1541 by 11
+```
+
+```{r}
+# Create factors for the table of information
+# getting info on variables from ~\Dropbox\unc.grad.school\dissertation\data\20171201\chileinfancycodebook_SESonly_ANN.doc
+
+yr0.dat.table = yr0.dat
+
+yr0.dat.table$v306 = factor(yr0.dat.table$v306, labels = c("1: 1-3",
+                                               "2: 4-6",
+                                               "3: 7-9",
+                                               "4: 10-12",
+                                               "5: 13-15",
+                                               "6: over 16"))
+yr0.dat.table$v315 = factor(yr0.dat.table$v315, labels = c("1: father is present; not left hh",
+                                               "3: left hh but sends money",
+                                               "4: partially left hh",
+                                               "6: completely gone"))
+
+yr0.dat.table$v317 = factor(yr0.dat.table$v317, labels = c("1: university completed	",
+                                               "2: university not completed",
+                                               "3: h.s. or technical studies completed",
+                                               "4: completed 8th grade",
+                                               "5: did not reach 8th grade",
+                                               "6: no schooling"))
+
+yr0.dat.table$v328 = factor(yr0.dat.table$v328, labels = c("1: owned",
+                                               "2: home mortgage",
+                                               "3: rent",
+                                               "4: given to you as a gift",
+                                               "5: squatters w tents or construction",
+                                               "6: lving in back of main house"))
+
+yr0.dat.table$v330 = factor(yr0.dat.table$v330, labels = c("1: very large house",
+                                               "2: smaller house",
+                                               "3: tiny concrete house",
+                                               "4: self-constructed home",
+                                               "5: wooden house",
+                                               "6: wooden house w/ less than three rooms"))
+
+yr0.dat.table$v335 = factor(yr0.dat.table$v335, labels = c("1: independent kitchen in one room",
+                                               "6: kitchen in a room with multiple uses"))
+
+yr0.dat.table$v341 = factor(yr0.dat.table$v341, labels = c("1: inside plumbing",
+                                               "5: out house",
+                                               "6: just go in woods"))
+
+yr0.dat.table$v342 = factor(yr0.dat.table$v342, labels = c("1: water from inside home faucet",
+                                               "6: water from outside faucet"))
+
+levels(factor(yr0.dat.table$v344)) # 1,2,3,6
+
+yr0.dat.table$v344 = factor(yr0.dat.table$v344, labels = c("1: more than 4x/week",
+                                               "2: 3 times/week",
+                                               "3: 2 times/week",
+                                               #"4: 1 time/week",
+                                               #"5: less than 1 time/week",
+                                               "6: never"))
+yr0.dat.table$v351 = factor(yr0.dat.table$v351, labels = c("1: 13-15 (own all six goods)",
+                                               "2: 10-12",
+                                               "3: 7-9",
+                                               "4: 4-6",
+                                               "5: 1-3",
+                                               "6: 0"))
+```
+
+```{r}
+
+# renaming SES for table
+# have to be careful about LaTex special characters
+new.names.var =  c("v306. # people in hh 'eating from 1 pot'",
+                      "v315. father’s presence in household",
+                      "v317. head of household’s highest educational level",
+                      "v328. property ownership",
+                      "v330. type of house construction",
+                      "v335. characteristics of the kitchen",
+                      "v341. sewage,plumbing",
+                      "v342. water",
+                      "v344. No. times garbage collected per week",
+                      "v351. total count of previous six goods,possessions (tv, washing machine, stereo, refrig., car)")
+
+new.names =  c("No. people in hh 'eating from 1 pot'",
+                      "Father’s presence in household",
+                      "Head of household’s highest educational level",
+                      "Property ownership",
+                      "Type of house construction",
+                      "Characteristics of the kitchen",
+                      "Sewage,plumbing",
+                      "Water",
+                      "No. times garbage collected per week",
+                      "Total count of previous six goods,possessions (tv, washing machine, stereo, refrig., car)")
+
+colnames(yr0.dat.table) = c(new.names, "id")
+```
+
+
+
+```{r}
+# save for use in table3-data-handle-weight-impute.Rmd (for 17 year sample)
+setwd("~/")
+save(yr0.dat, yr0.dat.table, new.names, 
+     graffar.vars, graffar.vars2,
+     file="../Dropbox/unc.grad.school/dissertation/data/20171201/graffar-details.Rdata")
+
+
+```
+
+  
+
+```{r}
+
+length(yr0.dat$id) # 1541
+
+setwd("~/")
+# bring in phenotype data from descriptive_statistics.Rmd
+load("merged-data.Rdata") # data frame is merge1
+
+nrow(merge1) # 602
+nrow(merge1.rev) # 1471
+names(merge1)
+
+table(merge1$id %in% yr0.dat$id)
+
+load("GitHub/unc-dissertation-markdown-p2/includes/scripts/paper1/sasdat.Rdata") 
+df2 = sasdat.df
+table(merge1$id %in% sasdat.df$ID)
+
+load("dat-2017-full.Rdata") # has full.ses data frame from Descriptive2.Rmd
+summary(full.ses)
+nrow(full.ses)
+names(full.ses)
+
+table(merge1$id %in% full.ses$ID_v1) # 153 of 449 missing from the full data frame. Who are these people?? 25%
+
+# compare graffar index across data from 2 different time periods.
+d2014 = merge1[c("id", 'graffar.index')]
+summary(d2014)
+d2017 = full.ses[c("ID_v1", "v368c")]
+
+colnames(d2014) = c("id", "gi.2014")
+colnames(d2017) = c("id", "gi.2017")
+
+nrow(d2017)
+nrow(d2014)
+d.both = merge(d2014, d2017, by="id")
+nrow(d.both)
+
+summary(d.both)
+
+
+```
+
+
+```{r}
+# Check: make sure graffar.index, v386c, matches what I calculate from graffar 'by hand'.
+
+class(yr0)
+head(data.frame(yr0)[graffar.vars2])
+
+graffar.check = rowSums(data.frame(yr0)[graffar.vars2])
+head(graffar.check)
+
+summary(graffar.check)
+summary(data.frame(yr0)$v368c)
+
+
+# TO DO -- Add graffar.vars2 to imputation and  just use imputed version...
+```
+
+```{r}
+setwd("~/")
+setwd("../Dropbox/unc.grad.school/dissertation/data/20171201")
+yr10 <- read.spss("data10yr_antro_maternalBMI.sav",
+                      to.data.frame=FALSE, 
+                      use.value.labels=FALSE)
+names(yr10)
+str(yr10)
+
+# copy all variable labels in separated list
+yr10vars <- data.frame(attr(yr10, "variable.labels")); class(yr10vars);
+yr10vars # no  descriptive labels in this data set, unlike 2014 data set. does have notes
+
+
+# subset for vars I will use in first aim:
+
+# yr 10
+# id: v1
+# 1. mother's height at age 10: T1131
+# 2. mother's self-reported pre-preg weight: T1137
+
+nrow(data.frame(yr10)) # 1127
+
+# yr 0
+# id: ID_v1
+# 1. v368c (revised graffar)
+# 2. v401 (total monthly expenses)
+nrow(data.frame(yr0))
+# data out for total sample
+head(yr10$v1)
+head(yr0$ID_v1)
+full.ses = merge(data.frame(yr0)[,c("ID_v1", "v368c", "v401")],
+                 data.frame(yr10)[,c("v1", "T1131", "T1137")],
+                 by.x="ID_v1", by.y="v1",
+                 all.x=T)
+nrow(full.ses)  # 1541
+str(full.ses)
+
+str(full.ses$v401)
+```
+
+```{r}
+
+setwd("~/")
+
+# save data for use in table1.Rmd
+save(full.ses, file="dat-2017-full.Rdata")
+
+```
+
+
+# Summary statistics of subset of data frame
+
+
+```{r, results='markup', eval=T}
+
+# id: v1
+# 1. mother's height at age 10: T1131
+# 2. mother's self-reported pre-preg weight: T1137
+
+nrow(data.frame(yr10)) # 1127
+
+# yr 0
+# id: ID_v1
+# 1. v368c (revised graffar)
+# 2. v401 (total monthly expenses)
+names(full.ses)
+full.ses = within(full.ses, {
+  label(ID_v1)="id"
+  label(v368c)="revised graffar"
+  label(v401) = "total monthly expenses"
+  label(T1131) = "mother's height at age 10 yr"
+  label(T1137) = "mother's weight at age 10 yr"
+})
+
+#describe(full.ses)
+
+```
+
+# Descriptive statistics
+
+```{r, results='markup', eval=T}
+full.ses$tot=1
+
+f = summary(tot ~ ., 
+             data=full.ses, 
+             method="reverse", test=F)
+
+print(f, rmarkdown=T)
+```
+
+
