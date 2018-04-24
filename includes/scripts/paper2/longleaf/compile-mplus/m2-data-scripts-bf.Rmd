@@ -1,0 +1,247 @@
+---
+title: "Use R to prepare and analyze for/from Mplus"
+author: "Ann Von Holle"
+date: '`r format(Sys.time(), "%d %B, %Y")`'
+output:
+  html_document:
+    toc: true # table of content true
+    toc_float: true
+    depth: 3  # upto three depths of headings (specified by #, ## and ###)
+    number_sections: true  ## if you want number sections at each table header
+    theme: united  # many options for theme, this one is my favorite.
+    highlight: tango  # specifies the syntax highlighting style
+  pdf_document:
+    number_sections: yes
+    toc: yes
+    toc_depth: 3
+header-includes: \usepackage{hyperref, booktabs, longtable, float}\hypersetup{colorlinks=true,
+  linkcolor=blue,filecolor=magenta,urlcolor=cyan}
+classoption: landscape
+---
+
+```{r setup1, include=FALSE}
+#bibliography: includes/bib/lit-review.bib
+
+knitr::opts_chunk$set(fig.width=8, fig.height=8,
+                      echo=T, warning=FALSE,
+                      message=T, 
+                      results='markup',
+                      comment=NA)
+```
+
+
+```{r}
+# NOTES
+
+# 1) 
+#    This program is run on Longleaf at /proj/epi/CVDGeneNas/avonholle/ms-d2/data-prep
+#    At the command prompt type, "sbatch run-files-data.sh &"
+#    In the shell script I specify one node as required by Mplus
+
+# 2)
+# this script based on the export-mplus-m2.Rmd file in the
+# ~\Documents\GitHub\unc-dissertation-markdown-p2\includes\scripts\paper2 directory
+
+# 3)
+# transfer slcs-m2-bf.dat and slcs-m2-subset.dat
+# to longleaf at /proj/epi/CVDGeneNas/avonholle/ms-d2/data-prep-bf/ dir
+# from ~/GitHub/unc-dissertation-markdown-p2/includes/scripts/paper2/lgmm
+# created in ~\GitHub\unc-dissertation-markdown-p2\includes\scripts\paper1\lgmm\export-mplus.Rmd
+
+```
+
+
+
+```{r}
+
+# export-mplus.R
+# Export the slcs data to a mplus format
+# export nhanes data for mplus use (txt file)
+require(knitr)
+
+install.packages("MplusAutomation", 
+                 repos="http://cran.us.r-project.org",
+                 lib="/proj/epi/CVDGeneNas/avonholle/Rlibs", 
+                 dependencies=TRUE)
+require(MplusAutomation, lib.loc="/proj/epi/CVDGeneNas/avonholle/Rlibs")
+
+# require(MplusAutomation)
+require(plyr)
+require(ggplot2)
+require(reshape2)
+#install.packages("kableExtra", 
+#                  repos="http://cran.r-project.org", 
+#                  lib="/pine/scr/v/o/vonholle/Rlibs", 
+#                  dependencies=TRUE)
+#require(kableExtra, lib.loc="/pine/scr/v/o/vonholle/Rlibs")
+require(mice)
+
+```
+
+
+```{r, eval=T}
+
+# create mplus models
+# from template
+
+# FOR THE ANALYSES POOLED OVER SEX OF CHILD
+# ====================================================
+
+setwd("/proj/epi/CVDGeneNas/avonholle/ms-d2/data-prep-bf/mplus-templates")
+
+# This is a different version of 3STEP method with BCH instead of DU3STEP 
+# and adjusting for confounders
+# This method less sensitive to outliers compared to DU3step
+
+# step 1
+createModels("template_mplus2-step1-pooled-univ.txt")
+# step3
+createModels("template_mplus2-step3-2-class-pooled-univ.txt")
+createModels("template_mplus2-step3-3-class-pooled-univ.txt")
+
+
+# Not adjusting for confounders in distal process
+# step 1
+createModels("template_mplus2-step1-pooled-univ-noad.txt")
+# step 3
+createModels("template_mplus2-step3-2-class-pooled-univ-noadj.txt")
+createModels("template_mplus2-step3-3-class-pooled-univ-noadj.txt")
+
+
+# for analyses with RATIOS
+# ====================================================---
+
+# Adjusted
+# step 1
+#createModels("template_mplus2-step1-pooled-ratio.txt")
+# step 3, 2 class
+createModels("template_mplus2-step3-2-class-pooled-ratio.txt")
+#createModels("template_mplus2-step3-3-class-pooled-ratio.txt")
+
+# Not adjusted
+# step 1
+#createModels("template_mplus2-step1-pooled-ratio-noadjust.txt")
+# step 3
+createModels("template_mplus2-step3-2-class-pooled-ratio-noadjust.txt")
+#createModels("template_mplus2-step3-3-class-pooled-ratio-noadjust.txt")
+
+# __________________________________________________________________
+
+# =================================
+# for the sex-stratified analyses
+# =================================
+
+# This is a different version of 3STEP method with BCH instead of DU3STEP 
+# and adjusting for confounders
+# This method less sensitive to outliers compared to DU3step
+# step 1
+createModels("template_mplus2-step1-strat-univ.txt")
+# step 3
+createModels("template_mplus2-step3-2-class-strat-univ.txt")
+createModels("template_mplus2-step3-3-class-strat-univ.txt")
+
+# Not adjusting for confounders in distal process
+# step 1
+createModels("template_mplus2-step1-strat-univ-noadj.txt")
+# step 3 
+createModels("template_mplus2-step3-2-class-strat-univ-noadj.txt")
+createModels("template_mplus2-step3-3-class-strat-univ-noadj.txt")
+
+# for analyses with ratios
+# ====================================================---
+
+# Adjusted
+# step 1
+#createModels("template_mplus2-step1-strat-ratio.txt")
+# step 3
+createModels("template_mplus2-step3-2-class-strat-ratio.txt")
+
+# Unadjusted
+# step 1
+#createModels("template_mplus2-step1-strat-ratio-noadjust.txt")
+# step 3
+createModels("template_mplus2-step3-2-class-strat-ratio-noadjust.txt")
+
+```
+
+
+```{r pool, eval=T}
+# Run Mplus models
+
+# Pooled data ==========================------
+# =======================================----
+
+# Adjusted
+# step 1
+runModels(target="/proj/epi/CVDGeneNas/avonholle/ms-d2/data-prep-bf/mplus-templates/pooled/univ", 
+        replaceOutfile="never") #always", "modifiedDate", "never"
+# step 3
+runModels(target="/proj/epi/CVDGeneNas/avonholle/ms-d2/data-prep-bf/mplus-templates/pooled/univ/step3", 
+          replaceOutfile="never") #always", "modifiedDate", "never"
+
+# Unadjusted
+# step 1
+runModels(target="/proj/epi/CVDGeneNas/avonholle/ms-d2/data-prep-bf/mplus-templates/pooled/univ-noadj",
+          replaceOutfile="never") #always", "modifiedDate", "never"
+
+# step 3
+runModels(target="/proj/epi/CVDGeneNas/avonholle/ms-d2/data-prep-bf/mplus-templates/pooled/univ-noadj/step3", 
+          replaceOutfile="never") #always", "modifiedDate", "never"
+
+
+# Ratios
+# ====================================================
+
+# Note: Use step 1 data from univariate analyses above
+
+# step 3
+runModels(target="/proj/epi/CVDGeneNas/avonholle/ms-d2/data-prep-bf/mplus-templates/pooled/ratio/step3",
+          replaceOutfile="always") # "never", "always", "modifiedDate"
+
+# Unadjusted
+
+# step 3, unadjusted
+runModels(target="/proj/epi/CVDGeneNas/avonholle/ms-d2/data-prep-bf/mplus-templates/pooled/ratio-noadjust/step3",
+          replaceOutfile="always") # "never", "always", "modifiedDate"
+
+```
+
+```{r strat, eval=T}
+
+# Stratified data ==========================------
+# =======================================----
+
+# Adjusted
+# ====================================================---
+
+# step 1
+runModels(target="/proj/epi/CVDGeneNas/avonholle/ms-d2/data-prep-bf/mplus-templates/strat/univ",
+          replaceOutfile="never") # "never", "always", "modifiedDate"
+# step 3
+runModels(target="/proj/epi/CVDGeneNas/avonholle/ms-d2/data-prep-bf/mplus-templates/strat/univ/step3",
+          replaceOutfile="never") # "never", "always", "modifiedDate"
+
+# Ratios
+# ======
+
+# step 3
+runModels(target="/proj/epi/CVDGeneNas/avonholle/ms-d2/data-prep-bf/mplus-templates/strat/ratio/step3",
+          replaceOutfile="always") # "never", always", "modifiedDate"
+
+# Unadjusted 
+# ====================================================---
+# step 1
+runModels(target="/proj/epi/CVDGeneNas/avonholle/ms-d2/data-prep-bf/mplus-templates/strat/univ-noadj",
+          replaceOutfile="never") # "never", "always", "modifiedDate"
+# step 3
+runModels(target="/proj/epi/CVDGeneNas/avonholle/ms-d2/data-prep-bf/mplus-templates/strat/univ-noadj/step3",
+          replaceOutfile="never") # "never", "always", "modifiedDate"
+
+# Ratios
+# ======
+
+# step 3
+runModels(target="/proj/epi/CVDGeneNas/avonholle/ms-d2/data-prep-bf/mplus-templates/strat/ratio-noadjust/step3",
+          replaceOutfile="always") # "never", always", "modifiedDate"
+
+```

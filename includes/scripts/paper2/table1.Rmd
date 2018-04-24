@@ -1,0 +1,580 @@
+---
+title: "Table 1 -- Dissertation manuscript 1"
+author: "Ann Von Holle"
+date: '`r format(Sys.time(), "%d %B, %Y")`'
+output:
+  html_document:
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+  pdf_document:
+    number_sections: yes
+    toc: yes
+    toc_depth: 3
+header-includes: \usepackage{hyperref, booktabs, longtable, float}\hypersetup{colorlinks=true,
+  linkcolor=blue,filecolor=magenta,urlcolor=cyan}
+classoption: landscape
+bibliography: ../../bib/lit-review.bib
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup-table1, include=FALSE}
+options(width=90)
+knitr::opts_chunk$set(fig.width=8, fig.height=8,
+                      echo=FALSE, warning=FALSE,
+                      message=FALSE, 
+                      results='hide',
+                      comment=NA)
+
+require(knitr)
+require(tableone)
+require(htmlTable)
+require(Hmisc) 
+require(ggplot2)
+require(reshape2)
+require(mice)
+
+#opts_knit$set(root.dir = "~/dissertation/unc-dissertation-markdown-p2/includes/scripts/paper2")
+opts_knit$set(root.dir = "~/GitHub/unc-dissertation-markdown-p2/includes/scripts/paper2")
+options(width = 150)
+
+```
+
+
+<!-- NOTES:
+1. This is the source document for this project. I will treat this document as a plain text Markdown file to create Word docs, pdfs and html files. This document will be downloaded in plain text format so any formatting such as bullet points, font changes, bolding, header choices will not be saved. However, please add comments or edits as you see fit. I can clean up later.
+
+2. Any text below preceded by an @ symbol is a placeholder for a citation.
+
+3. To indicate formatting in plain text use the following notation.
+Sections in this document start with a # symbol. Section 1 headings start with #, section 2 headings start with ##, etc..
+**bold**
+*italic*
+$latex formula$
+
+4. If you want to see what the text below looks like after formatting, you can cut and paste in https://stackedit.io/editor OR you can go to the web page with a recent version of updates in html format: html format or Word .docx format.
+
+5. Used google code at following link to create heading numbering: http://stackoverflow.com/questions/12389088/google-docs-drive-number-the-headings
+
+6. Can edit this file at https://docs.google.com/document/d/1UI7c676DO4_ItDheW9PGy3yBsRTh1l_EPDOGlo3sIkA/edit?usp=sharing 
+
+END OF NOTES
+-->
+
+```{r}
+
+# read in SAS  data using haven package -- no label option
+setwd("~/")
+
+
+catvars = c('Sex', 'milkcode', "stillbf6")
+contvars. = c("trg[mg/dL]", "Ttlchlstrl", "LDLChlstrl",
+             "HDLchlstrl")
+contvars = c("trg.mg.dL.", "Ttlchlstrl", "LDLChlstrl",
+             "HDLchlstrl", "graffar.index", "MATAGE")
+length(contvars)
+
+# read in data from descriptive_statistics.Rmd
+load("merged-data.Rdata") # has merge1 data frame
+head(merge1)
+names(merge1)
+names(merge2)
+mean(merge1$graffar.index, na.rm=T)
+summary(merge1$LDLChlstrl)
+
+#merge1=merge2 # in this particular program need to switch to merge2 from descriptive_statistics.Rmd, which has the outliers removed.
+
+# Add labels to new variable names
+# -------------------------------------
+load("sasdat.Rdata") # has df.varlabels from read-phenotypes.Rmd
+load("dat-2014.Rdata") # has c5.2014.names.labels -- from Descriptive.Rmd, the data frame with variable names and labels from year 5 cohort data, 2014 release
+
+```
+
+
+```{r}
+# create a new data frame for export to m2 analyses with breastfeeding variable
+
+# this code borrowed from /paper2/misc-table-compare-bf.Rmd
+
+# Load in bf data.
+# See 3/7/2018 email
+
+bf = read.csv(file="~/../Dropbox/unc.grad.school/dissertation/data/m2/breastfeeding/bfvars_Mar6_2018.csv")
+
+names(bf) # use the stillbf6. has largest association with ldl at outcome (see  /paper2/misc-table-compare-bf.html)
+
+# mom1mam: age at first bottle (months) (n=1730)
+# edad1mam: age at first bottle (months) (days) (n=1730)
+# weanmnth: age when weaned from breast milk (months) (n=1117)
+# edadultpecho: age when weaned from breast milk (day) (n=1705)
+
+nrow(merge1) #602
+merge1 = merge(merge1, 
+               bf[c("id", "stillbf6")],
+               by="id")
+
+nrow(merge1) #602
+names(merge1) # now how stillbf6
+```
+
+```{r}
+
+# merge the 1- and 5- year cohort variable/label names together
+both.vl = rbind(c5.2014.names.labels, df.varlabels)
+head(both.vl)
+
+both.vl$lname = substr(both.vl$lname, 1, 35)
+both.vl$lname = as.character(both.vl$lname)
+
+# find position of variables in merged data set that has the 
+# variables for the descriptive table
+cat1 = which(as.character(both.vl$vname) %in% catvars); #cat1
+cat2 = which(as.character(both.vl$vname) %in% contvars.); #cat2; length(cat2)
+
+num.vars = which(as.character(both.vl$vname) %in% c(catvars,contvars.))
+
+# rename variables according to data frame
+char.1 = both.vl$lname
+colnames(merge1)
+
+# convert colnames to match that of the 2014 version
+both.vl$vname2 = sapply(both.vl$vname, function(x) gsub("\\[",  ".", x))
+both.vl$vname2 = sapply(both.vl$vname2, function(x) gsub("\\]",  ".", x))
+both.vl$vname2 = sapply(both.vl$vname2, function(x) gsub("\\/",  ".", x))
+both.vl$vname2
+
+#reorder the columns of merge2 to match the vector of labels
+name.order = as.character(both.vl$vname2[c(num.vars)])
+merge2 = merge1[c(name.order, "stillbf6", "graffar.index", "MATAGE", "id")]
+head(merge2)
+
+#colnames(merge2) #check
+
+# substitute labels for variable names in merge2 data frame column names
+colnames(merge2)[colnames(merge2) %in% c(name.order)] = both.vl$lname[both.vl$vname2 %in% name.order]
+
+#mean(merge2$`Graffar index`, na.rm=T) # check colnames are correct
+#mean(merge1$graffar.index, na.rm=T)
+
+colnames(merge2)[colnames(merge2) %in% c('Sex (SEX)')] = "Sex"
+levels(merge2$`original three codes`)
+
+# Add labels to variables ---------------------
+merge2$Sex.f = factor(merge2$Sex, labels = c("Male", "Female"))
+merge2$`original three codes` = factor(merge2$`original three codes`, 
+                                       labels=c("1=high iron?",
+#                                                "2=low iron?",
+                                                "3=no added iron?"))
+
+names(merge2)
+
+makedtable = function(by.var){
+  # by.var="Sex.f" # debug
+  
+  extra.vars = c("stillbf6", "graffar.index", "MATAGE")
+  factor.extra = c("stillbf6")
+    t1 = CreateTableOne(vars = c(char.1[num.vars], extra.vars), 
+                        data=merge2,
+                        factorVars = c(char.1[cat1], factor.extra), 
+                        strata=by.var, 
+                        test=FALSE)
+    
+    t1.overall = CreateTableOne(vars=c(char.1[num.vars], extra.vars), 
+                        data=merge2,
+                        factorVars = c(char.1[c(cat1)], factor.extra),
+                        test=FALSE)
+    
+    #print(t1, nonnorma=contvars, type='html')
+    
+    tab1.mat <- print(t1, nonnormal = char.1[num.vars],
+                      quote = FALSE, noSpaces = TRUE, printToggle = FALSE,
+                      contDigits=1)
+    
+    tab1.overall.mat <- print(t1.overall, 
+                              nonnormal = char.1[num.vars],
+                              quote = FALSE, noSpaces = TRUE,
+                              printToggle = FALSE, contDigits = 1)
+    
+    t1.tot = cbind(tab1.mat, tab1.overall.mat)
+    #head(t1.tot)
+    # Run this for a pdf document
+
+    # get rid of underscore characters in rownames. won't work in this chunk without changing
+    #rownames(t1.tot)
+    t1.tot.pdf = t1.tot
+    rownames(t1.tot.pdf) = gsub("_", "\\_", rownames(t1.tot), fixed = T)
+    #rownames(t1.tot.test)
+    list1 = list(t1.tot, t1.tot.pdf)
+    return(list1)
+}
+
+```
+
+
+```{r}
+# print to latex for pdf document
+# ---------------------------------
+
+# see https://stackoverflow.com/questions/31443409/hmisc-latex-fuction-need-to-remove-the-first-line
+
+mylatex <- function (...) {
+    o <- capture.output(latex(...))
+    # this will strip /all/ line-only comments; or if you're only
+    #  interested in stripping the first such comment you could
+    #  adjust accordingly
+    o <- grep('^%', o, inv=T, value=T)
+    cat(o, sep='\n')
+}
+```
+
+# Descriptive statistics by gender
+
+```{r, results='asis'}
+
+pdf.table = makedtable('Sex.f')
+
+pdf.table.2 = pdf.table[2]
+names(pdf.table.2) = "Descriptive statistics by gender"
+
+# mylatex(pdf.table.2, file="",
+#         lines.page=45,
+#         booktabs=T, 
+#         rowlabel="Variables",
+#         longtable=T)
+
+#setwd("~/GitHub/unc-dissertation-markdown-p2/includes/scripts/paper2")
+
+dat.out = data.frame(pdf.table[1])
+dat.out$char = c("n",
+                 "No added iron, n (\\%)",
+                 "Triglycerides (mg/dL)",
+                 "Total cholesterol (mg/dL)",
+                 "LDL-C (mg/dL)",
+                 "HDL-C (mg/dL)",
+                 "Still breastfeeding at 6 months, n (\\%)",
+                 "Graffar Index",
+                 "Maternal age (years)"
+                 )
+rownames(dat.out) = NULL
+colnames(dat.out) = c("Male", "Female", "All", "char")
+dat.out = dat.out[,c("char", "Female", "Male", "All")]
+
+save(dat.out, file="table1.Rdata")
+
+kable(pdf.table.2)
+
+
+```
+
+```{r}
+# make plot for table 1 info (for m2 AHA slides)
+
+head(merge2)
+names(merge2)
+nrow(merge2)
+
+merge2.long = melt(merge2[, !(colnames(merge2) %in% c("Sex (SEX)"))], by=c(`original three codes`, 'Sex.f'))
+head(merge2.long)
+
+
+```
+
+```{r, echo=FALSE, results='asis', eval=T}
+# add a page break
+  cat("\n\n\\pagebreak\n")
+```
+
+# Descriptive statistics by treatment arm at 6 months
+
+```{r, results='asis'}
+pdf.table = makedtable('original three codes')
+
+pdf.table.2 = pdf.table[2]
+names(pdf.table.2) = "Descriptive statistics by treatment arm at 6 months"
+
+# mylatex(pdf.table.2, file="",
+#         lines.page=45,
+#         booktabs=T, 
+#         rowlabel="Variables",
+#         longtable=T)
+
+kable(pdf.table.2)
+
+```
+
+```{r, results='markup', eval=FALSE}
+
+sub.merge = merge1[,c(catvars, contvars, "Sex.f")]
+t1 = summary(Sex.f ~ ., data=sub.merge, method="reverse")
+
+print(t1, rmarkdown=T)
+
+```
+
+
+# Violin plots for cholesterol variables
+
+```{r violin1}
+
+contvars. = c("trg[mg/dL]", "Ttlchlstrl", "LDLChlstrl",
+             "HDLchlstrl")
+
+contvars2 = c("trg.mg.dL.", "Ttlchlstrl", "LDLChlstrl",
+             "HDLchlstrl", "log.tg", "non.hdl")
+
+# take wfl data and transform from wide to long
+names(merge1)
+nrow(merge2)
+id.leftout = which(!(merge1$id %in% merge2$id))
+id.leftout
+
+merge1$log.tg = log(merge1$trg.mg.dL.)
+merge1$non.hdl = with(merge1, Ttlchlstrl - HDLchlstrl)
+
+names(merge2)
+merge2$log.tg = log(merge2$`triglycerides [mg/dL] (A_TG)`)
+merge2$non.hdl = with(merge2, `Total cholesterol (A_TOTALCHOL)` - `HDL cholesterol (A_HDL)`)
+
+merge1[id.leftout, contvars2]
+
+
+# exclude high TG (130+)
+nrow(merge1)
+merge1.sub = merge1[merge1$trg.mg.dL.<130,]
+nrow(merge1.sub)
+(nrow(merge1) - nrow(merge1.sub)) / nrow(merge1)
+
+# exclude high LDL (130+)
+merge1.sub2 = merge1.sub[merge1.sub$LDLChlstrl<130,]
+(nrow(merge1.sub) - nrow(merge1.sub2)) / nrow(merge1.sub)
+min(merge1.sub2$HDLchlstrl)
+
+merge1[merge1$HDLchlstrl<20, contvars2]
+merge1[merge1$LDLChlstrl>250, contvars2]
+
+# exclude high HDL (45+)
+merge1.sub3 = merge1.sub2[merge1.sub2$HDLchlstrl>40,]
+(nrow(merge1.sub2) - nrow(merge1.sub3)) / nrow(merge1.sub2)
+
+# exclude all at once
+merge1.sub0 = merge1[merge1$trg.mg.dL.<130 &
+                       merge1$LDLChlstrl<130 &
+                       merge1$HDLchlstrl>40,]
+nrow(merge1.sub0)
+summary(merge1.sub0[,c("trg.mg.dL.", "LDLChlstrl", "HDLchlstrl")])
+nrow(merge1.sub0)
+
+# end of examination of high cholesterol levels
+names(merge2)
+lipid.vars.c = names(merge2)[c(3:6, 9:10)]
+nrow(merge2)
+head(merge2)
+sasdat.df.long = melt(merge2[, c(lipid.vars.c, 'Sex.f', 'id')],
+                      id.vars = c("id", 'Sex.f'))
+head(sasdat.df.long)
+levels(factor(sasdat.df.long$variable))
+sasdat.df.long$variable.f = factor(sasdat.df.long$variable,
+                                   labels = c("TG",
+                                              "TC",
+                                              "LDL-C",
+                                              "HDL-C",
+                                              "log(TG)",
+                                              "non-HDL"))
+levels(sasdat.df.long$variable.f)
+
+
+# see http://www.cookbook-r.com/Graphs/Colors_%28ggplot2%29/
+# The palette with black:
+cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+# The palette with grey:
+cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+# The palette with grey:
+cbbbPalette <- c("#000000", "#000000", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+
+# function to plot values
+# -------------------------------------------------
+
+make.plot = function(label.y, dat.long) {
+  # dat.long = sasdat.df.long # for testing
+  # label.y = 'test' # for testing
+  ggplot(data=dat.long,
+                 aes(y=value, x=Sex.f, color=Sex.f)) +
+  facet_grid(variable.f ~ ., scales = "free") +
+  geom_violin(color="black", lwd=1) +
+  geom_boxplot(width=0.15) +
+  ylab(label.y) +
+  stat_summary(fun.y=mean, geom="point", shape=5, size=4) +
+  scale_colour_manual(values=c("red", "blue"), name="Sex of child") +
+  theme_bw() +
+  theme(
+    plot.background = element_blank()
+   ,panel.border = element_blank()
+   ,legend.title = element_text(colour="black", size=16)
+   ,legend.text = element_text(colour="black", size = 16)
+   ,text = element_text(size=16)
+) +
+  #draws x and y axis line
+  theme(axis.line = element_line(color = 'black'),
+        axis.line.x = element_line(color="black"),
+        axis.ticks.y= element_line(colour="black"),
+        axis.text.x=element_blank(),
+        axis.title.x = element_blank(),
+#        axis.text.x = element_text(size=16),
+        axis.text.y = element_text(size=16),
+        axis.title.y=element_text(vjust=0.5),
+        legend.position="bottom")
+}
+
+make.plot("Lipid variables", sasdat.df.long)
+
+
+```
+
+```{r}
+
+# Make plot for AHA m2 slides
+# -----------------------------
+
+head(sasdat.df.long)
+
+levels(factor(sasdat.df.long$variable.f))
+df.long.sub = sasdat.df.long[sasdat.df.long$variable.f %in% c("log(TG)", "HDL-C", "LDL-C"),]
+head(df.long.sub)
+
+p.sub = make.plot("Lipid Variables", df.long.sub)
+p.sub
+
+table(df.long.sub$variable.f)
+lipid.thresh <- data.frame(variable.f = c("LDL-C", "HDL-C", "log(TG)"), 
+                           Z = c(110, 45, log(90)))
+
+p.sub.lines = p.sub + geom_hline(data = lipid.thresh, 
+                   aes(yintercept = Z),
+                   lty=3, size=1) +
+   theme(plot.caption = element_text(size = 8, hjust = 0.5)) +
+    labs(
+      caption=expression(paste("Note: Dotted lines represent threshold for acceptable thresholds according to \nNational Cholesterol Education Panel (NCEP) Expert Panel on cholesterol levels in children.")),
+       x="",
+       y="Lipid outcomes (mg/dL)")
+
+#setwd("C:/Users/ann/Documents/GitHub/unc-dissertation-markdown-p2/includes/scripts/presentations/aha-2018-m2/figures")
+png(filename="../presentations/aha-2018-m2/figures/lipids-t1.png", res=300, width=1500, height=1500)
+  p.sub.lines
+dev.off()
+
+```
+
+
+# Number of missing observations at each time point
+
+```{r}
+
+wfl = c("wfl.0", "wfl.1", "wfl.2", "wfl.3", "wfl.4", "wfl.5")
+wt = c("Wgh.gr..aB", "Wg.gr..a1M", "Wg.gr..a2M", "Wg.gr..a3M", "Wg.gr..a4M", "Wg.gr..a5M")
+ht = c("Hgh.cm..aB", "Hg.cm..a1M", "Hg.cm..a2M", "Hg.cm..a3M", "Hg.cm..a4M", "Hg.cm..a5M")
+
+
+a.vars = merge1[c(wfl, wt, ht)]
+t1=CreateContTable(data=a.vars, vars=c(wfl, wt, ht))
+```
+
+
+```{r, results='markup'}
+summary(t1)
+```
+
+# Average number of non-missing WFL values per person
+
+```{r, results='markup'}
+#dim(a.vars) # 602 by 18
+
+a.vars = within(a.vars, {
+  nonmiss.wfl0 = ifelse(is.na(wfl.0)==F, 1, 0)
+  nonmiss.wfl1 = ifelse(is.na(wfl.1)==F, 1, 0)
+  nonmiss.wfl2 = ifelse(is.na(wfl.2)==F, 1, 0)
+  nonmiss.wfl3 = ifelse(is.na(wfl.3)==F, 1, 0)
+  nonmiss.wfl4 = ifelse(is.na(wfl.4)==F, 1, 0)
+  nonmiss.wfl5 = ifelse(is.na(wfl.5)==F, 1, 0)
+  
+  tot.nonmiss = sum(nonmiss.wfl0-nonmiss.wfl5)
+})
+
+a.vars$totnonmiss = rowSums(a.vars[,c("nonmiss.wfl0",
+                                      "nonmiss.wfl1",
+                                      "nonmiss.wfl2",
+                                      "nonmiss.wfl3",
+                                      "nonmiss.wfl4",
+                                      "nonmiss.wfl5"
+                                      )])
+summary(a.vars$totnonmiss)
+
+```
+
+
+# Patterns of missingness for weight for length variables from month 0 to 5
+
+0=observed, 1=missing in table below.
+
+```{r, results='markup'}
+miss.patt = md.pattern(a.vars)
+
+miss.patt[,wfl]
+```
+
+
+## Counts of missing value per pattern as specified above.
+
+```{r}
+5-rowSums(miss.patt[,wfl]) # number of missing observations in pattern
+```
+
+
+# Violin plots of time at measurement
+
+```{r}
+
+
+timevars = c('DysbbdaM1m', 'DysbbdaM2m', 'DysbbdaM3m', 'DysbbdaM4m', 'DysbbdaM5m')
+
+sasdat.df.long = melt(merge1[, c(timevars, 'id', 'Sex.f')],
+                      id.vars = c("id", 'Sex.f'))
+head(sasdat.df.long)
+levels(factor(sasdat.df.long$variable))
+sasdat.df.long$v2 = factor(sasdat.df.long$variable, 
+                           labels=c("month 1",
+                                    "month 2",
+                                    "month 3",
+                                    "month 4", 
+                                    "month 5"))
+head(sasdat.df.long)
+
+ggplot(data=sasdat.df.long,
+                 aes(y=value, x=Sex.f, color=Sex.f)) +
+  facet_grid(v2~., scales = "free") +
+  geom_violin(color="black", lwd=1) +
+  geom_boxplot(width=0.15) +
+  ylab("time (months)") +
+  stat_summary(fun.y=mean, geom="point", shape=5, size=4) +
+  scale_colour_manual(values=c("red", "blue"), name="Sex of child") +
+  theme_bw() +
+  theme(
+    plot.background = element_blank()
+   ,panel.border = element_blank()
+   ,legend.title = element_text(colour="black", size=16)
+   ,legend.text = element_text(colour="black", size = 16)
+   ,text = element_text(size=16)
+) +
+  #draws x and y axis line
+  theme(axis.line = element_line(color = 'black'),
+        axis.line.x = element_line(color="black"),
+        axis.ticks.y= element_line(colour="black"),
+        axis.text.x=element_blank(),
+        axis.title.x = element_blank(),
+#        axis.text.x = element_text(size=16),
+        axis.text.y = element_text(size=16),
+        axis.title.y=element_text(vjust=0.5),
+        legend.position="bottom")
+
+```

@@ -1,0 +1,1343 @@
+---
+title: "Dissertation manuscript 2 -- compile all results by sex of child, adjusted status and lipid measure (univariate or the ratio) --- Added adjustment for breastfeeding at 6 months"
+author: "Ann Von Holle"
+date: '`r format(Sys.time(), "%d %B, %Y")`'
+geometry: "left=1cm,right=1cm,top=2cm,bottom=2cm"
+output:
+  pdf_document:
+    fig_caption: true
+    number_sections: yes
+    pandoc_args:
+    - --filter
+    - C:/Python27/Scripts/pandoc-eqnos.exe
+    toc: yes
+    toc_depth: 3
+  html_document:
+    fig.caption: yes
+    number_sections: yes
+    pandoc_args:
+    - --filter
+    - pandoc-fignos
+    toc: yes
+    toc_depth: '3'
+    toc_float: no
+    xnos-section-numbers: yes
+header-includes: \usepackage{hyperref}\hypersetup{colorlinks=true, linkcolor=blue,filecolor=magenta,urlcolor=cyan}
+  \usepackage{amsmath} \usepackage{float} \usepackage[font=large,labelfont=bf]{caption} \usepackage{lscape}
+editor_options:
+  chunk_output_type: console
+bibliography: ../../bib/lit-review.bib
+---
+
+```{r setup, include=FALSE, purl=FALSE}
+#classoption: landscape
+knitr::opts_chunk$set(fig.width=12, fig.height=8,
+                      echo=F, warning=FALSE,
+                      message=FALSE, 
+                      results='hide',
+                      comment=NA)
+#    css: ../style.css
+
+#knitr::opts_knit$set(root.dir = "~/dissertation/unc-dissertation-markdown-p2/includes/scripts/paper2")
+knitr::opts_knit$set(root.dir = "~/GitHub/unc-dissertation-markdown-p2/includes/scripts/paper2")
+
+options(width = 150)
+```
+
+
+
+```{r , purl=F}
+
+require(knitr)
+require(MplusAutomation)
+require(plyr)
+require(ggplot2)
+require(reshape2)
+require(kableExtra)
+require(data.table)
+require(tidyr)
+#library(qvalue)
+require(gridExtra)
+require(captioner)
+
+
+```
+
+
+<!-- Descriptive statistics from /paper2/table1.Rmd -->
+
+```{r}
+
+load(file="table1.Rdata") # dat.out object
+
+```
+
+
+# Tables
+
+```{r, results='markup'} 
+# Descriptive Statistics
+
+# colnames(dat.out)
+
+kable(dat.out[c("char", "Male", "Female", "All")], 
+      booktabs=T, escape=F,
+      format="latex",
+      row.names = F,
+      col.names =  c("Characteristic", "Male", "Female", "Total"),
+      caption="(MS2: Table 1) Descriptive statistics, median [IQR]\\label{tab:ms2t1}") %>%
+  kable_styling(latex_options = c("striped", "HOLD_position", "scale_down"))
+
+```
+
+\clearpage
+\newpage
+
+<!-- The SITAR part -->
+
+<!-- Start with the SITAR results from initial-m2.Rmd -->
+
+\begin{landscape}
+
+```{r sitar}
+load("ms-tables/sitar-table.Rdata") # all.wide data frame from ../initial-m2-impute2.Rmd
+# NOTE: have used mice
+
+```
+
+
+
+```{r sitar-table, results='markup'}
+# SITAR analyses
+all.wide[is.na(all.wide)==T]="--" # get rid ef missing values
+
+kable(all.wide,
+      escape=F,
+      booktabs=T,
+      longtable=T,
+      format="latex",
+      caption="(MS2: Table 2) Coefficients for association between SITAR growth parameter (se) and  lipid outcome by sex of child, type of trajectory, and adjustment status\\label{tab:sitar}",
+      col.names = c("Sex", "Trajectory type", "Lipid", 
+                     rep(c("Size", "Tempo", "Velocity"), 2))) %>%
+  add_header_above(c( " "=3, "Unadjusted"=3, "Adjusted$^a$"=3), escape=F) %>%
+  kable_styling(latex_options = c("HOLD_position", "scale_down", "repeat_header")) %>% 
+  row_spec(3, extra_latex_after = "\\cline{3-9}") %>%
+  row_spec(6, extra_latex_after = "\\cline{3-9}") %>%
+  row_spec(12, extra_latex_after = "\\cline{3-9}") %>%
+  row_spec(15, extra_latex_after = "\\cline{3-9}") %>%
+  row_spec(21, extra_latex_after = "\\cline{3-9}") %>%
+  row_spec(24, extra_latex_after = "\\cline{3-9}") %>%
+  collapse_rows(columns = 1:3, latex_hline = "major")  %>%
+  footnote(alphabet="Adjusted for randomization status, gestational age, Graffar index, and breastfeeding status",
+           general="Bold values indicate statistical significance at FDR=0.05")
+
+```
+
+\end{landscape}
+
+\clearpage
+\newpage
+
+
+<!-- The LGMM part -->
+
+```{r, eval=F, purl=F}
+
+# only re-run if new data
+
+#  read in parameters from Mplus run on longleaf
+params.pool.univ.noadj = readModels("longleaf/compile-mplus/mplus-templates-bf/pooled/univ-noadj/step3")
+warnings()
+
+params.pool.univ.adj = readModels("longleaf/compile-mplus/mplus-templates-bf/pooled/univ/step3")
+
+params.strat.univ.noadj = readModels("longleaf/compile-mplus/mplus-templates-bf/strat/univ-noadj/step3")
+params.strat.univ.noadj[[1]]
+
+params.strat.univ.adj = readModels("longleaf/compile-mplus/mplus-templates-bf/strat/univ/step3")
+
+# ratios and correlations
+params.pool.ratio.noadj = readModels("longleaf/compile-mplus/mplus-templates-bf/pooled/ratio-noadjust/step3")
+params.pool.ratio.adj = readModels("longleaf/compile-mplus/mplus-templates-bf/pooled/ratio/step3")
+
+params.strat.ratio.noadj = readModels("longleaf/compile-mplus/mplus-templates-bf/strat/ratio-noadjust/step3")
+
+params.strat.ratio.adj = readModels("longleaf/compile-mplus/mplus-templates-bf/strat/ratio/step3")
+
+list.dat = list(pun = params.pool.univ.noadj,
+                pua = params.pool.univ.adj,
+                sun = params.strat.univ.noadj,
+                sua = params.strat.univ.adj,
+                prn = params.pool.ratio.noadj,
+                pra = params.pool.ratio.adj,
+                srn = params.strat.ratio.noadj,
+                sra = params.strat.ratio.adj)
+
+save(list.dat, file="longleaf/compile-mplus/mplus-templates-bf/params.Rdata")
+
+```
+
+```{r dat2}
+
+# select out the final classes by sex of child and type of trajectory
+# ++++++++++++-------------------------------------------------------------------
+
+load(file="../paper1/lgmm/select-model-pooled.Rdata") # select model has final lgmm model class selection
+select.model.pooled = select.model
+
+load(file="../paper1/lgmm/select-model.Rdata") # select model has final lgmm model class selection
+select.model.strat = select.model
+
+load(file="longleaf/compile-mplus/mplus-templates-bf/params.Rdata") # contains params data frame
+names(list.dat)
+
+# take out 3rd element of each list, the unstandardized parameter
+df.all.params = lapply(list.dat, lapply, function(y) y$parameters$unstandardized)
+names(df.all.params[[2]])
+
+# take all the data frames and combine into one with a unique id
+# df.all.params is a list of 4 objects, each from a separate mplus run 
+# combine all models into one data frame for each run
+
+# within each list take out the models and make a data frame of all results
+combine.params = lapply(df.all.params, function(x) { do.call("rbind.fill", x)  })
+length(combine.params) # list of 8
+
+sapply(combine.params, length) # 7 columns
+sapply(combine.params, nrow) 
+
+counts = lapply(df.all.params, function(x) sapply(x, nrow) ) # there are some models with null counts
+names.counts = lapply(df.all.params, names)
+
+counts.2 = unlist(counts)
+length(counts.2)
+
+class(counts.2)
+id.models = rep(names(counts.2), counts.2)
+length(id.models)
+
+# take all the data frames and combine into one with a unique id
+
+# get unique model id for each section of params
+# ===========================
+
+
+# still a list so extract out
+
+all = do.call("rbind.fill", combine.params)
+dim(all)
+
+all$id.model = id.models
+# dim(all)
+# head(all)
+
+all$type = rep(names(combine.params),
+                              sapply(combine.params, nrow)) # assign original object name (pun pua sun sua)
+
+head(all[all$type=="pra",])
+names(all)
+
+test = all[all$type=="pra" & all$param=="DIFF_RAT",]
+head(test)
+
+```
+
+
+
+```{r h1-un}
+# function to extract out model info from file title
+
+handle1 = function(dat){
+dat = within(dat, {
+      # set up labels for outcome and sex of child groups (for facetting below)
+  
+    sex = ifelse(grepl(".female.", tolower(id.model))==T, "Female",
+                 ifelse(grepl(".male.", tolower(id.model))==T, "Male", "Both"))
+      
+      
+    outcome = ifelse(grepl("..ht..", id.model)==T, "Length",
+                 ifelse(grepl("..wt..", id.model)==T, "Weight", 
+                        ifelse(grepl("..wfl..", id.model)==T, "WFL", NA)))
+
+    lipid = ifelse(grepl("distal.log_tg.", id.model)==T, "log(TG)",
+                   ifelse(grepl("distal.ldl.", id.model)==T, "LDL-C",
+                          ifelse(grepl("distal.hdl.", id.model)==T, "HDL-C",
+                                 ifelse(grepl(".ratio.", id.model)==T, "TG:HDL ratio", NA))))
+
+    class = ifelse(grepl(".2.Class", id.model)==T, 2,
+                   ifelse(grepl(".2.class", id.model)==T, 2,
+                          ifelse(grepl(".3.Class", id.model)==T, 3,
+                                 ifelse(grepl(".3.class", id.model)==T, 3, NA))))
+
+    type.f = ifelse(type %in% c("pun", "pua", "prn", "pra"), "pooled", "stratified")
+    
+    adj = ifelse(type %in% c("pua", "sua", "prn", "srn"), "yes", "no") # not sure but adj and un adj are switched in tables.
+    
+    })
+
+}
+```
+
+
+
+```{r h2-un}
+
+# Get table of tests
+table(all$paramHeader)
+table(all$type)
+colnames(all)
+lipid.distal. = all[all$paramHeader=="New.Additional.Parameters",]
+head(lipid.distal.)
+table(lipid.distal.$param)
+
+lipid.distal. = handle1(lipid.distal.)
+
+dim(lipid.distal.) # 504 by 12
+sapply(lipid.distal.[c("class", "lipid", "outcome")], table)
+
+lipid.distal.[lipid.distal.$lipid=="LDL", c("id.model", "lipid")]  # check
+str(lipid.distal.)
+
+```
+
+
+```{r h3-un}
+
+names(lipid.distal.)
+lipid.distal2 = lipid.distal.[,!(colnames(lipid.distal.) %in% c("id.model", 
+                                                                "string",
+                                                                "LatentClass",
+                                                                "paramHeader"))]
+nrow(lipid.distal2)
+head(lipid.distal2)
+
+lipid.distal2[lipid.distal2$param=="DIFF_RAT",]
+
+# select out pairwise differences
+lipid.distal2. = lipid.distal2[((lipid.distal2$class==2 & lipid.distal2$param %in% c("DIFF1", "DIFF_RAT")) |
+                                (lipid.distal2$class==3 & (lipid.distal2$param %in% c("DIFF1", 'DIFF2', 'DIFF3'))) 
+                               ),]
+
+lipid.distal2.$lipid = with(lipid.distal2., 
+                            ifelse(param=="DIFF_RAT", "TG:HDL ratio", lipid))
+lipid.distal2.$param = with(lipid.distal2., 
+                            ifelse(param=="DIFF_RAT", "DIFF1", param))
+
+nrow(lipid.distal2.)
+table(lipid.distal2.$param)
+
+select.model.strat$type.f = "stratified"
+select.model.pooled$type.f="pooled"
+select.model.pooled$sex="Both"
+
+select.model. = rbind(select.model.strat, select.model.pooled)
+head(select.model.)
+select.model.$outcome = with(select.model., ifelse(outcome=="Height", "Length", outcome))
+head(lipid.distal2.)
+# change number of classes for most to 2 based on class counts -- revised from original fit
+select.model.$class = with(select.model., 
+                           ifelse((sex %in% c("Male") & outcome %in%  "WFL"), 3, 2))
+
+select.model.
+
+# select out the best fitting growth models by sex of child and type of outcome
+nrow(lipid.distal2.) #179
+
+vars. = c("sex", "outcome", "class")
+unique(lipid.distal2.[vars.])
+
+lipid.distal2 = merge(select.model.[vars.],
+                      lipid.distal2.,
+                      by=,
+                      all.x=T)
+nrow(lipid.distal2)  # 102
+
+head(lipid.distal2[order(lipid.distal2$pval), 
+                    c("type", "outcome", "class", "param", "lipid",  "est", "pval")])
+#hist(lipid.distal2$pval) # looks pretty flat
+
+# after selecting out relevant models do bonferroni
+#lipid.distal2$adjust = p.adjust(lipid.distal2$pval, method="fdr")
+#lipid.distal2[lipid.distal2$adjust<0.05,] # check
+#sig.val = ifelse(lipid.distal2$adjust<0.05, 1, 0)
+#table(sig.val)
+
+loc.num = which(colnames(lipid.distal2) %in% c("est", "se"))
+loc.num
+
+lipid.distal2[loc.num] = apply(lipid.distal2[loc.num], 2, function(x) {
+  x = as.numeric(as.character(x))
+})
+
+lipid.distal2[order(lipid.distal2$pval), !(colnames(lipid.distal2) %in% c("paramHeader",
+                                                                          "LatentClass"))]
+
+lipid.distal2$est.se = with(lipid.distal2, 
+                            paste0(formatC(est,format="f", digits=2),
+                                   " (", 
+                                   formatC(se,format="f", digits=2), ")"))
+
+#[complete.cases(lipid.distal2)==T
+head(lipid.distal2)
+lipid.distal2
+
+distal.wide <- dcast(lipid.distal2,
+                      sex + outcome + lipid + class ~ param + adj, 
+                     value.var = c("est.se"))
+distal.wide
+
+```
+
+```{r h4-un}
+
+# make formatted info for formatted table
+handle2 = function(dat){
+      # dat = lipid.distal2 # for debugging
+
+  dat = within(dat, {
+
+    est = as.numeric(as.character(est))
+    se = as.numeric(as.character(se))
+    lci = est - 1.96*se
+    uci = est + 1.96*se
+    
+    #adjusted.p = p.adjust(as.numeric(as.character(pval)), method='bonf')
+    #sig.val = ifelse(adjusted.p<0.05, 1, 0)
+    
+    est.n = as.numeric(as.character(est))
+    se.n = as.numeric(as.character(se))
+    
+    reverse.sign = ifelse(param.rev %in% c("Medium vs Low", "High vs Low", "High vs Medium"), "yes", "no") # these are class switches
+
+    val.ci = ifelse(reverse.sign=="no", 
+      
+           paste0(formatC(est.n, format = "f", digits = 2), " (", 
+                  formatC(est.n-1.96*se.n, format = "f", digits = 2), ", ", 
+                  formatC(est.n+1.96*se.n, format = "f", digits = 2), ")"),
+           
+           paste0(formatC(-est.n, format = "f", digits = 2), " (", 
+                  formatC(-est.n-1.96*se.n, format = "f", digits = 2), ", ", 
+                  formatC(-est.n+1.96*se.n, format = "f", digits = 2), ")")
+           )
+    
+    param.rev = ifelse(param.rev=="Medium vs Low", "Low vs Medium", 
+                       ifelse(param.rev=="High vs Low", "Low vs High",
+                              ifelse(param.rev=="High vs Medium", "Medium vs High", param.rev)))
+    
+})
+  
+
+class(dat$pval)
+p.adjust(dat$pval)
+dat$adj
+head(dat)
+
+# calculate adjusted p-value by outcome instead of pooled/univ, etc..
+newdf <- setDT(dat)[, adjusted.p := .SD[, p.adjust(pval, method='bonf')], 
+                                          by=c( "adj")][, sig.val := .SD[,ifelse(adjusted.p<0.05, 1, 0)],  by=c( "adj")]
+
+dat = data.frame(newdf)
+
+dat = within(dat, {
+    est.ci.bold = ifelse(
+    sig.val==1, paste0("**", val.ci, "**"), val.ci)
+
+
+  # see awesome_table_in_pdf-1.pdf
+  est.ci.bold4 = ifelse(sig.val==1,
+                        paste0(text_spec( paste0(val.ci), 'latex', bold=T)),
+                        val.ci)
+
+})
+
+return(dat)
+  
+}
+
+```
+
+
+
+<!-- Get trajectory information first -->
+
+```{r get-traj, eval=F, purl=F}
+
+# only re-run if new data
+
+#  read in parameters from Mplus run on longleaf
+params.pool.univ.noadj = readModels("longleaf/compile-mplus/mplus-templates-bf/pooled/univ-noadj")
+params.pool.univ.adj = readModels("longleaf/compile-mplus/mplus-templates-bf/pooled/univ")
+params.strat.univ.noadj = readModels("longleaf/compile-mplus/mplus-templates-bf/strat/univ-noadj")
+params.strat.univ.adj = readModels("longleaf/compile-mplus/mplus-templates-bf/strat/univ")
+
+# Note: the ratio analyses use the same step1 data as the one generated from the univariate data above.
+
+list.dat.traj = list(pun = params.pool.univ.noadj,
+                pua = params.pool.univ.adj,
+                sun = params.strat.univ.noadj,
+                sua = params.strat.univ.adj)
+
+save(list.dat.traj, file="longleaf/compile-mplus/mplus-templates-bf/params-traj.Rdata")
+
+```
+
+
+```{r plot1-pu}
+
+# Get labeled values for the trajectories and apply them to subsequent table / figures: low, medium and high. All based on slopes
+# ===============================================
+
+# get saved data from above
+load(file="longleaf/compile-mplus/mplus-templates-bf/params-traj.Rdata") # has list.dat.traj, a nested list of lists (4 lists for type of analysis (pooled/adjusted) and models as lists within each of the 4 lists)
+
+# test code start here =========================
+
+# take out 3rd element of each list, the unstandardized parameter
+df.traj = lapply(list.dat.traj, lapply, function(y) y$parameters$unstandardized)
+names(df.traj) # check
+
+names(df.traj[[4]]) # check
+
+# take all the data frames and combine into one with a unique id
+# df.all.params is a list of 4 objects, each from a separate mplus run 
+# combine all models into one data frame for each run
+combine.traj = lapply(df.traj, function(x) do.call("rbind.fill", x))
+names(combine.traj)
+
+# take all the data frames and combine into one with a unique id
+ids.traj = mapply(function(x,y) { 
+  x$id.model = rep(names(y),
+                   sapply(y, nrow))}, combine.traj, df.traj)
+
+# still a list so extract out
+all.traj = do.call("rbind.fill", combine.traj)
+id.models.traj = unlist(ids.traj)
+all.traj$id.model = unlist(ids.traj)
+dim(all.traj)
+head(all.traj)
+
+all.traj$type = rep(names(combine.traj),
+                              sapply(combine.traj, nrow)) # assign original object name (pun pua sun sua)
+
+head(all.traj[all.traj$type=="pua",])
+names(all.traj)
+
+
+# take out 3rd element of each list, the parameters
+
+combine.traj = all.traj[all.traj$paramHeader %in% c("Means", "Intercepts") &
+                               all.traj$param %in% c("I", "S",
+                                                           "Q", "C"),]
+
+head(combine.traj$id.model)
+
+combine.traj = handle1(combine.traj)
+head(combine.traj)
+
+# now convert from long to wide format with param estimates
+# by latent class and model
+cp.wide <- dcast(combine.traj,
+                 adj + type.f + sex + outcome + class + LatentClass ~ param, 
+                 value.var="est")
+cp.wide
+cp.wide$id = rownames(cp.wide)
+cp.wide[is.na(cp.wide)] = 0
+
+cp.wide. = merge(select.model.,
+                      cp.wide,
+                      by=c("sex", "outcome", "class"),
+                      all.x=T)
+head(cp.wide.)
+
+cp.wide2 = cp.wide.[c("sex", "outcome", "adj", "LatentClass",
+                     "I", "S", "Q", "C")]
+
+# Label the classes according to gradients of slopes
+class.labels = setDT(cp.wide2)
+
+class.labels[, class.order := frank(S), by=c("sex", "adj", "outcome")]
+levels(factor(class.labels$class.order))
+class.labels$class.order = factor(class.labels$class.order, labels=c("Low",
+                                                                     "Medium",
+                                                                     "High"))
+class.labels
+
+cp.wide = data.frame(class.labels)
+class(cp.wide)
+
+cp.wide$id = rownames(cp.wide)
+cp.wide[is.na(cp.wide)] = 0
+
+cp.wide = cp.wide[order(cp.wide$sex, cp.wide$outcome, cp.wide$adj, cp.wide$class.order),]
+cp.wide
+
+```
+
+```{r h5-un}
+
+# Print off table of results with bolding for 95% ci
+
+# convert labels for comparisons, i.e. 1 vs 2, 1 vs 3 and 2 vs 3,
+# to low/med/high labels
+
+convert.prep = lipid.distal2[c("sex", "outcome", "class", "param", "type.f", "adj", "lipid")] # this information contains all unique identifiers for these data
+head(convert.prep)
+nrow(convert.prep)
+nrow(unique(convert.prep))
+
+convert.prep = lipid.distal2[c("sex", "outcome", "class", "param", "type.f", "adj")] 
+
+head(cp.wide)
+
+cp.wide.prep = dcast(cp.wide[c("sex", "adj", "outcome",
+                              "LatentClass", "class.order")], 
+                     sex + adj + outcome  ~ LatentClass,
+                     value.var="class.order")
+                     
+cp.wide.prep
+nrow(cp.wide.prep) # 15
+colnames(cp.wide.prep)[4:6] = c("class1", "class2", "class3")
+cp.wide.prep
+nrow(cp.wide.prep)
+
+nrow(lipid.distal2)
+convert.prep2 = merge(lipid.distal2,
+                      cp.wide.prep[c("sex", "adj", "outcome", "class1", "class2", "class3")],
+                      by=c("sex", "adj", "outcome"),
+                      all.y=T)
+nrow(convert.prep2) # 61
+
+convert.prep2$param.rev = with(convert.prep2,
+                               ifelse(param=="DIFF1", paste0(class1, " vs ", class2),
+                                      ifelse(param=="DIFF2", paste0(class1, " vs ", class3),
+                                             ifelse(param=="DIFF3", paste0(class2, " vs ", class3), NA))))
+
+head(convert.prep2)
+
+lipid.distal2 = convert.prep2
+head(lipid.distal2)
+
+lipid.distal2 = handle2(lipid.distal2)
+head(lipid.distal2)
+
+table(lipid.distal2$param.rev)
+```
+
+```{r}
+
+# wald chi sq tests
+# ==============================
+# 
+
+# get summaries from each model (nested within each run: 2-level nested list)
+df.summaries = lapply(list.dat, lapply, function(y) y$summaries)
+names(df.summaries)
+df.summaries[[4]] # for univariate
+df.summaries[[5]] # for ratios
+
+combine.sums = lapply(df.summaries, function(x) do.call("rbind.fill", x)) # within each list of model summaries,  append them together
+class(combine.sums)
+names(combine.sums)
+
+df.sums = do.call("rbind.fill", combine.sums)
+df.sums
+
+df.sums$id.model = df.sums$Filename
+
+df.sums$type = rep(names(combine.sums),
+                   sapply(combine.sums, nrow)) # assign original object name (pun pua sun sua)
+
+df.sums.2 = handle1(df.sums)
+table(df.sums.2$lipid)
+head(df.sums.2)
+nrow(df.sums.2)
+names(df.sums.2)
+
+df.sums.2$Wald = with(df.sums.2, paste0(round(WaldChiSq_PValue,2), ", ", "(", round(WaldChiSq_Value,2), ",", WaldChiSq_DF, ")"))
+
+head(df.sums.2)
+
+
+# select out the best fitting growth models by sex of child and type of outcome
+df.sums.2.sub = merge(select.model.,
+                      df.sums.2,
+                      by=c("sex", "outcome", "class"),
+                      all.x=T)
+nrow(df.sums.2.sub) # 70
+names(df.sums.2.sub)
+head(df.sums.2.sub[,-28])
+
+ld2.select = lipid.distal2[lipid.distal2$sig.val %in% c(0,1) &
+                             complete.cases(lipid.distal2)==T,]
+nrow(ld2.select) # 18 rows
+names(ld2.select)
+
+
+# prepare mean differences ......
+# =======================================
+head(lipid.distal2)
+levels(factor(lipid.distal2$param.rev))
+
+lipid.distal2$param.rev = factor(lipid.distal2$param.rev, levels = c("Low vs Medium", "Low vs High", "Medium vs High"))
+
+ld2.select = data.frame(lipid.distal2)
+ld2.select[order(ld2.select$pval),c("pval", "adjusted.p")]
+
+head(ld2.select)
+table(ld2.select$param.rev)
+head(ld2.select)
+
+ld2.select[ld2.select$sex %in% "Male",]
+
+distal.wide2.prep <- dcast(ld2.select[is.na(ld2.select$param.rev)==F,],
+                     sex + outcome + class + lipid  ~ param.rev + adj , 
+                     value.var="est.ci.bold")
+nrow(distal.wide2.prep)
+head(distal.wide2.prep)
+table(distal.wide2.prep$lipid)
+
+
+# find any values significant after multiple comparisons adjustment for Wald
+# ==================================================================
+head(df.sums.2.sub)
+df.sums.2.sub$WaldChiSq_PValue
+head( df.sums.2.sub[c("sex", "outcome", "class", "lipid", "adj", "Wald")])
+names(df.sums.2.sub)
+table(df.sums.2.sub$lipid)
+
+# calculate adjusted p-value by outcome instead of pooled/univ, etc..
+newdf <- setDT(df.sums.2.sub)[, adjusted.p := .SD[,p.adjust(as.numeric(as.character(WaldChiSq_PValue)),
+                                                            method='fdr')], 
+                                          by=c("adj")][, sig.val := .SD[,ifelse(adjusted.p<0.05, 1, 0)],
+                                                        by=c("adj")] #by=c("lipid", "adj")
+table(newdf$sig.val) # no significant tests after bonf multiple comparison adjustment
+
+dat = data.frame(newdf)
+dat = within(dat, {
+
+Wald.2.ci = paste0(formatC(round(WaldChiSq_PValue,3),format="f", digits=3),
+                   ", ", 
+                   "(", 
+                   formatC(WaldChiSq_Value, format="f", digits=2),
+                   ",", 
+                   WaldChiSq_DF, ")")
+
+  # see awesome_table_in_pdf-1.pdf
+  Wald.2 = ifelse(sig.val==1,
+                        paste0(text_spec( paste0(Wald.2.ci), 'latex', bold=T)),
+                        Wald.2.ci)
+  
+  })
+  
+
+wald.prep = dcast(data.frame(dat),
+                     sex + outcome + class + lipid  ~ adj , 
+                     value.var="Wald.2")
+wald.prep
+
+distal.wide2 = merge(distal.wide2.prep, 
+                     wald.prep[c("sex", "outcome", "class", "lipid", "no", "yes")],
+                     by = c("sex" ,"outcome", "class", "lipid"))
+nrow(distal.wide2) # 27
+distal.wide2
+
+```
+
+
+```{r mean-pu}
+# get mean distal outcome estimates by growth classes
+
+sapply(all[c("paramHeader", "param", "type")], table) # check
+
+# have to be careful in selecting out means. Don't want the means for lipids from the ratio analyses except the ratios themselves.
+combine.means. = all[(all$paramHeader %in% c("Means", "Intercepts") & all$param %in% c("HDL", "LDL", "LOG_TG") &
+                        all$type %in% c("pua", "pun", "sua", "sun")) |
+                       (all$paramHeader %in% c("New.Additional.Parameters") & all$param %in% c("TG_HDL1R", "TG_HDL2R", "TG_HDL3R")),]
+table(combine.means.$param)
+
+combine.means. = handle1(combine.means.)
+tail(combine.means.[combine.means.$param=="LOG_TG",])
+
+
+# fix lipid values for ratios
+combine.means.$lipid = with(combine.means., ifelse(param %in% c("TG_HDL1R", "TG_HDL2R", "TG_HDL3R"), 
+                                                   "TG:HDL ratio", 
+                                                   param))
+combine.means.$LatentClass = with(combine.means., ifelse(param=="TG_HDL1R", 1,
+                                                         ifelse(param=="TG_HDL2R", 2,
+                                                                ifelse(param=="TG_HDL3R", 3, LatentClass))))
+
+sapply(combine.means.[c("LatentClass", "lipid")], table)
+
+combine.means.$param.rev=NA # this var is in the handle2 function and need to make a dummy variable for this data set to work.
+
+combine.means. = handle2(combine.means.)
+names(combine.means.)
+sapply(combine.means.[c("LatentClass", "lipid")], table)
+
+combine.means = merge(combine.means.,
+                       select.model.,
+                       by=c("sex", "outcome", "class"))
+sapply(combine.means[c("LatentClass", "lipid")], table)
+
+head(combine.means[combine.means$param=="TG_HDL2R",])
+
+
+colnames(combine.means)
+head(combine.means[,c("outcome", "class", "LatentClass", "paramHeader", "param", "est", "se")])
+
+names(cp.wide)
+
+nrow(combine.means)
+combine.means.merge = merge(combine.means,
+                            cp.wide[c("sex", "adj", "outcome", "LatentClass", "class.order")],
+                            by=c("sex", "adj", "outcome", "LatentClass"))
+nrow(combine.means.merge)
+
+levels(factor(combine.means.merge$lipid))
+combine.means.merge$lipid = factor(combine.means.merge$lipid, 
+                                   labels = c("HDL-C", "LDL-C", "log(TG)", "TG:HDL ratio"))
+table(combine.means.merge$lipid)
+
+head(combine.means.merge[is.na(combine.means.merge$lipid)==T,])
+
+mean.wide <- dcast(unique(combine.means.merge),
+                   sex + adj + outcome + lipid  ~ class.order, value.var="val.ci")
+mean.wide
+
+
+mean.wide2 <- dcast(unique(combine.means.merge),
+                   sex + outcome + lipid  ~ class.order + adj, value.var="val.ci")
+head(mean.wide2)
+
+# TO DO: only look at assn for primary trait and snp
+#mean.wide[mean.wide$snp %in% c("rs_h", "rs_l", "rs_t"),]
+
+```
+
+
+
+
+```{r count-pu}
+
+# Class counts for best fitting trajectories
+
+# get class counts from list read in at beginning
+
+df.cc.list = lapply(list.dat.traj, lapply, function(y) y$class_counts$mostLikely)
+df.cc = lapply(df.cc.list, function(x) do.call("rbind.fill", x)) # unpack list of lists (list of pooled/adj model and the models within each of those groups (by lipid and outcome))
+names(df.cc)
+df.cc[[1]]
+
+# still a list so extract out
+all.count = do.call("rbind.fill", df.cc)
+head(all.count)
+class(all.count)
+names(all.count)[1] = "LatentClass"
+
+# take all the data frames and combine into one with a unique id
+ids.ct = mapply(function(x,y) { 
+  x$id.model = rep(names(y),
+                   sapply(y, nrow))}, df.cc, df.cc.list)
+all.count$id.model = unlist(ids.ct)
+all.count$type = rep(names(df.cc),
+                              sapply(df.cc, nrow)) # assign original object name (pun pua sun sua)
+all.count. = handle1(all.count) # get info from id.model variable
+dim(all.count.)
+head(all.count.)
+
+# take models with best fit
+count.select = merge(select.model.,
+                  all.count., 
+                  by=c("sex", "outcome", "class"),
+                  all.x=T)
+dim(count.select)
+
+head(cp.wide)
+# add on labeled trajectories from cp.wide
+
+head(count.select)
+cc.select.merge = merge(count.select,
+                            cp.wide[c("sex", "adj", "outcome", "LatentClass", "class.order")],
+                            by=c("sex", "adj", "outcome", "LatentClass"),
+                            all.y=T)
+
+cc.wide.s <- dcast(cc.select.merge,
+                    sex + outcome  ~ class.order + adj,
+                   value.var="count")
+cc.wide.s
+
+```
+
+
+
+```{r plot2-pu, eval=T}
+
+# some data handling
+# ++++++++++++------------------------------------
+
+# set up horizontal axis values
+# see https://stackoverflow.com/questions/11693599/alternative-to-expand-grid-for-data-frames for following code
+expand.grid.df <- function(...) Reduce(function(...) merge(..., by=NULL), list(...))
+
+age = data.frame( age = seq(0, 5, by=0.1))
+
+cp.wide.2 = expand.grid.df(cp.wide, age)
+
+cp.wide.2 = within(cp.wide.2, {
+  value = I + S*age + Q*age^2  + C*age^3# predicted outcome
+})
+
+head(cp.wide.2)
+levels(factor(cp.wide.2$outcome))
+
+cp.wide.2$outcome = factor(cp.wide.2$outcome, 
+                           labels = c("Length (cm)", "Weight (kg)", "WFL (g/cm)"))
+
+# color palette for color blind
+# The palette with black:
+# from http://www.cookbook-r.com/Graphs/Colors_(ggplot2)/#a-colorblind-friendly-palette
+cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+
+plot.traj = ggplot(data=cp.wide.2[cp.wide.2$adj=="no",], 
+               aes(x=age, y=value, group=id, 
+                   colour=class.order)) +
+  geom_line(lwd=1.5, lty=1) +
+  geom_line(data=cp.wide.2[cp.wide.2$adj=="yes",], 
+            lwd=1.5, lty=3,
+            aes(x=age, y=value, group=id, 
+                colour=class.order))  +
+  facet_grid(outcome ~ sex, scales = "free") +
+  theme_bw(base_size=20) +
+  scale_color_manual(name = "Latent Class",
+                     values = cbbPalette) +
+  guides( colour = guide_legend(override.aes = list(size=3, alpha=1)),
+         linetype = guide_legend(override.aes = list(size = 3))) +
+  theme(legend.position="bottom", 
+        plot.caption = element_text(size = 12, hjust = 0.5))
+
+```
+
+
+
+```{r}
+
+# plot of traj for aha-2018 m2 oral presentation
+
+cp.wide2.pu = cp.wide.2[cp.wide.2$sex=="Both" & cp.wide.2$outcome=="WFL",]
+
+
+aha.2018.m2.plottraj = ggplot(data=cp.wide2.pu[cp.wide2.pu$adj=="no",], 
+               aes(x=age, y=value, group=id, 
+                   colour=class.order)) +
+  geom_line(lwd=1.5, lty=1) +
+    geom_line(data=cp.wide2.pu[cp.wide2.pu$adj=="yes",], 
+            lwd=1.5, lty=3,
+            aes(x=age, y=value, group=id, 
+                colour=class.order))  +
+  theme_bw(base_size=18) +
+  theme(legend.position="bottom") +
+    scale_color_manual(name = "Latent Class",
+                     values = cbbPalette) +
+  guides(colour = guide_legend(override.aes = list(size=3, alpha=1)),
+         linetype = guide_legend(override.aes = list(size = 3))) +
+labs(title="Weight-for-length (WFL) growth trajectories",
+       subtitle = "Pooled sample, by adjustment status",
+       caption="Note: Dotted lines represent curves in analyses adjusting for sex of child (for pooled sample), randomization status, and socioeconomic status.",
+       x="Age (months)",
+       y="g/cm") 
+
+#aha.2018.m2.plottraj
+
+
+# Export mean dat so I can combine with adjusted estimates
+save(cp.wide2.pu, file="../presentations/aha-2018-m2/figures/plot-unadj.Rdata")
+
+```
+
+\begin{landscape}
+
+```{r, results='markup', eval=T}
+
+# Parameters for the growth classes
+
+# names(cp.wide)
+
+cp.wide.l = melt(cp.wide[c("sex", "outcome", "class.order", "adj",
+                           "I", "S", "Q")], 
+                 id = c("sex", "outcome", "class.order", "adj"))
+
+cp.wide.extra <- dcast(cp.wide.l,
+                 sex + outcome + class.order ~ variable + adj, 
+                 value.var="value")
+
+kable(cp.wide.extra,
+      booktabs=T,
+      format="latex",
+      longtable=T,
+      row.names=F,
+      escape=F,
+      caption='(MS2: Table 3) Parameters for the growth classes\\label{tab:paramvals}',
+      col.names = c("Sex of child", "Trajectory type", "Class Order", 
+                    rep(c("Not adjusted", "Adjusted$^a$"),3))) %>%
+    collapse_rows(columns=1:2) %>%
+    add_header_above(c("Categories"=3, "Intercept"=2, "Slope"=2, "Quadratic"=2)) %>%
+    kable_styling(bootstrap_options = c("striped"), 
+                latex_options=c("HOLD_position", "scale_down", "repeat_header")) %>%
+  add_footnote("Adjusted for sex of child in pooled sample, randomization status, breastfeeding at six months, and socioeconomic status.", notation="alphabet")
+
+```
+
+\clearpage
+\newpage
+
+```{r nums, results='markup', tab.cap='(MS2: Table 4) Pairwise growth class differences in lipid distal outcome. (mg/dL)'}
+
+# Estimated pairwise differences in distal lipid outcome by latent growth classes by stratification status, type of lipid distal outcome and adjustment status
+
+
+distal.wide2[is.na(distal.wide2)==T]="--" # get rid ef missing values
+
+#distal.wide2$outcome = factor(distal.wide2$outcome, 
+#                              labels=c("Length", "Weight", "WFL"))
+
+kable(distal.wide2[, -c(3)], 
+      escape=F,
+      booktabs=T,
+      format="latex",
+      longtable=T,
+      caption='(MS2: Table 4) Pairwise growth class differences in lipid distal outcome. (mg/dL)\\label{tab:ms2-diffs}',
+      col.names = c("sex", "outcome", "lipid",
+                     rep(c("Not adjusted", "Adjusted$^a$"), 4))) %>%
+  collapse_rows(columns = 1:3) %>%
+  add_header_above(c("Categories"=3, "Low vs Medium"=2,
+                     "Low vs High"=2, "Medium vs High"=2, 
+                     "Overall test: p-value, (Chi-sq, df)"=2)) %>%
+  kable_styling(latex_options=c("HOLD_position", "scale_down", "repeat_header"),
+                font_size=6) %>%
+  footnote(alphabet="Adjusted for sex of child in pooled sample, randomization status, breastfeeding at 6 months, and socioeconomic status.")
+
+```
+
+```{r, results='markup'}
+
+# Mean lipid values by class and type of distal outcome
+
+# NOTE: All of the following values are in mg/dL for the most likely latent growth class. 
+
+#colnames(mean.wide)
+mean.wide2[is.na(mean.wide2)==T]="--" # get rid ef missing values
+
+kable(mean.wide2, 
+      booktabs=T,
+      format="latex",
+      escape=F,
+      longtable=T,
+      caption='(MS2: Table 5): Mean distal lipid value by growth class and type of growth measure\\label{tab:ms2t2}',
+      col.names = c("Sex", "Outcome", "Lipid",
+                    rep(c("Not adjusted", "Adjusted$^a$"), 3))) %>%
+  collapse_rows(columns= c(1:2)) %>% # need to fix; , latex_hline = "major"
+  add_header_above(c("Categories"=3, "Low"=2, "Medium"=2, "High"=2)) %>%
+  add_header_above(c(" "=3, "Latent Class Groups"=6)) %>%
+  kable_styling(latex_options=c("HOLD_position", "repeat_header", "scale_down"), font_size=7) %>%  
+  footnote(alphabet="Adjusted for sex of child in pooled sample, randomization status, breastfeeding at 6 months, and socioeconomic status.")
+
+
+```
+
+\clearpage
+\newpage
+
+
+```{r, results='markup'}
+cc.wide.s[is.na(cc.wide.s)==T]="--" # get rid of missing values
+
+kable(cc.wide.s, 
+      booktabs=T,
+      format="latex",
+      row.names=F,
+      col.names = c("Sex of child", "Trajectory type", rep(c("Not adjusted", "Adjusted"), 3)),
+      caption='(MS2: Table 6) Counts of people in each latent class, n') %>%
+  kable_styling(bootstrap_options = c("striped"), 
+                latex_options=c("HOLD_position")) %>%
+  collapse_rows(columns = 1:2) %>%
+  add_header_above(c("Categories"=2, "Low"=2, "Medium"=2, "High"=2))
+```
+
+
+\end{landscape}
+
+
+\clearpage
+\newpage
+
+# Figures
+
+
+```{r, fig.cap = "(MS2: Figure 1) Growth trajectories by type of trajectory, sex of child and adjustment status.\\label{fig:ms2f1}", fig.pos="H"}
+
+## Most likely latent class trajectories by sex of child, distal outcome and adjustment status
+
+plot.traj + labs(
+       caption="Note: Dotted lines represent curves in analyses adjusted for sex of child (for pooled sample), breastfeeding at six months,  randomization status and socioeconomic level.",
+       x="Age (months)",
+       y="units for growth trajectory measure") 
+
+```
+
+
+\clearpage
+\newpage
+
+
+```{r}
+
+# Plot of mean lipid values by class and type of distal outcome
+
+
+# get mean distal outcome estimates by growth classes
+id.v = c( "sex", "adj", "outcome", "LatentClass", "lipid")
+
+head(combine.means.merge[,c(id.v, "est", "se")])
+names(combine.means)
+
+plot.mean.dat = combine.means[,c(id.v, "est", "se")]
+sapply(plot.mean.dat, class)
+
+head(plot.mean.dat)
+
+```
+
+
+```{r, fig.cap="Plot of mean lipid values by class and type of distal outcome by type of trajectory, lipid outcome, sex of child, and adjustment status\\label{fig:ms2f2}", fig.pos="H"}
+
+
+## Mean distal lipid values for most likely latent class trajectories by sex of child, distal outcome and adjustment status
+
+pd <- position_dodge(0.8) # move them 0.8 to the left and right
+
+names(plot.mean.dat)
+names(cp.wide)
+
+levels(factor(plot.mean.dat$lipid))
+plot.mean.dat$lipid = factor(plot.mean.dat$lipid, 
+                             labels = c("HDL-C", "LDL-C", "log(TG)", "TG:HDL ratio"))
+plot.mean.dat2 = merge(plot.mean.dat,
+                       cp.wide[c("sex", "adj", "outcome", "LatentClass", "class.order")],
+                       by = c("sex", "adj" , "outcome", "LatentClass"))
+names(plot.mean.dat2)
+head(plot.mean.dat2)
+
+all.means = ggplot(plot.mean.dat2[plot.mean.dat2$est>0 & !(is.na(plot.mean.dat2$se)==T),],
+       aes(x=class.order, y=est, color=class.order, shape=adj)) +
+  facet_grid(lipid ~ sex + outcome, scale='free') + # label_parsed allows greek symbols in the strip text
+    geom_errorbar(aes(ymin=est-1.96*se, ymax=est+1.96*se), 
+                  width=.1, position=pd, size=1.5) +
+    geom_point(position=pd, size=4) +
+  scale_color_manual("Latent Class Groups", values = cbbPalette) +
+  scale_shape_manual("Adjusted", values = c(0,15)) +
+  ylab("Mean lipid values (mg/dL)") +
+  xlab("Latent class groups") +
+  theme_bw(base_size=15) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        strip.background =element_rect(fill="white"),
+        legend.position = "bottom",
+        plot.caption = element_text(size = 10, hjust = 0.5)) +
+        # strip.placement = "outside",
+        # strip.background = element_blank(),
+        # #element_rect(fill=NA,colour="grey50"),
+        # panel.spacing=unit(0,"cm"),
+        # panel.border = element_rect(fill=NA, colour = "black"))
+ labs(caption="Note: Adjusted analyses includes sex of child (for pooled sample), randomization status, and socioeconomic status.")
+
+all.means
+
+# export figure for AHA 2018 m2 pres slides
+
+png(file="../presentations/aha-2018-m2/figures/aim2-all-compare.png", height=12, width=16, units='in', res=300)
+  all.means + theme_bw(base_size=20) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1),
+          plot.caption = element_text(size = 10, hjust = 0.5),
+          strip.background =element_rect(fill="white"),
+        legend.position = "bottom")
+dev.off()
+
+
+```
+
+
+\clearpage
+\newpage
+
+
+
+```{r, fig.cap="Plot of mean lipid values for WFL trajectories and LDL-C lipid outcome by latent growth class", fig.pos="H"}
+
+## WFL and LDL: Mean distal lipid values for most likely latent class trajectories by sex of child, distal outcome and adjustment status
+
+
+# plot for export to aha 2018 slides
+# -----------------------------------
+aha.2018.m2.plotmeans = 
+ggplot(plot.mean.dat2[plot.mean.dat2$est>0 & plot.mean.dat2$outcome=="WFL" & plot.mean.dat2$lipid=="LDL-C",],
+       aes(x=class.order, y=est, color=class.order, shape=adj)) +
+  facet_grid(lipid ~ sex + outcome, scale='free') + # label_parsed allows greek symbols in the strip text
+    geom_errorbar(aes(ymin=est-1.96*se, ymax=est+1.96*se), 
+                  width=.1, position=pd, size=1.5) +
+    geom_point(position=pd, size=4) +
+  scale_color_manual("Latent Class Groups", values = cbbPalette) +
+  scale_shape_manual("Adjusted", values = c(0,15)) +
+  ylab("Mean lipid values (mg/dL)") +
+  xlab("Latent class groups") +
+  theme_bw(base_size=20) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        strip.background =element_rect(fill="white"),
+        legend.position = "bottom",
+        plot.caption = element_text(size = 10, hjust = 0.5))
+
+aha.2018.m2.plotmeans +
+  labs(caption="Note: Adjusted analyses include sex of child (for pooled sample), randomization status, and socioeconomic status.") 
+
+# export figure for AHA 2018 m2 pres slides
+
+png(file="../presentations/aha-2018-m2/figures/aim2-wfl-ldl.png", height=4, width=7, units='in', res=300)
+  aha.2018.m2.plotmeans
+dev.off()
+
+```
+
+
+\clearpage
+\newpage
+
+<!-- # Appendix -->
+
+<!-- see https://tex.stackexchange.com/questions/118606/numbering-tables-a1-a2-etc-in-latex -->
+
+<!-- \begin{landscape} -->
+
+<!-- \setcounter{table}{0} -->
+<!-- \renewcommand{\thetable}{A\arabic{table}} -->
+
+<!-- ```{r, results='markup'} -->
+
+<!-- ## Nonlinear mixed effects model fit evaluation: BIC for all evaluated models -->
+
+<!-- # load the data from /paper1/sitar-rev5/fit-summary.Rmd -->
+<!-- # for bic -->
+
+<!-- load(file="../bic-fit.Rdata") # t2 data frame -->
+
+<!-- vars.t = c("traj", "model.id", "model.description", "bic.bold2") -->
+<!-- t2.sub = t2[vars.t] -->
+
+<!-- kable(t2.sub, -->
+<!--       format="latex", -->
+<!--       longtable=T, -->
+<!--       escape=F, -->
+<!--       booktabs=T,  -->
+<!--       caption="Nonlinear mixed effects model fit evaluation: BIC for all evaluated models", -->
+<!--       col.names=c("Trajectory type", "Model ID", "Model description", "BIC$^a$")) %>% -->
+<!--   collapse_rows(col=1) %>% -->
+<!--   kable_styling(latex_options=c("striped", "scale_down", "repeat_header"), font_size=9) %>% # "repeat_header" "scale_down", -->
+<!--   footnote(alphabet="Bold values indicate lowest value within a trajectory evaluation.") -->
+
+
+<!-- ``` -->
+
+<!-- \clearpage -->
+<!-- \newpage -->
+
+
+
+<!-- ```{r, results='markup', eval=T} -->
+<!-- ## Model variance and covariance for random effects of all evaluated models -->
+
+<!-- # load the data from /model-fit/fit-summary.Rmd -->
+<!-- load(file="../vc-fit.Rdata") # vc.all data  -->
+
+<!-- kable(vc.all[c("traj", "model.id", "model description", "names", "Variance", "StdDev", "Corr")], -->
+<!--       format="latex", -->
+<!--       booktabs=T, escape=F, -->
+<!--       col.names=c("Trajectory type", "Model id", "Model type", "random effect", "Variance", "SD", "Correlation"), -->
+<!--       caption="Model variance and covariance for random effects of all evaluated models", -->
+<!--       longtable=T, -->
+<!--       row.names=F) %>% -->
+<!--   kable_styling(latex_options=c("striped", "scale_down", "repeat_header"), font_size=9) %>% -->
+<!--   collapse_rows(col=c(1:3))#, latex_hline=c("major")) #, font_size=9 -->
+
+<!-- ``` -->
+
+<!-- \clearpage -->
+<!-- \newpage -->
+
+
+
+<!-- ```{r lgmm-fit} -->
+
+<!-- ## Fit statistics for the LGMM model -->
+
+<!-- load(file="fit-lgmm-pooled.Rdata") # contains fit.wt data frame from ~\GitHub\unc-dissertation-markdown-p2\includes\scripts\paper1\lgmm\virtuallab\pooled-fit\summarize-mplus-results-sex-pooled.Rmd -->
+
+
+<!-- fit.wt$outcome = factor(fit.wt$outcome, labels=c("Height", "WFL", "Weight")) -->
+
+<!-- # see https://stackoverflow.com/questions/9063889/how-to-round-a-data-frame-in-r-that-contains-some-character-variables -->
+
+<!-- round_df <- function(df, digits) { -->
+<!--   nums <- vapply(df, is.numeric, FUN.VALUE = logical(1)) -->
+
+<!--   df[,nums] <- round(df[,nums], digits = digits) -->
+
+<!--   (df) -->
+<!-- } -->
+
+<!-- #sapply(fit.wt, class) -->
+<!-- #names(fit.wt) -->
+
+<!-- fit.wt[,c(3:6)] = apply(fit.wt[,c(3:6)], 2, function(x) as.numeric(as.character(x))) -->
+<!-- fit.wt = round_df(fit.wt[], digits=0) -->
+<!-- ``` -->
+
+<!-- ```{r, results='markup'} -->
+<!-- # TO DO: need to re-run with reduced sample size (on Linux server?) -->
+<!-- # ------------------------------------------------------------------- -->
+
+<!-- kable(fit.wt, booktabs=T, -->
+<!--       format="latex", -->
+<!--       col.names =  c("Outcome", "Number of classes", rep(c("quadratic", "cubic"), 6)), -->
+<!--       caption='LGMM fit statistics by type of outcome, pooled sample', -->
+<!--       row.names = F) %>% -->
+<!--    add_header_above(c(" "=2, "AIC"=2, "aBIC"=2, "BLRT: chi-sq (df); p-value"=2, "VLMR: chi-sq (df); p-value"=2, -->
+<!--                       "Entropy"=2, "Observations"=2)) %>% -->
+<!--   kable_styling(latex_options = c("HOLD_position", "scale_down") )%>% -->
+<!--   collapse_rows(columns = 1:2, latex_hline = "major") -->
+
+
+<!-- ``` -->
+
+<!-- \end{landscape} -->
+
+<!-- TO DO: Include these figures in a separate document.... -->
+
+<!--
+# Type of analysis (taken from [statistical analysis plan](sap2.html))
+
+
+## SEM diagram for unadjusted (pooled) analyses
+
+![Diagram of unadjusted LGMM for aim 2\label{lgmm1}](../../figures/aim2-pool-unadj.png){ width=70% }
+
+\clearpage
+
+## SEM diagram for adjusted (pooled) LGMM analyses
+
+![Diagram of adjusted LGMM for aim 2\label{lgmm1}](../../figures/aim2-pool-conf2.png){ width=70% }
+
+\clearpage
+
+## SEM diagram for adjusted (pooled) LGMM analyses for ratios (and correlations)
+
+![Diagram of LGMM for aim2](../../figures/aim2-cfa-pooled-bch.png){#fig:lgmm1}
+
+-->

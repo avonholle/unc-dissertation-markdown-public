@@ -1,0 +1,964 @@
+---
+title: "Association between SITAR growth parameters and lipid levels, with imputation"
+author: "Ann Von Holle"
+date: '`r format(Sys.time(), "%d %B, %Y")`'
+output:
+  html_document:
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+    number_sections: yes
+  pdf_document:
+    number_sections: yes
+    toc: yes
+    toc_depth: 3
+header-includes: \usepackage{hyperref, booktabs, longtable, float}\hypersetup{colorlinks=true,
+  linkcolor=blue,filecolor=magenta,urlcolor=cyan}
+classoption: landscape
+bibliography: ../../bib/lit-review.bib
+---
+
+<!-- NOTES to self: need to follow up on mice for adjusted models. about 7% missing for graffar. -->
+
+```{r setup1, include=FALSE}
+knitr::opts_chunk$set(fig.width=8, fig.height=8,
+                      echo=FALSE, warning=FALSE,
+                      message=FALSE, 
+                      results='hide',
+                      comment=NA)
+
+
+knitr::opts_knit$set(root.dir = "~/Github/unc-dissertation-markdown-p2/includes/scripts/paper2")
+#knitr::opts_knit$set(root.dir = "~/dissertation/unc-dissertation-markdown-p2/includes/scripts/paper2")
+```
+
+```{r}
+require(knitr)
+require(tableone)
+require(htmlTable)
+require(Hmisc) 
+require(ggplot2)
+require(reshape2)
+require(nlme)
+require(splines)
+require(sitar)
+require(foreach)
+require(data.table)
+require(mice)
+require(kableExtra)
+require(plyr)
+```
+
+
+<!-- Read in imputed data, imp -->
+
+```{r, child='table3-data-handle-weight-impute.Rmd', eval=F}
+# This chunk borrowed from ../paper1/table2-mice.Rmd
+
+```
+
+
+
+```{r}
+
+# This chunk borrowed from ../paper1/table2-mice.Rmd
+
+# for analyses see 
+#1) https://stackoverflow.com/questions/24872668/multiple-imputation-of-longitudinal-data-in-mice-and-statistical-analyses-of-obj and
+#2) https://stackoverflow.com/questions/26667162/perform-operation-on-each-imputed-dataset-in-rs-mice
+
+# read in data
+setwd("~/")
+load("imp-dat.Rdata") # contains the imp object from mice package in ../paper1/table3-data-handle-weight-impute.Rmd
+
+# NOTE: the imp-dat-rev.Rdata object contains info from first year sample so has more, n>1400
+# for ms we are only looking at year 17 sample so do not need entire sample.
+
+# make a list of data frames by imputation number
+
+count.imp. =  complete(imp, action="long", include=TRUE)
+count.imp = length(unique(count.imp.$.imp))-1; count.imp
+
+orig.data = count.imp.[count.imp.$.imp==0,]
+nrow(orig.data) # 602
+
+imp.data <- as.list(1:count.imp)
+for(i in 1:count.imp){
+  imp.data[[i]] <- complete(imp, action=i)
+}
+
+test = imp.data[[2]]
+test[test$id==98,]
+
+names(imp.data[[1]])
+summary(test)
+head(imp.data[[1]])
+nrow(imp.data[[1]]) #602
+
+```
+
+```{r, eval=T}
+
+# read in data
+setwd("~/")
+
+load("re-wt.Rdata") # (re.vals.df, has wt random effects from sitar model (see table2-mice.Rmd in paper1 folder (note that that the sitar-rev5/table2-mice.Rmd file has >1000 obs from first year sample)
+
+# NOTE: re-wt-rev.Rdata has obs from first year sample, not re-wt.Rdata. I only need the 602 from the 17 year sample.
+
+re.wt = re.vals.df
+colnames(re.wt)
+colnames(re.wt) = c("alpha0.wt", 'beta0.wt', 'beta1.wt', 'id')
+nrow(re.wt)  # 602
+
+load("re-ht.Rdata") # TO DO: go back and check that my interp for velocity is correct.
+re.ht = re.vals.df
+colnames(re.ht)
+colnames(re.ht) = c("beta0.ht", "beta1.ht", 'id')
+
+load("re-wfl.Rdata")
+re.wfl = re.vals.df
+colnames(re.wfl)
+names(re.wfl)
+colnames(re.wfl) = c("alpha0.wfl", "beta0.wfl", 'id')
+
+head(re.wt)
+head(re.wfl)
+head(re.ht)
+
+# year 1 cohort data
+# bring in phenotype data from descriptive_statistics.Rmd
+load("merged-data.Rdata") # data frame is merge1
+nrow(merge1) # 602
+names(merge1)
+#str(merge1)
+
+```
+
+
+
+```{r}
+# load data for imputing graffar index, from Descriptive2.Rmd
+setwd("~/")
+load(file="../Dropbox/unc.grad.school/dissertation/data/20171201/graffar-details.Rdata") # yr0.dat, new.names, graffar.vars, graffar.vars2
+
+head(yr0.dat)
+
+```
+
+
+```{r}
+
+# This chunk borrowed from ../paper1/table2-mice.Rmd
+
+
+# ------------------------------------------------
+# Merge the random effects with each imputation (one row per id)
+# ------------------------------------------------
+
+imp.fit = lapply(imp.data, FUN=function(x){
+
+  # tryCatch({ # tryCatch function will return a missing value for iterations that don't work
+  
+   # x = imp.data[[1]] # debug
+   # x = orig.data
+  
+   # convert back to numeric to make score
+
+                     #x[,graffar.vars] = apply(x[,graffar.vars], 2, 
+                    #                          function(x) as.numeric(as.character(x)))
+                     
+                     # make graffar index -- summing values
+#                     x$graffar.index2 = apply(x[graffar.vars], 1, sum)
+                     x$Sex.f = ifelse(x$Sex==1, "Male", "Female")
+
+  # NEED to  figure this out...
+                     # LEFT off here....
+    out.vars = c('HDLchlstrl', 'LDLChlstrl', 'trg.mg.dL.', 
+                 'GestatnlAg', 'stillbf6',
+                 'Sex.f', 'milkcode', graffar.vars2) # Note: there is a graffar index from the 2014 data, Descriptive.Rmd -- slightly different than the ond derived from the 2017 version.
+    #out.vars %in% names(x)
+    
+    #'Ttlchlstrl'
+
+    # 3. make data frame
+    
+      re.vals.merge = merge(re.wt, x[c("id", out.vars)], by = "id")
+
+      re.vals.merge = merge(re.vals.merge, re.ht, by = "id")
+      re.vals.merge = merge(re.vals.merge, re.wfl, by = "id")
+
+      # scale variables
+      re.vals.merge$GestatnlAg.center = scale(re.vals.merge$GestatnlAg, scale=F)
+      #re.vals.merge$v.momage.i.scale = scale(re.vals.merge$v.momage.i, scale=F)
+      
+      lipid.names = c("hdl", "ldl", "tg")
+      colnames(re.vals.merge)[which(colnames(re.vals.merge) %in% c( "HDLchlstrl", "LDLChlstrl", "trg.mg.dL." ))] = lipid.names
+      
+      re.vals.merge$log.tg = log(re.vals.merge$tg)
+      
+     # graffar index for baseline data
+     # convert back to numeric to make score
+#       re.vals.merge[,graffar.vars] = apply(re.vals.merge[,graffar.vars], 2, 
+#                              function(x) as.numeric(as.character(x)))
+                     
+     # make graffar index -- summing values
+ #      re.vals.merge$graffar.index = apply(re.vals.merge[graffar.vars], 1, sum)
+
+
+      # make factors
+      re.vals.merge$Sex.f = factor(re.vals.merge$Sex, labels=c("male", "female"))
+      
+      # Take out lipids that exceed 5 sd (taken from ../paper1/descriptive_statistics.Rmd file)
+      outdet <- function(x) abs(scale(x)) >= 5
+      lipid.vars = c('hdl', 'ldl', 'tg')
+      names(re.vals.merge)
+      nrow(re.vals.merge) # 602
+    
+        #index with the function to remove values more than x sd from mean
+        re.vals.merge.2 = re.vals.merge[!apply(sapply(re.vals.merge[lipid.vars], outdet), 1, any), ] 
+        nrow(re.vals.merge.2) # 596 (removed 1-596/602 = 1% of sample)
+        
+        names(re.vals.merge.2)
+        # make revised graffar after imputation
+        re.vals.merge.2$graffar.index = rowSums(re.vals.merge.2[graffar.vars2])
+        
+        summary(re.vals.merge.2)
+        
+        
+
+      return(re.vals.merge.2)
+      
+          #  },
+          #   error = function(err) {return()} # return NULL on error
+          # )
+})
+
+# imp.fit object is a list of data frames, each having an imputed data set and matching outcome values (wt, ht, and wfl)
+
+
+```
+
+
+```{r}
+
+# Create formulas for regression models
+# ------------------------------------------
+names(imp.fit[[1]])
+
+# list of exposures and outcomes
+outs = c("hdl", "ldl", "log.tg")
+
+covs = list("alpha0.wt", "beta0.wt", "beta1.wt", 
+            'beta0.ht', 'beta1.ht', "alpha0.wfl", "beta0.wfl")
+
+# standardize the r.e.
+# see https://stackoverflow.com/questions/23619188/r-scaling-numeric-values-only-in-a-dataframe-with-mixed-types
+
+
+formlist =  lapply(covs, function(l) 
+  lapply(outs, function(k) 
+    formula(paste(k, paste(l, 
+                           paste(c('Sex.f', 'milkcode', "GestatnlAg.center", "graffar.index", 'stillbf6'),
+                                 collapse="+"),
+                           sep="+"),
+                  sep="~")
+            )
+    )
+  )
+forms = unlist(formlist)
+forms[[1]]
+
+# unadjusted analyses (except for sex of child)
+formlist.un =  lapply(covs, function(l) 
+  lapply(outs, function(k) 
+    formula(paste(k, paste(l, c('Sex.f'), sep="+"),
+                  sep="~")
+            )
+    )
+  )
+
+forms.un = unlist(formlist.un)
+forms.un[[1]]
+
+
+# for sex-stratified analyses
+# ----------------------------------------
+formlist.nos =  lapply(covs, function(l) 
+  lapply(outs, function(k) 
+#  formula(paste(k, paste(l), sep="~"))))
+  formula(paste(k, paste(l, 
+                         paste(c('milkcode', "GestatnlAg.center", "graffar.index", "stillbf6"),
+                               collapse="+"),
+                         sep="+"), sep="~"))))
+forms.nos = unlist(formlist.nos)
+forms.nos[[1]] # check
+
+formlist.nos.un =  lapply(covs, function(l) 
+  lapply(outs, function(k)
+    formula(paste(k, paste(l), sep="~"))))
+forms.nos.un = unlist(formlist.nos.un)
+forms.nos.un[[1]] # check
+```
+
+
+```{r}
+
+# Imputation algorithms taken from ../paper1/table2-mice.Rmd
+
+# Make a function to run and extract out the models (adj and unadj) on the pooled data frame
+
+# run over all adjusted models, pooling by sex of child
+get.pooldat = function(models) {
+  
+
+  # models = forms # debug
+    imp.fit.reg.nos = 
+          lapply(models, function(i) {
+             s1 = summary(pool(as.mira(
+              lapply(imp.fit, FUN=function(x) m1 = lm(i, data=x))
+              ))) # NOTE: should look through this object separately for diagnostics         
+             
+          exposure = sapply(strsplit(paste(i)[[3]]," +"), "[", 1) # take first covariate from right hand side of regression model
+          
+             df1 = data.frame(outcome = paste(i)[[2]],
+                              form = substr(paste(i)[[3]],1,30),
+                              cov1 = exposure,
+                              coef = s1[2,1], 
+                              se = s1[2,2],
+                              lci = s1[2,6],
+                              uci = s1[2,7],
+                              pval = s1[2,5])
+           
+             return(list(s1, df1))
+          }
+             )
+    
+      imp.fit.reg.nos[[1]]
+    
+        # extract out results from the lists produced in lapply step above
+        # first, make a list of 2nd element from each nested list
+        imp.fit.reg.nos.2 = lapply(imp.fit.reg.nos, function(x) x[[2]])
+        imp.fit.reg.nos.2[[1]]  # check
+        
+        reg.1.df = do.call(rbind.data.frame, imp.fit.reg.nos.2)
+        reg.1.df
+        
+        # checks
+        reg.1.df$long.var = with(reg.1.df,
+                                 ifelse(grepl(".wt", cov1)==T,
+                                           "Weight",
+                                   ifelse(grepl(".wfl", cov1)==T, 
+                                          "WFL", 
+                                          ifelse(grepl(".ht", cov1)==T,
+                                                 "Height", NA))))
+        
+      table(reg.1.df$long.var)
+
+      reg.1.dt = data.table(reg.1.df)
+        reg.1.dt
+        
+        reg.1.dt[, p.val.adjust := p.adjust(pval, method='fdr'), by=c('long.var')]
+        reg.1.dt$p.val.sig = ifelse(reg.1.dt$p.val.adjust<0.05, 1, 0)
+        reg.1.dt
+        names(reg.1.dt)
+        
+        # rename for table below
+        keep.vars = c("outcome", "cov1", "coef", "se", "long.var", "p.val.adjust")
+        new.names = c("Lipid outcome", "growth param",
+                      "coefficient", "se", "size var", "adjusted p-value")
+        reg.1.dt.out = data.frame(reg.1.dt)[keep.vars]
+        colnames(reg.1.dt.out) = new.names
+        
+        # relabels growth param names
+        levels(factor(reg.1.dt.out$`growth param`))
+        reg.1.dt.out$`growth param` = factor(reg.1.dt.out$`growth param`)
+        levels(reg.1.dt.out$`growth param`) = list(Size=c("alpha0.wt",
+                                                          "alpha0.wfl"),
+                                                           Tempo=c("beta0.wt",
+                                                                   "beta0.ht",
+                                                                   "beta0.wfl"),
+                                                           Velocity=c("beta1.wt",
+                                                                      "beta1.ht"))
+        levels(reg.1.dt.out$`growth param`) # check
+        
+            
+        # see https://stackoverflow.com/questions/9063889/how-to-round-a-data-frame-in-r-that-contains-some-character-variables
+        reg.1.dt.out = data.frame(lapply(reg.1.dt.out, function(y) if(is.numeric(y)) round(y, 2) else y)) 
+
+        return(reg.1.dt.out)
+}
+
+
+# Run the pooled UNadjusted model here
+reg.1.dt.out.un = get.pooldat(forms.un)
+str(reg.1.dt.out.un)
+reg.1.dt.out.un$adj="no"
+reg.1.dt.out.un$`Sex of child`="all"
+
+# Run the pooled ADJUSTED model here
+reg.1.dt.outt = get.pooldat(forms)
+str(reg.1.dt.outt)
+head(reg.1.dt.outt)
+reg.1.dt.outt$adj="yes"
+reg.1.dt.outt$`Sex of child`="all"
+
+```
+
+
+```{r}
+
+# some checks
+
+# checking one model to make sure values are same in apply loop compared to manually configuring model
+# ===================================
+
+test.m = lm(log.tg ~ alpha0.wfl + GestatnlAg.center + graffar.index + 
+    stillbf6, data=imp.fit[[1]]) # this data frame doesn't have milkcode
+summary(test.m) # confirm using all data
+nrow(imp.fit[[1]]) # 597
+
+#  get observed data from imputed data frame
+
+obs.0 =  complete(imp, action="long", include=TRUE)
+obs.0 = obs.0[obs.0$.imp==0,]
+names(obs.0)
+summary(obs.0)
+
+mg1 = merge(obs.0, re.wfl, by = "id")
+mg1$log.tg = log(mg1$trg.mg.dL.)
+mg1$GestatnlAg.center = scale(mg1$GestatnlAg, scale=F)
+
+summary(mg1)
+
+test.m2 = lm(log.tg ~ alpha0.wfl +  GestatnlAg.center + graffar.index + 
+    stillbf6, data=mg1)
+summary(test.m2) # confirm about 51 observation deleted in a complete case analysis of 596 missing (around 10%)
+    
+```
+
+
+
+# Models pooling over sex of child
+
+The results below are estimates of association between SITAR growth parameteres for children ages 0 to 5 months and lipid levels at an average age of 17 years. All models were selected after [evaluations of fit](../paper1/table3-w-fcns.pdf) done in section 4 of [aim 1 results](../../../../diss/ms1-analyses).
+
+These models are outlined in the [statistical analysis plan for the second manuscript](../includes/scripts/paper2/sap2.html). In short, the coefficients below indicate the association between the SITAR infant growth parameters and lipid values measured at a mean age of 17 years. All p-values are adjusted using the FDR method.
+
+Interpretation of a coefficient is as follows: For HDL as an outcome and height velocity as a covariate, the coefficient of -11.35 indicates for a unit increase in height velocity there is more than an 11 point decline in HDL (mg/dL), indicating faster height change in infants ages 0-5 months is associated with adverse values of HDL (lower values of HDL). Similarly, for a unit change in height velocity, there is more than 20 point increase in LDL, indicating an adverse outcome associated with faster height change in infants ages 0 to 5 months.
+
+There is evidence to support pooling observations by sex of child instead of stratifying by sex of child given lack of differences in the coefficients by sex of child (the last part of the results shown here). With the SITAR model approach the growth trajectory is sex-specific so even if data are combined with both males and females their growth values are sex-specific given the way the growth parameters were modeled with sex-specific growth trajectories. 
+
+After adjusting for possible type I error inflation with the FDR correction, there does appear to be a signal with change in height and lipid values when pooling across sex of child.
+
+## Coefficients for regression models
+
+```{r}
+
+reg.1.dt.out = rbind.fill(reg.1.dt.outt,
+                          reg.1.dt.out.un)
+
+kable(reg.1.dt.out)
+
+head(reg.1.dt.out)
+reg.1.dt.out = within(reg.1.dt.out, {
+  coef.se = ifelse(adjusted.p.value<0.05, 
+                   paste0("**", coefficient, " (", se, ")**"),
+                   paste0(coefficient, " (", se, ")")
+                   )
+})
+
+names(reg.1.dt.out)
+
+head(reg.1.dt.out)
+head(table(reg.1.dt.out$adjusted.p.value))
+
+reg.1.wide <- dcast(reg.1.dt.out,
+                    size.var + Lipid.outcome ~ growth.param + adj, 
+                    value.var="coef.se")
+reg.1.wide
+
+```
+
+
+```{r, results='markup'}
+
+kable(reg.1.wide, 
+      booktabs=T,
+      format="html",
+      caption='Coefficient (se)',
+      col.names = c("Outcome", "Lipid", 
+                     rep(c("no", "yes"), 3))) %>%
+  collapse_rows(columns = 1:2, latex_hline = "major")  %>%
+  kable_styling(bootstrap_options = c("striped")) %>%
+  add_header_above(c( " "=2, "Size"=2, "Tempo"=2, "Velocity"=2)) %>%
+  add_footnote("Bold values indicate statistical significance at FDR=0.05")
+
+```
+
+## Plot of coefficients with 95% confidence intervals
+
+```{r, eval=T}
+
+reg.1.df = data.frame(reg.1.dt.out)
+head(reg.1.df)
+
+# The errorbars overlapped, so use position_dodge to move them horizontally
+levels(factor(reg.1.df$Lipid.outcome))
+levels(factor(reg.1.df$growth.param))
+
+reg.1.df$outcome.f = factor(reg.1.df$Lipid.outcome, 
+                             label = c("HDL", 
+                                       "LDL",
+                                       #"TC", 
+                                       "log(TG)"))
+
+# cov1.f is growth.param
+levels(reg.1.df$growth.param)
+# outcome.val is size.var
+levels(reg.1.df$size.var)
+
+
+# The errorbars overlapped, so use position_dodge to move them horizontally
+pd <- position_dodge(0.5) # move them .05 to the left and right
+
+# color palette for color blind
+# The palette with black:
+# from http://www.cookbook-r.com/Graphs/Colors_(ggplot2)/#a-colorblind-friendly-palette
+# The palette with grey:
+cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+
+
+ggplot(reg.1.df, 
+       aes(x=growth.param, y=coefficient, colour=growth.param, shape=adj)) +
+  facet_grid( outcome.f ~ size.var, scale='free', labeller = label_parsed) +# label_parsed allows greek symbols in the strip text
+    geom_errorbar(aes(ymin=coefficient-1.96*se, 
+                      ymax=coefficient+1.96*se), width=.1, position=pd) +
+  geom_point(position=pd, size=3) +
+  scale_color_manual("Growth parameters", values = cbbPalette,
+                     guide=F) +
+  scale_shape_manual("Adjusted", values = c(0,15)) +
+  theme_bw(base_size=18) +
+  ylab("mg/dL") +
+  xlab("Exposure") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+       strip.text.y = element_text(size = 14),
+       legend.position="bottom") +
+  geom_hline(yintercept = 0, color="blue", lty=3)
+
+```
+
+
+# Models stratified by sex of child
+
+```{r}
+
+# get values over which the regression models were iterated.
+# ------------------------------------------------------------
+    sex.levels = levels(imp.fit[[1]]$Sex.f); sex.levels
+    names.list = lapply(sex.levels, 
+                        function(j) 
+                          lapply(formlist, function(i) paste(i,":",j))
+                        )
+    names.list  #check
+
+# run models over gender groups and formulas
+    
+    
+
+# run over all adjusted models, pooling by sex of child
+get.stratdat = function(models) {
+  
+  # models = forms.nos.un # debugging
+
+  reg.2 = lapply(sex.levels, function(j) {
+  
+            lapply(models, function(i) {
+               s1 = summary(pool(as.mira(
+                lapply(imp.fit, FUN=function(x) m1 = lm(i, data=x[x$Sex.f==j,]))
+                ))) # NOTE: should look through this object separately for diagnostics         
+             
+          exposure = sapply(strsplit(paste(i)[[3]]," +"), "[", 1) # take first covariate from right hand side of regression model
+          
+             df1 = data.frame(outcome = paste(i)[[2]],
+                              Sex.f = paste(j),
+                              form = substr(paste(i)[[3]],1,30),
+                              cov1 = exposure,
+                              coef = s1[2,1], 
+                              se = s1[2,2],
+                              lci = s1[2,6],
+                              uci = s1[2,7],
+                              pval = s1[2,5])
+           
+             return(list(s1, df1))
+          })
+             })
+    
+      reg.2[[1]]
+    
+        # extract out results from the lists produced in lapply step above
+        # first, make a list of 2nd element from each nested list
+      
+          # extract out results from the lists produced in lapply step above
+    reg.2.unlist = unlist(reg.2, recursive=F) # need to do this extra step because now nested by sex of child.
+    reg.2.unlist.2 = lapply(reg.2.unlist, function(x) x[[2]]) # take out param est for exposure covariate
+    reg.2.unlist.2[[1]]
+    reg.2.df = do.call(rbind.data.frame, reg.2.unlist.2)
+    reg.2.df
+
+        # checks
+        reg.2.df$long.var = with(reg.2.df,
+                                 ifelse(grepl(".wt", cov1)==T,
+                                           "Weight",
+                                   ifelse(grepl(".wfl", cov1)==T, 
+                                          "WFL", 
+                                          ifelse(grepl(".ht", cov1)==T,
+                                                 "Height", NA))))
+        
+      table(reg.2.df$long.var)
+        
+    
+      reg.2.dt = data.table(reg.2.df)
+        reg.2.dt
+        
+        reg.2.dt[, p.val.adjust := p.adjust(pval, method='fdr'), by=c('long.var')]
+        reg.2.dt$p.val.sig = ifelse(reg.2.dt$p.val.adjust<0.05, 1, 0)
+        reg.2.dt
+        names(reg.2.dt)
+        
+        # rename for table below
+        keep.vars = c("outcome", "Sex.f", "cov1", "coef", "se", "long.var", "p.val.adjust")
+        new.names = c("Lipid outcome", "sex of child", "growth param",
+                      "coefficient", "se", "size var", "adjusted p-value")
+        reg.2.dt.out = data.frame(reg.2.dt)[keep.vars]
+        colnames(reg.2.dt.out) = new.names
+
+        # relabels growth param names
+        levels(factor(reg.2.dt.out$`growth param`))
+        reg.2.dt.out$`growth param` = factor(reg.2.dt.out$`growth param`)
+        levels(reg.2.dt.out$`growth param`) = list(Size=c("alpha0.wt",
+                                                          "alpha0.wfl"),
+                                                           Tempo=c("beta0.wt",
+                                                                   "beta0.ht",
+                                                                   "beta0.wfl"),
+                                                           Velocity=c("beta1.wt",
+                                                                      "beta1.ht"))
+        levels(reg.2.dt.out$`growth param`) # check
+        
+            
+        # see https://stackoverflow.com/questions/9063889/how-to-round-a-data-frame-in-r-that-contains-some-character-variables
+        reg.2.dt.out = data.frame(lapply(reg.2.dt.out, function(y) if(is.numeric(y)) round(y, 2) else y)) 
+
+        return(reg.2.dt.out)
+}
+
+
+# Run the pooled UNadjusted model here
+reg.2.dt.out.un = get.stratdat(forms.nos.un)
+str(reg.2.dt.out.un)
+head(reg.2.dt.out.un)
+reg.2.dt.out.un$adj="no"
+
+# Run the pooled ADJUSTED model here
+reg.2.dt.outt = get.stratdat(forms.nos)
+str(reg.2.dt.outt)
+head(reg.2.dt.outt)
+reg.2.dt.outt$adj="yes"
+
+```
+
+
+## Coefficients for regression models
+
+```{r}
+
+reg.2.dt.out = rbind.fill(reg.2.dt.outt,
+                          reg.2.dt.out.un)
+
+head(reg.2.dt.out)
+
+#reg.2.dt.out$adjusted.p.value = reg.2.dt.out$`adjusted p-value`
+reg.2.dt.out$coef.se = with(reg.2.dt.out, {
+  coef.se = ifelse(adjusted.p.value<0.05, 
+                   paste0("**", round(coefficient,2), " (", round(se,2), ")**"),
+                   paste0(round(coefficient,2), " (", round(se,2), ")")
+                   )
+})
+
+head(reg.2.dt.out)
+names(reg.2.dt.out)
+
+colnames(reg.2.dt.out)[which(colnames(reg.2.dt.out) %in% c("Lipid.outcome", "sex.of.child",  "growth.param", "size.var", "adjusted.p.value"))] = c("Lipid outcome", "Sex of child", "growth param", "size var", "adjusted p-value")
+
+names(reg.2.dt.out)
+
+reg.2.wide <- dcast(reg.2.dt.out,
+                    `Sex of child` + `size var` + `Lipid outcome` ~ `growth param` + adj, 
+                    value.var="coef.se")
+head(reg.2.wide)
+
+```
+
+```{r, results='markup'}
+
+kable(reg.2.wide, booktabs=T,
+      format="html",
+      caption='Coefficient (se)',
+      col.names = c("Sex", "Outcome", "Lipid", 
+                     rep(c("no", "yes"), 3))) %>%
+  collapse_rows(columns = 1:3, latex_hline = "major")  %>%
+  kable_styling(bootstrap_options = c("striped")) %>%
+  add_header_above(c( " "=3, "Size"=2, "Tempo"=2, "Velocity"=2)) %>%
+  add_footnote("Bold values indicate statistical significance at FDR=0.05")
+```
+
+
+## Plot of coefficients with 95% confidence intervals
+
+```{r, fig.keep='all'}
+
+reg.2.df = reg.2.dt.out
+names(reg.2.df)
+
+# The error bars overlapped, so use position_dodge to move them horizontally
+levels(factor(reg.2.df$`Lipid outcome`))
+levels(factor(reg.2.df$`growth param`))
+levels(factor(reg.2.df$`size var`))
+
+reg.2.df$outcome.f = factor(reg.2.df$`Lipid outcome`, 
+                             label = c("HDL", 
+                                       "LDL",
+                                       "log(TG)"))
+head(reg.2.df)
+reg.2.df$coef = reg.2.df$coefficient
+
+# The errorbars overlapped, so use position_dodge to move them horizontally
+pd <- position_dodge(0.5) # move them .05 to the left and right
+names(reg.2.df)
+
+reg.2.df$g.and.g = with(reg.2.df, paste0(`growth param`, 
+                                         " / ",
+                                         `Sex of child`))
+
+plot.bysex = ggplot(reg.2.df,
+       aes(x=g.and.g,
+           y=coef, 
+           colour=`Sex of child`, 
+           group=adj,
+           shape=adj)) +
+  facet_grid(outcome.f ~ `size var`, scale='free', labeller = label_parsed) +# label_parsed allows greek symbols in the strip text
+  geom_errorbar(aes(ymin=coef-1.96*se, 
+                      ymax=coef+1.96*se), width=.1, position=pd) +
+  geom_point(position=pd, size=2) +
+  theme_bw(base_size=18) +
+  ylab("mg/dL") +
+  xlab("Exposure") +
+  scale_color_manual("Sex of child", values = cbbPalette) +
+#                     guide=F) +
+  scale_shape_manual("Adjusted", values = c(0,15)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+       strip.text.y = element_text(size = 18, colour = "black"),
+       legend.position="bottom") +
+  geom_hline(yintercept = 0, color="blue", lty=3) 
+
+plot.bysex
+
+```
+
+```{r, fig.keep='all'}
+# print male, female and pooled side by side for plot to go in manuscript
+
+reg.1 = reg.1.df
+
+reg.1$`Sex of child` = "all"
+names(reg.1)
+
+newvars =c('growth param', 'size var', 'Sex of child')
+colnames(reg.1)[which(colnames(reg.1) %in% c("growth.param",
+                                                   "Sex.of.child",
+                                                   "size.var"))] = newvars
+colnames(reg.1)
+sapply(reg.1[newvars], table)
+
+reg = rbind.fill(reg.2.df,
+                 reg.1)
+
+# The error bars overlapped, so use position_dodge to move them horizontally
+levels(factor(reg$`Lipid outcome`))
+levels(factor(reg$`growth param`))
+levels(factor(reg$`size var`))
+
+reg$coef = reg$coefficient
+
+# The errorbars overlapped, so use position_dodge to move them horizontally
+pd <- position_dodge(0.5) # move them .05 to the left and right
+
+reg$g.and.g = with(reg, paste0(`growth param`, 
+                                         " / ",
+                                         `Sex of child`))
+table(reg$g.and.g)
+#library(lubridate)
+reg$sizevar = reg$`size var` 
+reg$gp = reg$`growth param`
+head(reg)
+
+
+# see https://stackoverflow.com/questions/44616530/axis-labels-on-two-lines-with-nested-x-variables-year-below-months/44616739
+plot.bysex.all = ggplot(reg,
+       aes(x=`Sex of child`,
+           y=coef, 
+           colour=`Sex of child`, 
+           group=adj,
+           shape=adj)) +
+  facet_grid(gp + outcome.f ~ sizevar ,
+             space="free_x", scales="free", switch="x") +# labeller = label_parsed allows greek symbols in the strip text
+  geom_errorbar(aes(ymin=coef-1.96*se, 
+                      ymax=coef+1.96*se), width=.1, position=pd) +
+  geom_point(position=pd, size=2) +
+  theme_bw(base_size=18) +
+  ylab("Outcome (mg/dL)") +
+  xlab("Exposure") +
+  scale_color_manual("Sex of child", values = cbbPalette) +
+#                     guide=F) +
+  scale_shape_manual("Adjusted", values = c(0,15)) +
+  theme(axis.text.x = element_blank(),#element_text(angle = 45, hjust = 1),
+       strip.text.y = element_text(size = 10, colour = "black"),
+       legend.position="bottom") +
+  geom_hline(yintercept = 0, color="blue", lty=3) +
+  theme(strip.placement = "outside",
+        strip.background = element_rect(fill=NA,colour="grey50"),
+        panel.spacing=unit(0,"cm"))
+
+save(plot.bysex, plot.bysex.all, file="sitarplot1.Rdata")
+
+plot.bysex.all
+
+```
+
+```{r plot-for-slides}
+
+reg.sub = reg[reg$sizevar=="Height" & reg$`growth param`=="Velocity",]
+reg.sub$`growth param` = "Length Velocity"
+head(reg.sub)
+
+
+plot.bysex.sub = ggplot(reg.sub,
+       aes(x=`Sex of child`,
+           y=coef, 
+           colour=`Sex of child`, 
+           group=adj,
+           shape=adj)) +
+  facet_grid(outcome.f ~ `growth param`,
+             space="free_x", scales="free", switch="x") +# labeller = label_parsed allows greek symbols in the strip text
+  geom_errorbar(aes(ymin=coef-1.96*se, 
+                      ymax=coef+1.96*se), width=.1, position=pd) +
+  geom_point(position=pd, size=4) +
+  theme_bw(base_size=18) +
+  ylab("Outcome (mg/dL)") +
+  xlab("Exposure") +
+  scale_color_manual("Sex of child", values = cbbPalette) +
+#                     guide=F) +
+  scale_shape_manual("Adjusted", values = c(0,15)) +
+  theme(axis.text.x = element_blank(),#element_text(angle = 45, hjust = 1),
+       strip.text.y = element_text(size = 12, colour = "black"),
+       legend.position="bottom") +
+  geom_hline(yintercept = 0, color="blue", lty=3) +
+  theme(strip.placement = "outside",
+        strip.background = element_rect(fill=NA,colour="grey50"),
+        panel.spacing=unit(0,"cm"))
+
+setwd("../presentations/aha-2018-m2/figures")
+png("sitar-plot-sub.png", width=2000, height=1200, res=300)
+  plot.bysex.sub
+dev.off()
+
+```
+
+## Coefficients for pooled and stratified regression models in one table
+
+```{r}
+
+pool = rbind.fill(reg.1.dt.outt,
+                 reg.1.dt.out.un)
+colnames(pool)
+colnames(pool)[which(colnames(pool) %in% c("adjusted.p.value", "size.var", "Lipid.outcome", "growth.param"))] = c( "Lipid outcome", "growth param", "size var", "adjusted p-value")
+colnames(pool) # check
+str(pool)
+
+str(reg.2.dt.out)
+all = rbind.fill(pool, reg.2.dt.out)
+
+str(all)
+
+
+all = within(all, {
+  coef.se = ifelse(`adjusted p-value`<0.05, 
+                   paste0("**", formatC(coefficient, format="f", digits=2), 
+                          " (", 
+                          formatC(se, format="f", digits=2),
+                          ")**"),
+                   paste0(formatC(coefficient, format="f", digits=2),
+                          " (", 
+                          formatC(se, format="f", digits=2),
+                          ")")
+                   )
+
+  # see awesome_table_in_pdf-1.pdf
+  coef.se2 = ifelse(`adjusted p-value`<0.05, 
+                    paste0(text_spec( paste0(formatC(coefficient, format="f", digits=2),
+                                             " (", 
+                                             formatC(se, format="f", digits=2),
+                                             ")"),
+                                      'latex',
+                                      bold=T)),
+                     paste0(formatC(coefficient, format="f", digits=2),
+                            " (", 
+                            formatC(se, format="f", digits=2),
+                            ")"))
+})
+
+
+
+head(all)
+str(all)
+names(all)
+
+all$outcome.f = factor(all$`Lipid outcome`, 
+                             label = c("HDL-C", 
+                                       "LDL-C",
+                                       "log(TG)"))
+
+levels(factor(all$`Sex of child`))
+
+all$`Sex of child` = factor(all$`Sex of child`, 
+                             label = c("All", "Female", "Male"))
+
+all.wide <- dcast(all,
+                    `Sex of child` + `size var` + outcome.f ~ adj + `growth param`, 
+                    value.var="coef.se2")
+head(all.wide)
+
+all.wide.html <- dcast(all,
+                    `Sex of child` + `size var` + outcome.f ~ `growth param` + adj, 
+                    value.var="coef.se")
+head(all.wide)
+
+# export data file to print in /ms-tables/tables-ms.Rmd
+#setwd("~/GitHub/unc-dissertation-markdown-p2/includes/scripts/paper2")
+save(all.wide, file='ms-tables/sitar-table.Rdata')
+
+```
+
+```{r, results='markup'}
+kable(all.wide.html,
+      booktabs=T,
+      format="html",
+      caption='Coefficient (se)',
+      col.names = c("Sex", "Trajectory type", "Lipid", 
+                     rep(c("No", "Yes"), 3))) %>%
+  collapse_rows(columns = 1:3, latex_hline = "major")  %>%
+  kable_styling(bootstrap_options = c("striped")) %>%
+  add_header_above(c( " "=3, "Size"=2, "Tempo"=2, "Velocity"=2)) %>%
+  add_footnote("Bold values indicate statistical significance at FDR=0.05")
+```
