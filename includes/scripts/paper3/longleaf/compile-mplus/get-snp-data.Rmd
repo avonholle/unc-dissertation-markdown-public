@@ -1,0 +1,768 @@
+---
+title: "Description of snps read in with .vcf file and VariantAnnotation"
+author: "Ann Von Holle"
+date: '`r format(Sys.time(), "%d %B, %Y")`'
+output:
+  html_document:
+    css: ../../style.css
+    toc: yes
+    toc_depth: '3'
+    toc_float: no
+    number_sections: yes
+    xnos-section-numbers: yes
+    pandoc_args:
+    - --filter
+    - pandoc-fignos
+  pdf_document:
+    number_sections: yes
+    pandoc_args:
+    - --filter
+    - C:/Python27/Scripts/pandoc-eqnos.exe
+    toc: yes
+    toc_depth: 3
+header-includes: \usepackage{hyperref}\hypersetup{colorlinks=true, linkcolor=blue,filecolor=magenta,urlcolor=cyan}
+  \usepackage{amsmath}
+---
+
+<!-- NOTE: This program code is copied from look-vcf-snps.Rmd but cleaned up-->
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(fig.width=12, fig.height=8,
+                      echo=T, warning=FALSE,
+                      message=T, 
+                      results='markup',
+                      comment=NA)
+options(width = 150)
+```
+
+```{r }
+
+require(knitr)
+#library(VariantAnnotation)
+library(data.table)
+#require(kableExtra)
+```
+
+
+
+
+
+```{r}
+
+# look-vcf-snps.R
+# Look at Read of SLCS vcf files
+# ---------------------------------------
+
+# TO DO: need to go back and put this program in m3 folder
+setwd("/proj/epi/CVDGeneNas/avonholle/ms-d1")
+load("datsnp.Rdata") # dat.snp is a list of objects, first object is chr,
+# second is data frame of snps
+# and third item is the snp coding info: according to the documentation for variantannotation
+# package, In the map DataFrame, allele.1 represents the reference allele and allele.2 is the alternate
+# allele.
+
+class(dat.snp)
+#dat.snp[[1]][[2]]
+head(dat.snp[[8]][[2]]) # test. 2nd element is the genotyping itself
+head(dat.snp[[8]][[3]]) # test. third element is genotyping info. allele.1 is the reference allele, allele.2 is the risk allele
+```
+
+
+
+```{r}
+# Extract out the info data from vcf file, which includes the maf. 4th element from list created in read-vcf-snps.R
+
+info.dat = lapply(dat.snp, function(x) data.frame(x[4]))
+info.dat[[1]]
+info.dat.df = do.call(rbind.data.frame, info.dat)
+info.dat.df
+
+setwd("/proj/epi/CVDGeneNas/avonholle/ms-d3/data-prep")
+save(info.dat.df, file="info-dat.Rdata")
+
+```
+
+
+```{r}
+# Extract out genotype info for the samples across all chromosomes.
+# -----------------------------------------------------------------
+
+# Extract out info from snps, 2nd element
+snp.dat = sapply(dat.snp, function(x) data.frame(x[2]))
+
+snp.dat.df = do.call(cbind.data.frame, snp.dat)
+dim(snp.dat.df)  # 881 obs and 207 snps for combined generalized + HL
+snp.dat.df$id = substr(rownames(snp.dat.df), 3, length(rownames(snp.dat.df)))
+snp.dat.df[1:5,c(ncol(snp.dat.df)-5, ncol(snp.dat.df))]
+
+# Handle data so the ids match the phenotype data and snps in columns have rsids
+# ----------------------------------------------------------------------------
+
+nms = names(snp.dat.df); head(nms); length(unique(nms)) # 208 unique snps
+
+# Extract out pos from columns of snp.dat.df
+pos.1 = as.numeric(sapply(strsplit(nms, "\\."), "[", 2))
+head(pos.1) # for some reason there are duplicaties (columns 66 and 67)
+
+df.pos.1 = data.frame(Pos_hg19=pos.1, orig.ord = 1:length(pos.1))
+head(df.pos.1)
+
+# get rsid linked to hg19 position
+# before, only had HL snps. Now, using combo of European generalizable to HL and HL.
+# from tot.rsid data frame in 'create-list-snps-for-vcf.R'
+
+# load the snps and effect sizes from spreadsheets, df.allele
+
+load("vars.Rdata") # has tot.rsid data frame with chr and hg19 position from create-list-snps-for-vcf.R
+# and df.allele -- data from studies
+summary(df.allele$eur)
+head(df.allele[c("eur", "Author", "rsid")])
+
+# get list of position numbers and rsid so I can put rsid on to position number 
+# in column names from vcf file
+link.pos.rsid = out.2[c("Pos_hg19", "rsid")] # total snps, 208
+nrow(link.pos.rsid)
+length(unique(link.pos.rsid$Pos_hg19)) # 208
+
+# merge the rsid onto position number
+nrow(df.pos.1) # 208
+nrow(link.pos.rsid)
+link.1 = merge(df.pos.1, 
+               link.pos.rsid, 
+               by="Pos_hg19", all.y=T)
+dim(link.1) #208 unique snps
+head(link.1)
+# link.1 has data frame with rsid and position
+dim(snp.dat.df)
+head(snp.dat.df[,207:208])
+
+# rename columns of snp dat by rsid and not position
+snp.dat.df2 = snp.dat.df
+
+#colnames(snp.dat.df2) = link.1$rsid
+#snp.dat.df2[1:5,1:5]
+dim(snp.dat.df2) # 881 by 208
+
+# see https://stackoverflow.com/questions/26391921/how-to-convert-entire-dataframe-to-numeric-while-preserving-decimals
+
+sapply(snp.dat.df2, class)
+snp.dat.df2[,208]
+
+
+
+# get phenotype id merged back on to data
+# ------------------------------------------
+
+ids = read.csv("IDsToMatch.csv", header=T) # ids from Anne that have the .ped/.fam file ids
+colnames(ids) = tolower(colnames(ids))
+ids$id_v1 = ids$id # make an id to merge onto the phenotype file
+head(ids)
+
+nrow(snp.dat.df2) #881
+
+# have to fix id -- can't convert to numeric class in current state
+id2 = with(snp.dat.df2, {
+  ifelse(is.na(as.numeric(as.character(id)))==T,
+         sapply(strsplit(as.character(id), "_"), "[", 2),
+         as.numeric(as.character(id)))
+})
+id2
+
+# this will now have phenotype id for merging with phenotype data in further analyses
+colnames(snp.dat.df2)[208]
+colnames(snp.dat.df2)[208] = "iid"
+snp.dat.df2$iid = as.numeric(as.character(id2))
+
+summary(snp.dat.df2$iid)
+head(ids$iid)
+nrow(ids) # 896
+
+
+# Need to replace colnames with rsid
+clean.snp.dat2 = merge(x=snp.dat.df2, 
+                       y=ids[c("iid", "id")],
+                       by="iid",
+                       all.x=T)
+
+head(colnames(clean.snp.dat2))
+dim(snp.dat.df2)
+dim(ids)
+dim(clean.snp.dat2) # 881 by 209
+tail(colnames(clean.snp.dat2))
+head(colnames(clean.snp.dat2))
+
+# column names 2-208 is "X.", chr # and position
+cn = colnames(clean.snp.dat2)[2:208]
+length(cn) # 207
+head(cn)
+cn.pos = as.numeric(sapply(strsplit(cn, "\\."), "[", 2))
+head(cn.pos)
+head(link.pos.rsid)
+tail(link.pos.rsid)
+dim(link.pos.rsid) # 208
+
+cn.pos.df = data.frame(Pos_hg19=cn.pos, orig.vcf.order=1:length(cn.pos))
+dim(cn.pos.df)
+head(cn.pos.df)
+tail(cn.pos.df) # 207
+
+dim(link.pos.rsid)
+cn.merge = merge(cn.pos.df, 
+                 link.pos.rsid,
+                 by="Pos_hg19",
+                 all.x=T)
+dim(cn.merge) # 207 by 3
+head(cn.merge[order(cn.merge$orig.vcf.order),])
+tail(cn.merge[order(cn.merge$orig.vcf.order),])
+# now add rsid as column names for clean.snp.dat2 instead of pos
+
+ncol1 = ncol(clean.snp.dat2); ncol1 # 209
+clean.snp.dat2. = clean.snp.dat2
+length(cn.merge$rsid)
+length(2:ncol1-1)
+head(colnames(clean.snp.dat2.))
+tail(colnames(clean.snp.dat2.))
+cn.merge = cn.merge[order(cn.merge$orig.vcf.order),]
+head(cn.merge[1:(ncol1-2),])
+tail(cn.merge[1:(ncol1-2),])
+
+length(colnames(clean.snp.dat2.)[2:(ncol1-1)])
+length(cn.merge$rsid[1:(ncol1-2)])
+
+colnames(clean.snp.dat2.)[2:(ncol1-1)] = cn.merge$rsid[1:(ncol1-2)]
+head(clean.snp.dat2.[,1:5])
+head(clean.snp.dat2.[,(ncol1-5):ncol1])
+head(clean.snp.dat2[,(ncol1-5):ncol1]) # check
+
+dim(clean.snp.dat2.) # 881 by 209
+clean.snp.dat2.[875:881, 207:209] # check
+clean.snp.dat2 = clean.snp.dat2.
+
+# read in pcs from /nas02/depts/epi/Genetic_Data_Center/chile/phenotypes/
+
+setwd("/nas02/depts/epi/Genetic_Data_Center/chile/phenotypes/")
+pcs = read.table("PCs_chileonly.txt")
+head(pcs)
+corr(pcs)
+
+
+summary(pcs)
+dim(pcs)
+pcs$id = as.numeric(as.character(rownames(pcs)))
+
+dim(clean.snp.dat2.)
+
+head(clean.snp.dat2.$iid)
+head(pcs$id)
+clean.snp.dat2. = merge(x=clean.snp.dat2.,
+                       y=pcs,
+                       by.x="iid",
+                       by.y="id",
+                       all.x=T)
+
+dim(clean.snp.dat2.)
+head(clean.snp.dat2.[,(ncol(clean.snp.dat2.)-5):ncol(clean.snp.dat2.)])
+tail(clean.snp.dat2.[,(ncol(clean.snp.dat2.)-5):ncol(clean.snp.dat2.)])
+
+clean.snp.dat2 = clean.snp.dat2.
+
+setwd("/proj/epi/CVDGeneNas/avonholle/ms-d3/data-prep")
+save(clean.snp.dat2, file="lipid-snp-dat.Rdata")
+
+# ---------------- END OF PART CREATING DATA FRAME OF SNP VALUES FOR BY PERSON ID -----
+
+```
+
+```{r}
+
+# MAKE RISK SCORE IN THIS PART
+# ----------------------------------------------------
+
+# sum number of alleles to get risk score
+
+# Check if the alternate allele is the same as the effect allele in the studies 
+# used to select the candidate snps for the risk score.
+# ------------------------------------------------------------------
+names(df.allele)
+head(df.allele[c("rsid", "Pos_hg19", "Chr", "Effect allele", "Other allele", "EAF", "Beta (SE)", "Author", "beta.units", "Trait")])
+
+# Extract out info from map, 3rd element from each list
+code.info = lapply(dat.snp, function(x) data.frame(x[3]))
+class(code.info)
+code.info.df = do.call(rbind.data.frame, code.info)
+head(code.info.df)
+dim(code.info.df) # 207 by 4
+
+# extract out chr and position from snp.names column
+code.info.df$Chr = paste0(sapply(strsplit(code.info.df$snp.names, ":"), "[", 1))
+code.info.df$pos = paste0(sapply(strsplit(code.info.df$snp.names, ":"), "[", 2))
+head(code.info.df)
+dim(code.info.df) # 207 by 6
+
+code.info.df[code.info.df$pos %in% c('19830921', '116619073'),]
+
+# having some difficulty with 'asis' class, see 
+# see https://stackoverflow.com/questions/32112086/convert-asis-to-numeric-separated-by-coma-in-data-frame
+code.info.df$allele.2.char <- vapply(code.info.df$allele.2, 
+                                  function(x) paste(x, collapse = ","), character(1L))
+code.info.df$allele.1.char <- vapply(code.info.df$allele.1, 
+                                  function(x) paste(x, collapse = ","), character(1L))
+class(code.info.df$allele.2.char)
+head(code.info.df)
+
+code.info.df$gt = with(code.info.df, paste0(allele.2.char, "/", allele.1.char))
+
+# allele.2 is the alternate allele and allele.1 is the reference allele
+# in code.info.df
+
+# Merge the two data frames (excel snps and vcf snps) by rsid
+# -------------------------------------------------------------
+
+head(code.info.df)
+names(code.info.df)
+length(unique(code.info.df$snp.names)) # 207
+dat.varinfo = data.frame(code.info.df[c("Chr", 
+                                        "pos",
+                                        "allele.1.char",
+                                        "allele.2.char",
+                                        "gt")])
+
+head(dat.varinfo)
+class(dat.varinfo$allele.2)
+names(df.allele)
+head(table(df.allele$rsid))
+
+df.allele[df.allele$rsid=="rs78536982",]
+colnames(df.allele)
+dat.excel = df.allele[c("Effect allele", "Chr", "Pos_hg19", "Author", "rsid", "Beta (SE)", "Trait", "eur")]
+dat.excel = unique(dat.excel)
+head(dat.excel)
+
+colnames(dat.excel)[c(3)] = c("pos")
+dat.excel$beta = as.numeric(as.character(dat.excel$`Beta (SE)`))
+head(dat.excel$beta)
+dat.excel = dat.excel[!(colnames(dat.excel) %in% c("Beta (SE)"))]
+
+colnames(dat.varinfo)
+colnames(dat.excel)
+dim(dat.varinfo)
+dim(unique(dat.varinfo))
+dim(dat.excel) # 252
+length(unique(dat.varinfo$pos)) # 207
+length(unique(paste0(dat.varinfo$Chr, dat.varinfo$pos)))
+head(dat.varinfo)
+head(dat.excel)
+nrow(dat.varinfo) # 207
+
+# for creating the weighted grs. needs some more work
+# to filter out duplicate traits and the author fields
+compare.1 = merge(dat.excel, 
+                  dat.varinfo, 
+                  by=c("pos"),
+                  all.y=T)
+
+head(compare.1[,1:5])
+dim(compare.1) # 251 by 11. 207 snps, but 251 total rows from teh excel files containing different traits and same snsp from different authors
+
+dim(unique(compare.1))  # 251 by 1. checking
+
+# look at coding from vcf file for snps of interest (from m3 analyses) to ensure correct values are there...
+snps=c("rs7412", "rs11076175", "rs78536982")
+
+compare.1[compare.1$rsid %in% snps,]
+
+compare.1$diff = ifelse( (substr(compare.1$allele.2.char,1,1) == substr(compare.1$"Effect allele",1,1))
+                         & compare.1$beta>0, 0, 1)
+
+names(compare.1) # allele.2 is coded as the risk allele in variantAnnotation
+
+head(compare.1[compare.1$diff==1, ])
+```
+
+```{r}
+# to do: The genotype is different across many of the two sources 
+# note: there are differences between the allele coding from variantannotation,
+# hg19p13 and how it was coded in the studies.
+# one example is rs2980869 (location 126488250).
+
+# In dbSNP the Metabochip platform for this snp has A/G alleles for fwd/B ss to rs orientation/strand while
+# the rev/T orientation is C/T.
+
+# see https://www.ncbi.nlm.nih.gov/projects/SNP/snp_ref.cgi?rs=2980869
+
+# next example is rs7528419. In dbsnp, https://www.ncbi.nlm.nih.gov/projects/SNP/snp_ref.cgi?rs=7528419,
+# no other coding scheme is there.
+
+# rs12740374: fwd/B is G/T and rev/T is A/C. Zubair coding allele is A
+
+# --------------------------------------------------------
+# Determine if direction needs to be reversed for effect size
+# for the codings from the Vcf file.
+# for the top/bottom coding see ftp://ftp.ncbi.nlm.nih.gov/snp/database/Illumina_top_bot_strand.note.txt
+# ------------------------------------------------------
+
+# TO DO: need to go back and check effect allele
+
+compare.1 = within(compare.1, {
+  reverse = ifelse((`Effect allele` == "A/C" & gt == "T/G") |
+                     (`Effect allele` == "A/G" & gt == "T/C") |
+                     (`Effect allele` == "A/T" & gt == "T/A") |
+                     (`Effect allele` == "C/G" & gt == "G/C") ,
+                   0, 
+                     ifelse(`Effect allele` == gt, 
+                            0, 
+                               ifelse(Author == "Zubair", 1, 
+                                    ifelse(Author %in% c("Below JE", "Ko A", 
+                                                         "Weissglas-Volkov D", "Tada", 
+                                                         "Teslovich", "Willer") & 
+                                             !(`Effect allele` == `allele.2.char`) & !(beta<0), 1,
+                                                   0))))
+})
+
+compare.1[compare.1$rsid=="rs2980869",]
+compare.1
+head(compare.1)
+
+colnames(compare.1)
+
+```
+
+```{r}
+
+# add maf from vcf file to this file
+# from look-vcf-snps.Rmd
+
+
+setwd("/proj/epi/CVDGeneNas/avonholle/ms-d3/data-prep")
+load(file="info-dat.Rdata") # has info.dat.df data frame with maf and position # from vcf files
+str(info.dat.df)
+
+rownames(info.dat.df)
+summary(info.dat.df$MAF)
+
+# extract chr and position number from rownames
+info.dat.df$Chr = paste0(sapply(strsplit(rownames(info.dat.df), ":"), "[", 1))
+info.dat.df$pos = paste0(sapply(strsplit(rownames(info.dat.df), ":"), "[", 2))
+
+head(info.dat.df)
+dim(info.dat.df) # 207 unique snps by 6 columns of info
+
+colnames(compare.1)
+
+nrow(compare.1); nrow(info.dat.df) # 251 and 207
+
+compare.1.. = merge(compare.1,
+                    info.dat.df[c("pos", "AF", "MAF")],
+                    by = c("pos"), 
+                    all.x=T)
+
+nrow(compare.1..) # 251
+colnames(compare.1..)
+compare.1..
+
+
+```
+
+# List of snps from HL population or that generalize to the HL population.
+
+```{r, results='markup'}
+# print off risk allele in variantAnnotation and risk allele in studies.
+# with indicator to reverse direction of effect
+
+# from variantannotation documentation for vcf file info:
+#   AF:  Estimated Alternate Allele Frequency
+#   MAF: Estimated Minor Allele Frequency
+
+#names(compare.1)
+compare.1..$num = 1:nrow(compare.1..)
+compare.1.print = compare.1..[c("num", "rsid", 'Chr.x', "pos", 
+                                "AF", "MAF", 'gt', "allele.2.char",
+                                "Effect allele", "Author", "beta", "Trait", "eur",
+                                "diff", "reverse")]
+#compare.1.print
+
+compare.1.print[which(colnames(compare.1.print) %in% c("AF", "MAF", "beta"))] = 
+  apply(compare.1.print[which(colnames(compare.1.print) %in% c("AF", "MAF", "beta"))] , 2, 
+        function(x) round(as.numeric(as.character(x)), 2))
+
+# colnames(compare.1.print) = c("rsid", "Chr", "hg19.pos", "genotype.VA.pkg", "risk.allele.VA.pkg", 
+#                               "risk.allele.study", "Author", "beta", "Trait", "different direction?", "reverse?", "non-HL generalize group")
+cn = colnames(compare.1.print)
+#head(compare.1.print)
+
+
+kable(compare.1.print,
+            booktabs=T,
+      format="html",
+      caption="eligible analysis snps",
+      col.names = c("row #", "rsid", "Chr", "hg19 pos", 
+                    "est alt allele freq", "maf", "genotype (alt/ref) vcf", "effect, vcf", 
+                    "effect, study", "Author", "beta", "Trait", "non-HL generalize groups",
+                    "diff alleles or same alleles and neg beta?", "reverse effect for weighted rs?")) %>%
+  kable_styling(bootstrap_options = c("striped")) %>%
+  add_header_above(c("SNP info"=4, 
+                     "vcf file info"=4, 
+                     'study info'=5, 
+                     'risk score calc info'=2))
+
+```
+
+
+```{r, make-ungrs}
+# unweighted in this section only
+
+# 1) get list of snps in rows and people ids in columns
+
+# Extract out info from snps, 2nd element
+snp.dat.t = do.call(rbind.data.frame, lapply(dat.snp, function(x) t(x[[2]])))
+nrow(snp.dat.t)
+snp.dat.t[1:5,1:5]
+dim(snp.dat.t) #207 rows representing snps and 881 columns rep participants
+
+# extract out chr and position from snp.names column
+snp.dat.t$Chr = paste0(sapply(strsplit(rownames(snp.dat.t), ":"), "[", 1))
+snp.dat.t$pos = paste0(sapply(strsplit(rownames(snp.dat.t), ":"), "[", 2))
+head(snp.dat.t[,880:883])
+dim(snp.dat.t) # 207 by 883
+
+# problem with duplicate pos across different spreadsheets
+dim(snp.dat.t)
+head(snp.dat.t$pos)
+
+dim(compare.1)
+length(unique(compare.1$pos))
+nrow(unique(compare.1[c("pos", "reverse")])) # 215 of them...
+# take out duplicate positions
+dups = which(duplicated(compare.1$pos))
+dup.pos = compare.1$pos[dups] # positions with duplicates
+length(unique(dup.pos)) # 39 of them
+dups.2 = compare.1[compare.1$pos %in% dup.pos,]
+dups.2[order(dups.2$pos), c('pos', 'rsid', 'Author', 'Trait', 'reverse')]
+non.dups = compare.1[!(compare.1$pos %in% dup.pos),]
+# take dups out for now -- ambiguous effect allele...
+colnames(non.dups)
+dim(non.dups)
+head(colnames(snp.dat.t))
+dim(snp.dat.t)
+
+# different way to eliminate duplicates without removing entire record,
+# including 7412
+# NOTE: need to go back and verify direction of effect -- don't use those snps 
+# (ones listed in dups.2) for risk scores
+# --------------------------------------------------------------------
+compare.1.dt = data.table(compare.1)
+compare.1.dt.sub = compare.1.dt[, head(.SD,1), by = c("pos", "Trait")]
+sub.1 = data.frame(compare.1.dt.sub)
+sub.1[order(sub.1$pos), c('pos', 'rsid', 'Author', 'Trait', 'reverse')]
+
+nrow(compare.1) # 251
+nrow(sub.1) # 231
+length(compare.1.dt.sub$pos) # 231
+
+length(compare.1$pos)
+grs.1. = merge(snp.dat.t,
+              sub.1,
+#              non.dups[c("pos", "reverse", "Trait")], 
+              by = "pos",
+              all.x=T)
+
+grs.1. = grs.1.[complete.cases(grs.1.),]
+nrow(grs.1.) # is 230 after excluding the duplicates....
+dim(grs.1.) # 230 by 897
+head(grs.1.[,1:5])
+head(grs.1.[,882:896]) # col 883 starts with chr info
+
+grs.1.[grs.1.$rsid=="rs7412", c("pos", "reverse", "Trait", "rsid")]
+# should be 207, not 215, close to number of snps with effect.. (minus 7 not found in original vcf file?)
+table(grs.1.$reverse)
+summary(grs.1.$reverse) # 40 snps missing reverse.
+
+summary(grs.1.$pos)
+grs.1.[1:10, c( (ncol(grs.1.)-5) : ncol(grs.1.))] # check
+grs.1.[1:10, 1:5]
+
+colnames(grs.1.)[1:5]
+non.snp.names = colnames(grs.1.)[883:ncol(grs.1.)]
+# Now take the 'reverse' column and if 1 then subtract the score from 2 to get 
+# the correct risk allele count.
+snp.cols = !(colnames(grs.1.) %in% c( "pos", non.snp.names))
+table(grs.1.$reverse) # 28 snps reverse direction
+
+grs.1 = grs.1.
+grs.1[snp.cols] = apply(grs.1[snp.cols], 2,
+                        function(x) {
+                          ifelse(grs.1$diff==1, 2-x, x)}
+                        )
+
+grs.1[1:10, c( (ncol(grs.1)-5) : ncol(grs.1))] # check
+grs.1[1:5, 1:5]
+
+nrow(grs.1) # 207
+nrow(unique(grs.1)) # 207
+nrow(dat.excel) # 252
+dim(grs.1)
+colnames(grs.1)[881:885]
+colnames(grs.1)[1:5]
+tail(colnames(grs.1))
+
+
+## sum up the risk allele count for each column, 
+# which represents a person
+grs.unw = colSums(grs.1[,2:882], na.rm=T)  
+
+pos.trait = which(colnames(grs.1) %in% c("Trait"))
+# make lipid specific risk score
+grs.1.dt = data.table(grs.1[ ,c(2:882, pos.trait)])
+class(grs.1[,3])
+colnames(grs.1.dt)
+dim(grs.1.dt) # 230 by 882
+head(grs.1.dt[1:5,1:5])
+head(grs.1.dt[1:5,880:882])
+
+grs.unw. = grs.1.dt[ , sapply(.SD, function(x) list(sum(x, na.rm=T))),
+                              .SDcols = c(1:881), by = Trait] # sum all of snps by Trait for each person represented in columns
+dim(grs.unw.) # 5 by 882 (first column is trait, rest are people)
+# 5 rows represent the 5 traits (hdl, na, tc, ldl and tg)
+grs.unw.[,1:5]
+# take out the missing trait columns
+grs.unw. = grs.unw.[-2,]
+grs.unw.[,880:882]
+grs.unw.[,1:5]
+
+# convert position to rsid for export
+head(names(grs.unw.))
+head(names(grs.unw))  #checking dt is same order as data frame
+
+nms = names(grs.unw)
+id = as.numeric(sapply(strsplit(nms, "\\_"), "[", 2))
+length(id) # 881
+head(id)
+
+# fix ids to phenotype ids
+# get phenotype id merged back on to data
+# ------------------------------------------
+setwd("~/../Dropbox/unc.grad.school/my-papers/ms-201608-1/programs/kure-analysis")
+ids = read.csv("IDsToMatch.csv", header=T) # ids from Anne that have the .ped/.fam file ids
+colnames(ids) = tolower(colnames(ids))
+ids$id_v1 = ids$id # make an id to merge onto the phenotype file
+head(ids)
+dim(grs.unw.)
+
+class(grs.unw.)
+
+grs.unw. = data.frame(grs.unw.)[1:3,]
+head(grs.unw.)
+
+df.grs = data.frame(iid=id, 
+                    un.grs.hdl = as.numeric(grs.unw.[grs.unw.$Trait=="HDL", 2:882]), 
+                    un.grs.ldl = as.numeric(grs.unw.[grs.unw.$Trait=="LDL", 2:882]),
+                    un.grs.tg =  as.numeric(grs.unw.[grs.unw.$Trait=="TG", 2:882]),
+                    w.grs = 1) # for now just put in a dummy variable for weighted version of grs
+rownames(df.grs) = NULL
+dim(df.grs)
+
+df.grs = merge(df.grs,
+               ids[c("iid", "id")], 
+               by = "iid")
+dim(df.grs)
+df.grs = df.grs[c("id", "un.grs.hdl", "un.grs.ldl", "un.grs.tg", "w.grs")]
+head(df.grs)
+summary(df.grs)
+str(non.dups)
+
+
+setwd("~/GitHub/unc-dissertation-markdown-p2/includes/scripts/paper3/longleaf")
+save(df.grs, non.dups, file="grs.Rdata")
+
+```
+
+
+
+```{r read}
+# Code to read in select snps from vcf file
+setwd("/proj/epi/CVDGeneNas/avonholle/ms-d3/data-prep")
+load("lipid-snp-dat.Rdata") # has clean.snp.dat2 data frame with individual snp data
+# from the 'look-vcf-snps.Rmd' program
+
+str(clean.snp.dat2)
+
+# select out the candidate snps from table 3.1 in dissertation proposal,
+# has been revised as of 9/2017. Based on HL snsp and HL snps that generalize to 
+# European snps.
+# file is ~\GitHub\unc-dissertation-markdown\includes\scripts\power\aim3\power-calcs-ind-assoc.Rmd
+
+select. = read.csv("sig-snp.csv")
+head(select.)
+
+select.rsid = select.$rsid
+head(as.character(select.rsid))
+length(select.rsid) # 23 of them
+
+cn = colnames(clean.snp.dat2) %in% c("id", as.character(select.rsid))
+
+colnames(clean.snp.dat2)[cn] # use these rsid in export-mplus-m3.Rmd file
+
+pc.vars = c("PC1", "PC2", "PC3", "PC4", "PC5")
+sub.snp = clean.snp.dat2[, colnames(clean.snp.dat2) %in% c("id", pc.vars,
+                                                           as.character(select.rsid))]
+dim(sub.snp) # TO DO: 5 snps not in clean.snp.dat2. why?
+head(sub.snp)
+colnames(sub.snp)
+
+```
+
+
+```{r}
+# read in grs data frame, df.grs, from snp-description.Rmd
+setwd("/proj/epi/CVDGeneNas/avonholle/ms-d3/data-prep")
+load("grs.Rdata")
+str(df.grs)
+
+grs.dat = df.grs[,c("id", "w.grs", "un.grs.hdl", "un.grs.ldl", "un.grs.tg")]
+```
+
+```{r}
+
+load(file="phen.Rdata") # get phenotype data from local drive. made in get-phen-data.Rmd file. data frames include: sub.phen, re.wt, re.wfl, re.ht
+
+# merge the sitar random effects to the selected candidate snps
+nrow(sub.snp)
+colnames(sub.snp)
+nrow(grs.dat)
+nrow(sub.phen)
+nrow(re.wt)
+
+names(sub.snp)
+
+sub.dat = merge(sub.snp, re.wt, by="id", all.x=T)
+sub.dat = merge(sub.dat, re.ht, by="id", all.x=T)
+sub.dat = merge(sub.dat, re.wfl, by="id", all.x=T)
+sub.dat = merge(sub.dat, sub.phen, by="id", all.y=T)
+nrow(sub.dat)
+sub.dat = merge(sub.dat, grs.dat, by="id") #  data with phenotypes, n=653
+# doesn't completely overlap with genetic data -- restricting data to n=523
+sub.dat = sub.dat[sub.dat$milkcode %in% c(1,3),] # take out missing milkcode or milkcode=2, n=484
+
+
+sub.dat = within(sub.dat, {
+  mk2 = ifelse(milkcode==1, 1,
+               ifelse(milkcode==3, 0, NA))
+  gestage.ctr = scale(GestatnlAg, scale=F) # center gest age
+  graffar.i.ctr = scale(graffar.index, scale=F) # center graffar
+})
+
+table(sub.dat$mk2) #check
+
+nrow(sub.dat)
+summary(sub.dat)
+
+names(sub.dat)
+table(sub.dat$milkcode)
+table(sub.dat$Sex.f)
+
+names(sub.dat)
+str(sub.dat)
+# export data for use in Mplus for second part of aim.
+setwd("/proj/epi/CVDGeneNas/avonholle/ms-d3/data-prep")
+save(sub.dat, file="subdat.Rdata")
+```

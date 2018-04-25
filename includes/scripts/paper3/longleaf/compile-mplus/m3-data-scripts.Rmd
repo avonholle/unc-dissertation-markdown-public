@@ -1,0 +1,286 @@
+---
+title: "Use R to prepare and analyze for/from Mplus"
+author: "Ann Von Holle"
+date: '`r format(Sys.time(), "%d %B, %Y")`'
+output:
+  html_document:
+    toc: true # table of content true
+    toc_float: true
+    depth: 3  # upto three depths of headings (specified by #, ## and ###)
+    number_sections: true  ## if you want number sections at each table header
+    theme: united  # many options for theme, this one is my favorite.
+    highlight: tango  # specifies the syntax highlighting style
+  pdf_document:
+    number_sections: yes
+    toc: yes
+    toc_depth: 3
+header-includes: \usepackage{hyperref, booktabs, longtable, float}\hypersetup{colorlinks=true,
+  linkcolor=blue,filecolor=magenta,urlcolor=cyan}
+classoption: landscape
+---
+
+```{r setup1, include=FALSE}
+#bibliography: includes/bib/lit-review.bib
+
+knitr::opts_chunk$set(fig.width=8, fig.height=8,
+                      echo=T, warning=FALSE,
+                      message=T, 
+                      results='markup',
+                      comment=NA)
+```
+
+
+```{r}
+
+# export-mplus.R
+# Export the slcs data to a mplus format
+# export nhanes data for mplus use (txt file)
+require(knitr)
+
+install.packages("MplusAutomation", 
+                 repos="http://cran.us.r-project.org",
+                 lib="/proj/epi/CVDGeneNas/avonholle/Rlibs", 
+                 dependencies=TRUE)
+require(MplusAutomation, lib.loc="/proj/epi/CVDGeneNas/avonholle/Rlibs")
+
+#require(MplusAutomation)
+require(plyr)
+require(ggplot2)
+require(reshape2)
+require(kableExtra)
+#require(mice)
+
+```
+
+```{r}
+
+# read in data from get-snp-data.Rmd, subdat, to export to Mplus
+setwd("/proj/epi/CVDGeneNas/avonholle/ms-d3/data-prep")
+load("subdat.Rdata")
+names(sub.dat)
+str(sub.dat)
+sub.dat$trg.mg.dL. = log(sub.dat$trg.mg.dL.)
+
+colnames(sub.dat)
+colnames(sub.dat)[which(colnames(sub.dat) %in% c("HDLchlstrl",
+                                                 "LDLChlstrl",
+                                                 "trg.mg.dL."))] = c("hdl",
+                                                                     "ldl",
+                                                                     "log.tg")
+colnames(sub.dat) # check
+summary(sub.dat$log.tg)
+
+# get growth traj info from export.dat3 data set in ../paper1/lgmm/export-mplus.Rmd
+
+# TO DO: need to add program that creates this data set
+load("exportdat3.Rdata") # has export.dat3 data with growth info
+str(export.dat3)
+names(export.dat3)
+
+wt = c("wt0", "wt1",
+       "wt2", "wt3",
+       "wt4", "wt5")
+ht = c("ht0", "ht1",
+       "ht2", "ht3",
+       "ht4", "ht5")
+
+wfl = c("wfl0", "wfl1",
+        "wfl2", "wfl3",
+        "wfl4", "wfl5")
+
+growth.info = export.dat3[c(wt, ht, wfl, "id")]; nrow(growth.info) # 674
+
+sub.dat2 = merge(sub.dat, growth.info, by="id")
+nrow(sub.dat) # to do: need to go back and check to see who I excluded to get 523 (from 667)
+nrow(sub.dat2) # check
+
+summary(sub.dat2)
+colnames(sub.dat2)
+table(sub.dat2$Sex.f)
+sub.dat2$sex = ifelse(sub.dat2$Sex.f=="male", 1, 0)
+table(sub.dat2$sex) # checknames(sub.dat2)
+hist(sub.dat2$un.grs.hdl)
+
+setwd("/proj/epi/CVDGeneNas/avonholle/ms-d3/data-prep")
+prepareMplusData(sub.dat2, "aim3.dat") # export data out to an mplus file
+```
+
+```{r}
+# read in pcs from /nas02/depts/epi/Genetic_Data_Center/chile/phenotypes/
+
+setwd("/nas02/depts/epi/Genetic_Data_Center/chile/phenotypes/")
+pcs = read.table("PCs_chileonly.txt")
+head(pcs)
+corr(pcs)
+
+```
+
+
+```{r}
+# get list of candidate snps
+
+# select out the candidate snps from table 3.1 in dissertation proposal,
+# has been revised as of 9/2017. Based on HL snsp and HL snps that generalize to 
+# European snps.
+# file is ~\GitHub\unc-dissertation-markdown\includes\scripts\power\aim3\power-calcs-ind-assoc.Rmd
+
+setwd("/proj/epi/CVDGeneNas/avonholle/ms-d3/data-prep")
+select. = read.csv("sig-snp.csv")
+head(select.)
+
+select.rsid = select.$rsid
+head(as.character(select.rsid))
+length(select.rsid) # 23 snps selected from lit
+
+load("lipid-snp-dat.Rdata") # has clean.snp.dat2 data frame with individual snp data
+# from the 'get-snp-data.Rmd' program
+
+str(clean.snp.dat2)
+cn = colnames(clean.snp.dat2)[colnames(clean.snp.dat2) %in% c("id",
+                                                              as.character(select.rsid))]
+length(cn) # 21 snps in the slcs file -- 
+as.character(cn)
+
+as.character(select.rsid[!(select.rsid %in% cn)]) # values from lit not in the slcs data. check theese.
+
+# snps to be used in lgmm
+select.[select.$rsid %in% cn, c("rsid", "Trait")]
+as.character(select.[select.$rsid %in% cn, c("rsid")])
+
+```
+
+
+```{r, eval=T}
+
+# create mplus models
+# from template
+
+
+# ================================================================================
+# Mplus input files for the 3-step process to assess interaction across classes
+# for snp-distal outcome using bch --
+# NOTE: run the first set in Mplus -- then take out all files except the .dat files
+# it creates. then run the 2nd set of analyses on the dat file.
+# ================================================================================
+
+# FOR THE ANALYSES POOLED OVER GENDER OF CHILD
+# ======================----------------------------
+setwd("/proj/epi/CVDGeneNas/avonholle/ms-d3/data-prep/mplus-templates/pooled")
+
+# Unadjusted
+# ===========================================
+
+# create data file for 3 step bch -- revised snp list, univariate distal outcome
+createModels("template-m3-mplus-univ-distal-step1-pooled.txt")
+createModels("template-m3-mplus-univ-distal-step3-2class-pooled.txt") # create analysis files, step 3, snps
+createModels("template-m3-mplus-univ-distal-step3-3class-pooled.txt") # create analysis files, step 3, snps
+```
+
+```{r}
+# Adjusted
+
+setwd("/proj/epi/CVDGeneNas/avonholle/ms-d3/data-prep/mplus-templates/pooled-adj")
+
+# create data file for 3 step bch -- revised snp list, univariate distal outcome
+createModels("template-m3-mplus-univ-distal-step1-pooled-adj.txt")
+createModels("template-m3-mplus-univ-distal-step3-2class-pooled-adj.txt") # create analysis files, step 3, snps
+createModels("template-m3-mplus-univ-distal-step3-3class-pooled-adj.txt") # create analysis files, step 3, snps
+# class size too small for adjusting in 3-class?
+```
+
+```{r}
+# -------------------------------
+# for the sex-stratified analyses
+# -------------------------------
+
+setwd("/proj/epi/CVDGeneNas/avonholle/ms-d3/data-prep/mplus-templates/strat")
+
+createModels("template-m3-mplus-univ-alt-distal-step1.txt") # create data files, step 1
+createModels("template-m3-mplus-univ-alt-distal-step3-2class.txt") # create analysis files, step 3, snps
+createModels("template-m3-mplus-univ-alt-distal-step3-3class.txt") # create analysis files, step 3, snps
+```
+
+```{r}
+# ADJUSTED
+
+setwd("/proj/epi/CVDGeneNas/avonholle/ms-d3/data-prep/mplus-templates/strat-adj")
+
+createModels("template-m3-mplus-univ-alt-distal-step1-adj.txt") # create data files, step 1
+createModels("template-m3-mplus-univ-alt-distal-step3-2class-adj.txt")
+
+
+# following this run, run table4-3step-bch-stratify.Rmd to compile all results
+
+# FOR THE cfa analysis. to do: need to fix.
+
+#createModels("template-m3-mplus-cfa-alt-distal-step3-2class.txt") # create analysis files for cfa distal, snps  -- 2CLASS
+#createModels("template-m3-mplus-cfa-alt-distal-step3-3class.txt") # create analysis files for cfa distal, snps  -- 3CLASS, males only, weight and height based on fit dx
+#createModels("template-m3-mplus-cfa-alt2-distal-step3.txt") # create analysis files for cfa distal,  genetic risk scores
+
+```
+
+
+
+```{r, eval=T}
+# Run Mplus models. note: run this one at a time.
+
+# Pooled data --------------------------------
+# -------------------------------------------
+
+# step 1
+runModels(target="/proj/epi/CVDGeneNas/avonholle/ms-d3/data-prep/mplus-templates/pooled", # replaceOutfile="always")
+#replaceOutfile="modifiedDate")
+replaceOutfile="never")
+
+# step 3, 2 and 3 classes
+runModels(target="/proj/epi/CVDGeneNas/avonholle/ms-d3/data-prep/mplus-templates/pooled/step3", #replaceOutfile="always",
+#replaceOutfile="modifiedDate")
+replaceOutfile="always")
+
+# ADJUSTED
+# ==========================================
+
+# step 1
+runModels(target="/proj/epi/CVDGeneNas/avonholle/ms-d3/data-prep/mplus-templates/pooled-adj", # replaceOutfile="always")
+#replaceOutfile="modifiedDate")
+replaceOutfile="never")
+
+# step 3, 2 and 3 classes
+runModels(target="/proj/epi/CVDGeneNas/avonholle/ms-d3/data-prep/mplus-templates/pooled-adj/step3", #replaceOutfile="always",
+#replaceOutfile="modifiedDate")
+replaceOutfile="always")
+
+
+# Stratified data --------------------------------
+# -------------------------------------------
+
+# step 1
+runModels(target="/proj/epi/CVDGeneNas/avonholle/ms-d3/data-prep/mplus-templates/strat", # replaceOutfile="always")
+#          replaceOutfile="never")
+          replaceOutfile="never") # need to repeat with higher number of starts
+
+# step 3: 2 and 3 classes
+runModels(target="/proj/epi/CVDGeneNas/avonholle/ms-d3/data-prep/mplus-templates/strat/step3", #replaceOutfile="always",
+          replaceOutfile="always") 
+#replaceOutfile = "never")
+
+# check if 3-class wfl is warranted.
+runModels(target="/proj/epi/CVDGeneNas/avonholle/ms-d3/data-prep/mplus-templates/strat/class-check", #replaceOutfile="always",
+          replaceOutfile="always") 
+#replaceOutfile = "never")
+
+
+# ADJUSTED
+
+# step 1
+runModels(target="/proj/epi/CVDGeneNas/avonholle/ms-d3/data-prep/mplus-templates/strat-adj", # replaceOutfile="always")
+#          replaceOutfile="never")
+          replaceOutfile="never") # need to repeat with higher number of starts
+
+# step 3: 2 and 3 classes
+runModels(target="/proj/epi/CVDGeneNas/avonholle/ms-d3/data-prep/mplus-templates/strat-adj/step3", #replaceOutfile="always",
+          replaceOutfile="always") 
+#replaceOutfile = "never")
+```
+
+
