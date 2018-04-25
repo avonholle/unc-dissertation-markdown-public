@@ -1,3 +1,11 @@
+```{r, eval=F, echo=TRUE}
+
+# NOTE: this code is for printing only. the .R file with same name is run in longleaf
+# On longleaf I put it in the /pine/scr/v/o/vonholle/dissertation/m3 folder and run 
+# with as a batch file, run-files.sh, with 'sbatch run-files.sh' command on longleaf.
+# sometimes have to convert run-files.sh from dos to unix by 'dos2unix run-files.sh
+# 
+
 # read-vcf-snps.R
 # Read of SLCS vcf files and get subset of 
 # candidate snps for my dissertation work.
@@ -13,9 +21,8 @@ biocLite("snpStats")
 # from create-list-snps-for-vcf.R
 # ---------------------------------------------------
 
-load("vars.Rdata") # contains the out.1 and out.2 data frame with chr and hg pos #
+load("vars.Rdata") # contains the out.1 data frame with chr and hg pos #
 str(out.2)
-summary(out.2)
 
 list.pos = split(out.2, f=out.2$Chr)
 list.pos[[length(list.pos)-2]] # check that variants are separated by chr
@@ -24,14 +31,8 @@ names = names(list.pos); names
 
 # Select subsets of data from vcf files
 # ---------------------------------------
+#setwd(/proj/epi/Genetic_Data_Center/chile/Imputed_Data)
 setwd("../../../Genetic_Data_Center/chile/Imputed_Data")
-
-
-# Look at the info.gz file
-# ----------------------------------------
-info.df <- read.table(gzfile("chr1.info.gz"), header=T)
-head(info.df)
-
 
 # Look at vcf file structure for one file
 # --------------------------------------
@@ -53,12 +54,8 @@ dat.snp = lapply(names, function(chr) {
   
   # set up parameters for reading in and subsetting the the vcf file
     param = ScanVcfParam(
-      info=c("AF", "MAF", "R2", "ER2"), # AF: Estimated Alternate Allele Frequency
-#      MAF: Estimated Minor Allele Frequency
-#      R2: Estimated Imputation Accuracy
-#      ER2: Empirical (Leave-One-Out) R-square (available only for genotyped variants)
-      geno=c("GT", "DS"), # GT: Genotype; DS: Estimated Alternate Allele Dosage : [P(0/1)+2*P(1/1)]
-      #GP: Estimated Posterior Probabilities for Genotypes 0/0, 0/1 and 1/1 
+      info=c("AF"),
+      geno=c("GT"), # genotype field with  0 for the reference allele and 1 for the alternate allele, see documentation for genotypeToSnpMatrix
       which=GRanges(paste0(chr), 
                     IRanges( start=list.pos[[chr]]$Pos_hg19,
                              end=list.pos[[chr]]$Pos_hg19)))
@@ -67,15 +64,16 @@ dat.snp = lapply(names, function(chr) {
                          "hg19", 
                          param=param)
     
-    res <- genotypeToSnpMatrix(vcf)
-    snps = as(res$genotype, "numeric")
-    info = info(vcf)
-    
-    return(list(chr, snps, res$map, info)) # first item in list is chr number, second item is the snps for each person, third element is info on the allele coding
+    res <- genotypeToSnpMatrix(vcf) # SnpMatrix terminology, "A" is the reference allele and "B" is the risk allele. Equivalent statements to those made with 0 and 1 allele values would be 0 = missing, 1 = "A/A", 2 = "A/B" or "B/A" and 3 = "B/B" (according to 'genotypeToSnpMatrix' documentation)
+    snps = as(res$genotype, "numeric") # genotype list element has columns are snps and the rows are the samples. this function codes in additive model with 0 = A/A, 1=A/B or B/A and 2 = B/B
+
+    return(list(chr, snps, res$map)) # first item in list is chr number, second item is the snps for each person, third element is info on the allele coding
     
     })
 
 setwd("../../../CVDGeneNas/avonholle/ms-d1")
 save(dat.snp, file="datsnp.Rdata")
 
-head(dat.snp[[2]][[2]]) # test
+head(dat.snp[[2]][[2]]) # check
+
+```

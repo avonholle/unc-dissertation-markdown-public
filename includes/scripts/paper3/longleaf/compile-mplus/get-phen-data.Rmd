@@ -1,0 +1,84 @@
+---
+title: "Dissertation manuscript 3 -- Tables 2 and 3-- SITAR association. Get data"
+author: "Ann Von Holle"
+date: '`r format(Sys.time(), "%d %B, %Y")`'
+output:
+  html_document:
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+  pdf_document:
+    number_sections: yes
+    toc: yes
+    toc_depth: 3
+header-includes: \usepackage{hyperref, booktabs, longtable, float}\hypersetup{colorlinks=true,
+  linkcolor=blue,filecolor=magenta,urlcolor=cyan}
+classoption: landscape
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(fig.width=12, 
+                      fig.height=8,
+                      echo=T, 
+                      warning=FALSE,
+                      message=T, 
+                      results='hide',
+                      comment=NA)
+options(width = 150)
+require(knitr)
+require(kableExtra)
+```
+
+
+```{r merge-re, eval=T}
+# Load in phenotype data
+
+# Note: This part will contain the sitar growth parameters (random effects from a nonlinear mixed effects model), which will serve as the 'environment' piece.
+# 
+# This code was copied from the '../paper2/initial-m2.Rmd' file.
+# 
+
+# read in data
+setwd("~/")
+load("re-wt.Rdata") # (re.vals.df, has wt random effects from sitar model (see ../paper2/table2-mice.Rmd  for data source)
+re.wt = re.vals.df
+colnames(re.wt) = c("alpha0.wt", 'beta0.wt', 'beta1.wt', 'id')
+
+load("re-ht.Rdata") 
+re.ht = re.vals.df
+colnames(re.ht) = c("beta0.ht", "beta1.ht", 'id')
+
+load("re-wfl.Rdata")
+re.wfl = re.vals.df
+colnames(re.wfl) = c("beta0.wfl", "beta1.wfl", 'id')
+
+head(re.wt)
+head(re.wfl)
+head(re.ht)
+
+```
+
+
+```{r}
+# year 1 cohort data
+# bring in phenotype data from descriptive_statistics.Rmd
+setwd("~/")
+load("merged-data.Rdata") # data frame is merge1
+#str(merge1)
+colnames(merge1)
+out.vars = c('HDLchlstrl', 'LDLChlstrl', 'trg.mg.dL.', 'GestatnlAg', 
+             'graffar.index',
+             'Sex.f', 'milkcode')
+#'Ttlchlstrl'
+sub.phen = merge1[c("id", out.vars)]
+head(sub.phen)
+
+```
+
+```{r}
+# save the phenotype data to a file to be exported to longleaf for mplus work
+setwd("~/GitHub/unc-dissertation-markdown-p2/includes/scripts/paper3/longleaf/compile-mplus")
+save(sub.phen, re.wt, re.wfl, re.ht, file="phen.Rdata")
+
+```
+
