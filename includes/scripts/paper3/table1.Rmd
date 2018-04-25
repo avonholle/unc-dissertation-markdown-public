@@ -1,0 +1,172 @@
+---
+title: "Table 1 info, ms3"
+author: "Ann Von Holle"
+date: '`r format(Sys.time(), "%d %B, %Y")`'
+output:
+  pdf_document:
+    number_sections: yes
+    toc: yes
+    toc_depth: 3
+  html_document:
+    depth: 3
+    highlight: tango
+    number_sections: yes
+    theme: united
+    toc: yes
+    toc_float: yes
+header-includes: \usepackage{hyperref, booktabs, longtable, float}\hypersetup{colorlinks=true,
+  linkcolor=blue,filecolor=magenta,urlcolor=cyan}
+---
+
+```{r setup1, include=FALSE}
+#bibliography: includes/bib/lit-review.bib
+
+knitr::opts_chunk$set(fig.width=8, fig.height=12,
+                      echo=F, 
+                      warning=F,
+                      message=F, 
+                      results='hide')
+
+#knitr::opts_knit$set(root.dir = "~/dissertation/unc-dissertation-markdown-p2/includes/scripts/paper3")
+knitr::opts_knit$set(root.dir = "~/GitHub/unc-dissertation-markdown-p2/includes/scripts/paper3")
+
+```
+
+
+```{r}
+
+# export-mplus.R
+# Export the slcs data to a mplus format
+# export nhanes data for mplus use (txt file)
+require(knitr)
+
+require(kableExtra)
+require(data.table)
+require(tableone)
+
+```
+
+
+```{r}
+
+load(file="longleaf/compile-mplus/table1/m3-summary-stat.Rdata") # just summary statistics, wt2.adj$id,  tab1, tab1.subset and all.tab2 tableone objects from ~\GitHub\unc-dissertation-markdown-p2\includes\scripts\paper3\longleaf\compile-mplus\table1\m3-get-table1.Rmd. Run on longleaf
+
+summary(ids)
+tab1 = print(tab1)
+tab1.p = print(tab1.subset)
+tab2.p = print(all.tab2, showAllLevels=T)
+
+
+dim(tab2.p)
+head(tab2.p)
+rownames(tab2.p)[2:4] = c("HDL-C risk score", "LDL-C risk score", "TG risk score")
+
+row.names(tab1.p) = c("n", "Graffar Index", "Gestatational age", "Rand. status",
+                      "HDL-C", "LDL-C", "log(TG)")
+
+```
+
+
+```{r}
+
+setwd("~/")
+# read in data from descriptive_statistics.Rmd
+load("merged-data.Rdata") # has merge1 data frame
+names(merge1)
+
+sub.vars = c("MATAGE",  "graffar.index", "MthrsTTyoe",
+             "milkcode",
+             "LDLChlstrl", "HDLchlstrl", "trg.mg.dL.")
+
+cv = c("Randomization status") # the continuous variables
+sub.dat = merge1[merge1$id %in% ids, c(sub.vars, "Sex.f")]
+colnames(sub.dat)
+table(sub.dat$milkcode)
+sub.dat$milkcode = factor(sub.dat$milkcode, 
+                          labels = c("High iron", 
+                                     "No added iron"))
+
+# note that per the 1/12/2018 email from Estela, the milkcode classification is as follows:
+# 1=high iron
+# 2=low iron
+# 3=no added iron
+# missing milkcode means they were part of the neuromaturation study.
+
+
+
+new.names = c("Maternal Age (years)",
+              "Graffar Index", 
+              "Maternal education (years)",
+              "Randomization status", 
+              "LDL-C (mg/dL)", 
+              "HDL-C (mg/dL)",
+              "TG (mg/dL)")
+
+colnames(sub.dat) = c(new.names, "Sex")
+
+```
+
+```{r}
+
+info.1 = CreateTableOne(vars = new.names, data=sub.dat,
+                        factorVars = cv, 
+                        test=FALSE, strata="Sex")
+
+info.1.tot = CreateTableOne(vars = new.names, data=sub.dat,
+                        factorVars = cv, 
+                        test=FALSE)
+
+all.1 = cbind(print(info.1, nonnormal = T, contDigits=1),
+              print(info.1.tot, nonnormal = T, contDigits=1))
+
+all.1
+
+```
+
+
+```{r}
+
+info.2 = CreateTableOne(vars = new.names, data=sub.dat,
+                        factorVars = cv,
+                        test=FALSE, strata="Randomization status")
+t2 = print(info.2)
+
+```
+
+
+```{r, results='markup'}
+
+kable(all.1, "latex",
+      booktabs=T, 
+      caption="Descriptive statistics for sample stratified by sex of child.",
+      col.names = c("Male", "Female", "Overall")) %>%
+  kable_styling(latex_options = c("striped", "HOLD_position"))
+
+```
+
+
+\clearpage
+\newpage
+
+```{r, results='markup'}
+
+# see https://stackoverflow.com/questions/45409750/get-rid-of-addlinespace-in-kable
+#linesep = if (booktabs) c('', '', '', '', '\\addlinespace') else '\\hline'
+
+kable(tab2.p[,-4],
+      "latex",
+      booktabs=T, 
+      longtable=T,
+      linesep = "",
+      caption = "Descriptive statistics for selected SNPs and genetic risk scores.",
+      col.names = c("Number of alleles", "Male", "Female", "Overall")) %>%
+  kable_styling(latex_options = c("striped", "repeat_header", "HOLD_position"))
+
+```
+
+```{r}
+# save for manuscript m3 tables
+
+save(all.1, tab2.p, file="table1.Rdata")
+
+```
