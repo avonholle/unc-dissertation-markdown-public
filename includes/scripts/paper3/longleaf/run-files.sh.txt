@@ -1,10 +1,9 @@
 #!/bin/bash
 
-#SBATCH --nodes=1
-#SBATCH -o test.Rout
+#SBATCH -o read-vcf-snps.Rout
 #SBATCH -t 24:00:00
 #SBATCH --mail-type=END,FAIL # notifications for job done & fail
 #SBATCH --mail-user=vonholle@email.unc.edu # send-to address
 
 module add r
-R CMD BATCH test.R
+R CMD BATCH read-vcf-snps.R
