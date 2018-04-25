@@ -1,0 +1,118 @@
+[[init]]
+iterators = distalv trajvar numclasses sex;
+
+distalv = 1:3;
+trajvar = 1:3;
+numclasses = 3;
+sex = 1:2;
+
+trajvarnames#trajvar = "wt" "ht" "wfl";
+distalnames#distalv = "ldl" "hdl" "log_tg";
+sexnames#sex = "Female" "Male";
+
+filename = "step3-pooled--distal-[[distalnames#distalv]]--[[trajvarnames#trajvar]]--outcome--[[numclasses]]-Classes-[[sexnames#sex]].inp";
+
+outputDirectory = "/proj/epi/CVDGeneNas/avonholle/ms-d2/data-prep-bf/mplus-templates/strat/univ/step3";
+
+[[/init]]
+
+TITLE: Step 1. [[numclasses]] class quadratic growth model for CFA distal, BCH approach, [[sexnames#sex]].
+
+DATA: FILE = "../step1-strat--[[trajvarnames#trajvar]]--outcome--[[numclasses]]-Classes-[[sexnames#sex]].dat";
+
+VARIABLE: 
+NAMES = 
+   [[trajvarnames#trajvar]]0 - [[trajvarnames#trajvar]]5    
+   graf2 mk22 bf2
+   hdl
+   ldl
+   log_tg
+  sex graffar_i_ctr mk2 stillbf6
+    BCHW1          
+    BCHW2          
+    bchw3
+    c1
+    c2
+    c3
+    uc
+    ID;
+
+MISSING=*;
+
+CLASSES = uc([[numclasses]]);
+
+IDVARIABLE is ID;
+
+[[trajvar=2]]
+USEVARIABLES =  
+    bchw1 bchw2 bchw3
+    [[distalnames#distalv]]
+   mk22;
+[[/trajvar=2]]
+[[trajvar!=2]]
+USEVARIABLES =  
+    bchw1 bchw2 bchw3
+    [[distalnames#distalv]]
+   graf2 mk22 bf2;
+[[/trajvar!=2]]
+
+TRAINING = BCHW1-BCHW3 (bch);
+
+[[trajvar=2]]
+DEFINE:
+  CENTER mk22 (grandmean);
+[[/trajvar=2]]
+[[trajvar!=2]]
+DEFINE:
+  CENTER graf2 mk22 bf2 (grandmean);
+
+[[/trajvar!=2]]
+
+
+ANALYSIS:	
+  TYPE = MIXTURE ;
+  starts=0;
+ 
+MODEL:
+
+%OVERALL%
+
+[[trajvar=2]]
+	[[distalnames#distalv]] on mk22;
+[[/trajvar=2]]
+[[trajvar!=2]]
+	[[distalnames#distalv]] on graf2 mk22 bf2; 
+	graf2;
+[[/trajvar!=2]]
+
+	! latent class variable and distal outcome
+	! See section 3.2 of Asparouhov 2014 paper on bch method in mplus
+
+    %uc#1%
+
+    [[[distalnames#distalv]]] (a1);
+  	[[distalnames#distalv]];
+
+    %uc#2%
+
+    [[[distalnames#distalv]]] (a2);
+  	[[distalnames#distalv]];
+
+    %uc#3%
+
+    [[[distalnames#distalv]]] (a3);
+  	[[distalnames#distalv]];
+
+MODEL TEST:
+  0 = a1 - a2;
+  0 = a1 - a3;
+
+MODEL CONSTRAINT:
+  new (diff1-diff3);
+  diff1 = a1 - a2;
+  diff2 = a1 - a3;
+  diff3 = a2 - a3;
+
+
+OUTPUT: 
+    standardized sampstat;

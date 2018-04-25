@@ -1,0 +1,121 @@
+[[init]]
+iterators = trajvar numclasses;
+
+trajvar = 1:3;
+numclasses = 2:3;
+
+trajvarnames#trajvar = "wt" "ht" "wfl";
+
+filename = "step1-pooled--[[trajvarnames#trajvar]]--outcome--[[numclasses]]-Classes.inp";
+
+outputDirectory = "/proj/epi/CVDGeneNas/avonholle/ms-d2/data-prep-bf/mplus-templates/pooled/univ-noadj";
+
+[[/init]]
+
+TITLE: Step 1. [[numclasses]] class cubic growth model for CFA distal, BCH approach.
+DATA: FILE = "../../../slcs-m2-bf.dat";
+VARIABLE: 
+NAMES = id hdl ldl tc tg log_tg wt0 wt1 wt2 wt3 wt4 wt5 ht0 ht1 ht2 ht3 ht4 ht5 wfl0
+     wfl1 wfl2 wfl3 wfl4 wfl5 t0 t1 t2 t3 t4 t5 Sex trt mat_wt mat_ht matsmoke
+     mat_age milkcode hhi yoe gestage graffar_i bmi graffar_i_ctr gestage_ctr mk2; 
+MISSING=.;
+
+CLASSES = uc([[numclasses]]);
+
+IDVARIABLE is ID;
+
+USEVARIABLES = [[trajvarnames#trajvar]]0 - [[trajvarnames#trajvar]]5 ;
+
+AUXILIARY = hdl ldl log_tg sex graffar_i_ctr mk2;
+
+
+ANALYSIS:	TYPE = MIXTURE ;
+	STARTS = 200 40;
+	
+MODEL:
+	%OVERALL%
+	i s q c | [[trajvarnames#trajvar]]0@0  [[trajvarnames#trajvar]]1@1.1 [[trajvarnames#trajvar]]2@2.1 [[trajvarnames#trajvar]]3@3.1 [[trajvarnames#trajvar]]4@4.1 [[trajvarnames#trajvar]]5@5.1; 
+	
+
+    [[trajvarnames#trajvar]]0 (v0);
+    [[trajvarnames#trajvar]]1 (v1);
+    [[trajvarnames#trajvar]]2 (v2);
+    [[trajvarnames#trajvar]]3 (v3);
+    [[trajvarnames#trajvar]]4 (v4);
+    [[trajvarnames#trajvar]]5 (v5);
+    
+    q@0; c@0;
+    
+
+    ! The AR(1). 
+    ! See ~\GitHub\unc-dissertation-markdown-p2\includes\scripts\
+    !   paper2\longleaf\compile-mplus\mplus-templates\ar1.xlsx
+    ! for more details and example 6.17 in Mplus documentation
+    ! and ar1.xlsx file in dropbox
+    
+    ! for first order corr;
+    [[trajvarnames#trajvar]]1 with [[trajvarnames#trajvar]]0 (p1);
+    [[trajvarnames#trajvar]]2 with [[trajvarnames#trajvar]]1 (p2);
+    [[trajvarnames#trajvar]]3 with [[trajvarnames#trajvar]]2 (p3);
+    [[trajvarnames#trajvar]]4 with [[trajvarnames#trajvar]]3 (p4);
+    [[trajvarnames#trajvar]]5 with [[trajvarnames#trajvar]]4 (p5);
+    
+    ! for second order corr;
+!    [[trajvarnames#trajvar]]2 with [[trajvarnames#trajvar]]0 (p6);
+!    [[trajvarnames#trajvar]]3 with [[trajvarnames#trajvar]]1 (p7);
+!    [[trajvarnames#trajvar]]4 with [[trajvarnames#trajvar]]2 (p8);
+!    [[trajvarnames#trajvar]]5 with [[trajvarnames#trajvar]]3 (p9);
+    
+    ! for third order corr;
+!    [[trajvarnames#trajvar]]3 with [[trajvarnames#trajvar]]0 (p10);
+!    [[trajvarnames#trajvar]]4 with [[trajvarnames#trajvar]]1 (p11);
+!    [[trajvarnames#trajvar]]5 with [[trajvarnames#trajvar]]2 (p12);    
+
+    ! for fourth order corr;
+!    [[trajvarnames#trajvar]]4 with [[trajvarnames#trajvar]]0 (p13);
+!    [[trajvarnames#trajvar]]5 with [[trajvarnames#trajvar]]1 (p14);    
+    
+    ! for fifth order corr;
+!    [[trajvarnames#trajvar]]5 with [[trajvarnames#trajvar]]0 (p15);    
+
+
+  MODEL CONSTRAINT:
+  	NEW (corr);
+  	    
+    0 < v0;
+    0 < v1;
+    0 < v2;
+    0 < v3;
+    0 < v4;
+    0 < v5; 
+    
+
+    ! first order;
+  	p1 = corr * sqrt(v1) * sqrt(v0);
+  	p2 = corr * sqrt(v2) * sqrt(v1);
+  	p3 = corr * sqrt(v3) * sqrt(v2);
+  	p4 = corr * sqrt(v4) * sqrt(v3);
+  	p5 = corr * sqrt(v5) * sqrt(v4);
+
+    ! second order;
+!  	p6 = corr**2 * sqrt(v2) * sqrt(v0);
+!  	p7 = corr**2 * sqrt(v3) * sqrt(v1);
+!  	p8 = corr**2 * sqrt(v4) * sqrt(v2);
+!  	p9 = corr**2 * sqrt(v5) * sqrt(v3);
+
+    ! third order;
+!  	p10 = corr**3 * sqrt(v3) * sqrt(v0);
+!  	p11 = corr**3 * sqrt(v4) * sqrt(v1);
+!  	p12 = corr**3 * sqrt(v5) * sqrt(v2);
+
+    ! fourth order;
+!  	p13 = corr**4 * sqrt(v4) * sqrt(v0);
+!  	p14 = corr**4 * sqrt(v5) * sqrt(v1);  	
+  	
+    ! fifth order;
+!  	p15 = corr**5 * sqrt(v5) * sqrt(v0);
+  	
+SAVEDATA: 
+  SAVE = bchweights cprobabilities;
+FILE IS "step1-pooled--[[trajvarnames#trajvar]]--outcome--[[numclasses]]-Classes.dat";
+
