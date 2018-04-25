@@ -1,0 +1,72 @@
+[[init]]
+iterators = trajvar numclasses sex;
+
+trajvar = 1:3;
+numclasses = 1:3;
+sex = 1:2;
+
+trajvarnames#trajvar = "wt" "ht" "wfl";
+sexnames#sex = "Female" "Male";
+
+filename = "step1-strat--[[trajvarnames#trajvar]]--outcome--[[numclasses]]-Classes-[[sexnames#sex]].inp";
+
+outputDirectory = "/proj/epi/CVDGeneNas/avonholle/ms-d2/data-prep-bf/mplus-templates/strat/univ-noadj";
+
+[[/init]]
+
+TITLE: Step 1. [[numclasses]] class quadratic growth model for CFA distal, BCH approach.
+DATA: FILE = "../../../slcs-m2-bf.dat";
+VARIABLE: 
+NAMES = id hdl ldl tc tg log_tg wt0 wt1 wt2 wt3 wt4 wt5 ht0 ht1 ht2 ht3 ht4 ht5 wfl0
+     wfl1 wfl2 wfl3 wfl4 wfl5 t0 t1 t2 t3 t4 t5 Sex trt mat_wt mat_ht matsmoke
+     mat_age milkcode hhi yoe gestage graffar_i bmi graffar_i_ctr gestage_ctr mk2; 
+MISSING=.;
+
+CLASSES = uc([[numclasses]]);
+
+IDVARIABLE is ID;
+
+USEVARIABLES = [[trajvarnames#trajvar]]0 - [[trajvarnames#trajvar]]5;
+
+AUXILIARY = hdl ldl log_tg sex graffar_i_ctr mk2;
+
+  [[sex=1]]
+  USEOBSERVATIONS = Sex==1; ! subset for females
+  [[/sex=1]]
+  [[sex=2]]
+  USEOBSERVATIONS = Sex==0; ! subset for males
+  [[/sex=2]]
+
+
+ANALYSIS:	TYPE = MIXTURE ;
+	STARTS = 200 40;
+	
+MODEL:
+	%OVERALL%
+	i s q c | [[trajvarnames#trajvar]]0@0  [[trajvarnames#trajvar]]1@1.1 [[trajvarnames#trajvar]]2@2.1 [[trajvarnames#trajvar]]3@3.1 [[trajvarnames#trajvar]]4@4.1 [[trajvarnames#trajvar]]5@5.1;
+	
+
+! simplifiying structure of resid var for smaller subsets
+  
+    [[trajvarnames#trajvar]]0 (v0);
+    [[trajvarnames#trajvar]]1 (v1);
+    [[trajvarnames#trajvar]]2 (v2);
+    [[trajvarnames#trajvar]]3 (v3);
+    [[trajvarnames#trajvar]]4 (v4);
+    [[trajvarnames#trajvar]]5 (v5);
+    
+  q@0; c@0;
+  
+ MODEL CONSTRAINT:
+ 
+    0 < v0;
+    0 < v1;
+    0 < v2;
+    0 < v3;
+    0 < v4;
+    0 < v5; 
+
+SAVEDATA: 
+  SAVE = bchweights cprobabilities;
+FILE IS "step1-strat--[[trajvarnames#trajvar]]--outcome--[[numclasses]]-Classes-[[sexnames#sex]].dat";
+

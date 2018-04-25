@@ -1,0 +1,145 @@
+[[init]]
+iterators = trajvar numclasses sex;
+
+trajvar = 1:3;
+numclasses = 2;
+sex = 1:2;
+
+trajvarnames#trajvar = "wt" "ht" "wfl";
+sexnames#sex = "Female" "Male";
+
+filename = "step3-ratio-strat--[[trajvarnames#trajvar]]--outcome--[[numclasses]]-Classes-[[sexnames#sex]].inp";
+
+outputDirectory = "/proj/epi/CVDGeneNas/avonholle/ms-d2/data-prep-bf/mplus-templates/strat/ratio/step3";
+
+[[/init]]
+
+TITLE: Step 1. [[numclasses]] class cubic growth model for CFA distal, BCH approach.
+
+DATA: FILE = "../../univ/step1-strat--[[trajvarnames#trajvar]]--outcome--[[numclasses]]-Classes-[[sexnames#sex]].dat";
+
+! get adj data from univariate analyses
+
+VARIABLE: 
+NAMES = 
+   [[trajvarnames#trajvar]]0 - [[trajvarnames#trajvar]]5      
+   graf2 mk22 bf2
+    HDL            
+    LDL            
+    LOG_TG         
+    sex graffar_ mk2 stillbf6
+    BCHW1          
+    BCHW2          
+    c1
+    c2
+    uc
+    ID;
+
+MISSING=*;
+
+CLASSES = uc([[numclasses]]) ldist;
+
+IDVARIABLE is ID;
+
+USEVARIABLES =  
+    bchw1 bchw2 
+    graf2 bf2
+    log_TG
+    log_HDL            
+    log_LDL 
+    ;
+
+TRAINING = BCHW1-BCHW2 (bch);
+
+DEFINE:
+  log_hdl = log(hdl);
+  log_ldl = log(ldl);
+  CENTER graf2 bf2 (grandmean);
+
+ANALYSIS:	
+  TYPE = MIXTURE ;
+  starts=0;
+ 
+MODEL:
+
+	%OVERALL%
+    ldist by log_tg* log_hdl log_ldl;  ! factor named ldist with 3 indicators;
+    [ldist@0]; ldist@1;! keep distal latent factor as standardized, 
+    !mean 0 and var 1
+    
+    ldist on  graf2 bf2;
+    graf2;
+    
+    %uc#1%
+
+    ldist by log_tg* (f1_tg)
+         log_hdl (f1_hdl)
+         log_ldl (f1_ldl); 
+
+         ! allow means of indicators to vary across classes
+         [log_tg] (mean1_tg);
+         [log_hdl] (mean1_hdl);
+         [log_ldl] (mean1_ldl);
+         
+         
+    log_tg (var1_tg);  ! allow variance for tg, ldl and hdl to vary across classes
+    log_hdl (var1_hdl);
+    log_ldl (var1_ldl);
+
+    %uc#2%
+
+    ldist by log_tg* (f2_tg)
+        log_hdl (f2_hdl) 
+        log_ldl (f2_ldl);  
+
+        ! allow means of indicators to vary across classes
+        [log_tg] (mean2_tg);
+        [log_ldl] (mean2_ldl);
+        [log_hdl] (mean2_hdl);
+        
+        log_tg (var2_tg);  ! allow variance for tg, ldl and hdl to vary across classes
+        log_hdl (var2_hdl);
+        log_ldl (var2_ldl);
+        
+        
+MODEL TEST:
+    0 = log(tg_hdl1ratio/tg_hdl2ratio); ! test if ratios are diff
+
+        
+MODEL CONSTRAINT:
+
+    var1_tg > 0;
+    var1_hdl > 0;
+    var1_ldl > 0;
+    var2_tg > 0;
+    var2_hdl > 0;
+    var2_ldl > 0;
+
+    new(std_f1_hdl std_f2_hdl std_f1_tg std_f2_tg
+        hdl_tg1corr hdl_tg2corr
+        diff_corr_1_vs_2
+        tg_hdl1ratio tg_hdl2ratio
+        diff_ratio_1_vs_2);
+
+!   stan3 = lam3*SQRT(vf1)/SQRT(lam3**2*vf1 + ve3); ! from example 5.20, Mplus user manual
+
+    std_f1_hdl = f1_hdl / sqrt(f1_hdl**2  + var1_hdl); ! std tg factor loading for group1
+    ! note: vf1 fixed to 1;
+    std_f2_hdl = f2_hdl / sqrt(f2_hdl**2 + var2_hdl); ! std tg factor loading for group2
+
+    std_f1_tg = f1_tg / sqrt(f1_tg**2 + var1_tg); ! std tg factor loading for group1
+    std_f2_tg = f2_tg / sqrt(f2_tg**2 + var2_tg); ! std tg factor loading for group2
+
+    hdl_tg1corr = std_f1_hdl * std_f1_tg; ! correlation between hdl and log tg
+                                           ! for class 1
+    hdl_tg2corr = std_f2_hdl * std_f2_tg; ! correlation between hdl and log tg
+                                           ! for class 2
+
+    tg_hdl1ratio = mean1_tg/mean1_hdl; ! ratio of log tg to log hdl or class 1
+    tg_hdl2ratio = mean2_tg/mean2_hdl; ! ratio of log tg to log hdl for class 2
+
+    diff_corr_1_vs_2 = log(hdl_tg1corr/hdl_tg2corr); ! test if correlations are diff
+    diff_ratio_1_vs_2 = log(tg_hdl1ratio/tg_hdl2ratio); ! test if ratios are diff
+
+OUTPUT: 
+    standardized sampstat;
