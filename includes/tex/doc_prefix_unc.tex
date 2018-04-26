@@ -1,0 +1,84 @@
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% DOCUMENT SETTINGS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\title{Infant growth trajectories and lipid levels in adolescence}
+\author{Ann Von Holle}
+\committee{Kari North}{Sheila Gahagan}{Gerardo Heiss}{Misa Graff}{Annie Green Howard}
+\date{\today}
+
+\input{./sections/2_abstract.tex}
+%\dedication{To someone}
+
+
+\pagestyle{plain}
+
+\frontmatter{}
+
+%\maketitle% Use this command for the correct formatted version of unc dissertation page. This is adapted from the scripts written by UNC Math department graduate students. Can be found at https://github.com/mmalahe/unc-dissertation
+
+% these are from the ..\uncdissertation.cls file
+\maketitlepg
+\makecopyrightpage
+\makeabstractpg
+%\makededicationpg
+
+\clearpage
+
+% NOTE: TO DO: need to go back and make sure I have all LaTex commands I need to get spacing correction after TOC.
+
+% The graduate school requires that entries are double spaced.
+% They also require that multiple lines in a single entry are single spaced.
+% This achieves that by setting \baselineskip (the space between lines)
+% and \parskip (the additional space between paragraphs) directly, then restoring them
+%
+% @todo: Find a more elegant way of achieving this
+
+% Establish original spacings
+% 
+\newlength{\oldbaselineskip}
+\setlength{\oldbaselineskip}{\the\baselineskip}
+\newlength{\oldparskip}
+\setlength{\oldparskip}{\the\parskip}
+
+% 
+%\chapter*{Acknowledgements}
+%\input{./sections/0_acknowledgements.tex}
+%\newpage
+
+%Set spacings for these sections
+\setlength{\baselineskip}{0.5\oldbaselineskip}
+\setlength{\parskip}{0.5\oldbaselineskip}
+
+
+% Create a ``Table of Contents''
+
+\tableofcontents
+\newpage
+
+% Create a ``List of Figures''
+
+% NOTE: to add these parts to toc got this idea from https://github.com/rosannav/thesis_in_rmarkdown/tree/master/example_thesis
+
+
+\listoffigures
+%\addcontentsline{toc}{section}{List of Figures}
+
+\newpage
+
+% Create a ``List of Tables''
+\listoftables
+%\addcontentsline{toc}{section}{List of Tables}
+
+
+% Restore original spacings
+\setlength{\baselineskip}{1.0\oldbaselineskip}
+\setlength{\parskip}{1.0\oldparskip}
+
+
+\listofabbreviations
+
+%\printterms[database=acronym]
+
+
+\mainmatter

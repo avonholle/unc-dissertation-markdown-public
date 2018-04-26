@@ -1,0 +1,79 @@
+
+\usepackage{datagidx}% NOTE: this will not work unless you disable glossaries package
+
+
+\newgidx{glossary}{Glossary}
+\newgidx{acronym}{List of Abbreviations}
+
+\DTLgidxSetDefaultDB{acronym}
+\newacro{TC}{Total Cholesterol}
+\newacro{HDL-C}{High Density Lipoprotein Cholesterol}
+\newacro{LDL-C}{Low Density Lipoprotein Cholesterol}
+\newacro{TG}{triglycerides}
+\newacro{GWAS}{Genome-Wide Association Studies}
+\newacro{GRS}{Genetic Risk Score}
+\newacro{PRS}{Polygenic Risk Score}
+\newacro{non-HDL-C}{non-High Density Lipoprotein Cholesterol}
+\newacro{BMI}{body mass index}
+\newacro{POF}{Postnatal Overfeeding}
+\newacro{RNA}{Ribonucleic Acid}
+\newacro{ALT}{Alanine aminotransferase}
+\newacro{GGT}{Gamma glutamyltransferase}
+\newacro{NAFLD}{nonalcoholic fatty liver disease}
+\newacro{LBW}{low birthweight}
+\newacro{SITAR}{SuperImposition by Translation and Rotation}
+\newacro{LGMM}{latent growth mixture model}
+\newacro{SLS}{Santiago Longitudinal Study}
+\newacro{WFL}{weight-for-length}
+\newacro{HL}{Hispanic/Latino}
+\newacro{CVD}{Cardiovascular Disease}
+\newacro{ASCVD}{Atherosclerotic Cardiovascular Disease}
+\newacro{DOHaD}{Developmental Origins of Health and Disease}
+\newacro{cGXE}{candidate gene x environment}
+\newacro{GXE}{genotype x environment}
+\newacro{SNP}{single nucleotide polymorphism}
+\newacro{DAG}{directed acyclic diagram}
+\newacro{LD}{linkage disequilibrium}
+\newacro{AA}{African American}
+\newacro{GLGC}{Global Lipid Genetic Consortium}
+\newacro{EA}{European ancestry}
+\newacro{IDL}{intermediate-density lipoprotein}
+\newacro{VLDL}{very low-density lipoprotein}
+\newacro{MA}{Mexican American}
+\newacro{NHW}{non-Hispanic White}
+\newacro{GOCS}{Growth and Obesity Cohort Study}
+\newacro{CV}{coefficient of variation}
+\newacro{IS}{iron sufficiency}
+\newacro{LCFA}{longitudinal confirmatory factor analysis}
+\newacro{CFA}{confirmatory factor analysis}
+\newacro{CAD}{coronary artery disease}
+\newacro{CAC}{coronary artery calcification}
+\newacro{MAF}{minor allele frequency}
+
+% override default description on this one:
+\newterm
+[%
+  symbol={\ensuremath{LXR\alpha}},%symbol for name
+  long={liver X receptor alpha}, % a brief description
+  short={\ensuremath{LXR\alpha}},
+  description={liver X receptor alpha}, % a brief description
+  text={\ensuremath{LXR\alpha}}
+]{LXR-alpha} %name
+
+\newterm
+[%
+  symbol={PPAR\ensuremath{\gamma}},
+  long={peroxisome proliferator-activated receptor gamma}, % a brief description
+  short={PPAR\ensuremath{\gamma}},
+  description={peroxisome proliferator-activated receptor gamma}, % a brief description
+  text={PPAR\ensuremath{\gamma}},
+  sort={PPAR\ensuremath{\gamma}}
+]{PPAR-gamma}
+
+%\newacro[text=LXR\ensuremath{\alpha}]{lxralpha}{liver X receptor alpha}
+%\newacro[LXR\ensuremath{$\alpha$}]{}{lxralpha}{lxralpha}
+%\newacro{PPAR\ensuremath{\gamma}}{peroxisome proliferator-activated receptor gamma}
+\newacro{mRNA}{messenger ribonucleic acid}
+\newacro{DNA}{deoxyribonucleic acid}
+\newacro{PNOF}{postnatal overfeeding}
+%no need to call makeglossaries.
