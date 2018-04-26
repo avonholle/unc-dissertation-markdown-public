@@ -1,0 +1,140 @@
+---
+bibliography: includes/bib/lit-review.bib
+classoption: report
+csl: includes/bib/vancouver.csl
+documentclass: uncdissertation
+fontsize: 12pt
+link-citations: yes
+output:
+  pdf_document:
+    includes:
+      before_body: includes/tex/doc_prefix_unc.tex
+      in_header: includes/tex/header-unc.tex
+    keep_tex: no
+    number_sections: yes
+    pandoc_args:
+    - --filter
+    - C:/Python27/Scripts/pandoc-eqnos.exe
+    toc: no
+  html_document:
+    toc: yes
+    toc_float: yes
+---
+
+
+```{r include=FALSE}
+library(knitr)
+library(readxl)
+library(htmlTable)
+library(xtable)
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+```
+
+<!-- NOTES: 
+
+1. All template code for formatting based on work from https://github.com/jvcasill/ua_thesis_rmd. The original .cls file is from https://github.com/mmalahe/unc-dissertation
+
+2. Be careful of unicode characters, especially in the bibliography file. Very hard to find and can kick up errors that prevents the file from compiling. For example, a Wright reference had a U+2AB unicode character after children (an apostrophe) that was not recognized and kept the program from compiling. or 'Package inputenc Error: Unicode char Î± (U+3B1)', which was actually in a journal title in the .bib file. Dashes are also problematic. See header-unc.tex to avoid that problem and add characters with 'declareunicodecharacters'.
+
+One way around this is to save the google doc file as a .txt file (ansi coding) then convert to utf-8 after opening in R (File|reopen with encoding)
+
+Using pandoc-eqnos python program in pandoc to number equations:  https://github.com/tomduck/pandoc-eqnos
+-->
+
+<!-- Include introductory chapters -->
+
+```{r, child='./sections/dissertation-section1.Rmd', eval=T}
+```
+
+
+<!-- Include first manuscript. -->
+ 
+\chapter{Manuscript 1: Sociodemographic predictors of early postnatal growth\label{ms1}}
+
+```{r, child='includes/scripts/paper1/draft/ms1.Rmd', eval=T}
+```
+
+<!-- Include tables and figures for first manuscript -->
+
+```{r, child='includes/scripts/paper1/sitar-rev5/tables-ms.Rmd', eval=T}
+```
+
+
+<!-- Include second manuscript. -->
+ 
+\chapter{Manuscript 2: Infant Growth Trajectories and Lipid Levels in Adolescence\: Evidence from
+  a Chilean Infancy Cohort\label{ms2}}
+
+```{r, child='includes/scripts/paper2/draft/ms2.Rmd', eval=T}
+```
+
+<!-- Include tables and figures for second manuscript -->
+
+```{r, child='includes/scripts/paper2/bch-read-all-bf-pdfversion.Rmd', eval=T}
+```
+
+<!-- Include third manuscript. -->
+ 
+\chapter{Manuscript 3: Infant growth as an effect modifier of genetic-lipid associations\: evidence from a Chilean infancy cohort\label{ms3}}
+
+```{r, child='includes/scripts/paper3/draft/ms3.Rmd', eval=T}
+```
+
+<!-- Include tables and figures for third manuscript -->
+
+
+```{r, child='includes/scripts/paper3/ms3-read-all-pdfversion.Rmd', eval=T}
+```
+
+
+<!-- Discussion section -->
+
+
+```{r, child='./sections/discussion.Rmd', eval=T}
+```
+
+
+<!-- Include references -->
+
+\setlength{\parindent}{-0.2in}
+\setlength{\leftskip}{0.2in}
+\setlength{\parskip}{8pt}
+
+\backmatter
+
+<!-- Include appendices -->
+
+\appendix
+
+```{r, child='./sections/appendix-graffar-desc.Rmd', eval=T}
+```
+
+```{r, child='./sections/appendix-model-fit-sitar.Rmd', eval=T}
+```
+
+
+```{r, child='./sections/appendix-model-fit-lgmm.Rmd', eval=T}
+```
+
+
+```{r, child='./sections/appendix-a-rev.Rmd', eval=T}
+```
+
+
+```{r, child='./sections/appendix-b-new.Rmd', eval=T}
+```
+
+<!--
+```{r appc, child='./sections/appendix-c.Rmd', eval=T, fig.width=6, fig.height=6}
+```
+-->
+
+\chapter{Background for power calculations\label{appD}}
+
+```{r appd, child='./sections/appendix-d.Rmd', eval=T, fig.width=6, fig.height=6}
+```
+
+\chapter*{References}
+\printbibliography{}
+\addtocontents{toc}{\protect\vspace*{\baselineskip}}
+
