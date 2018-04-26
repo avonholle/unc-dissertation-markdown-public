@@ -1,0 +1,924 @@
+---
+title: "Table 3 -- SITAR model evaluation. weight"
+author: "Ann Von Holle"
+date: '`r format(Sys.time(), "%d %B, %Y")`'
+output:
+  pdf_document:
+    number_sections: yes
+    toc: yes
+    toc_depth: 3
+  html_document:
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+header-includes: \usepackage{hyperref, booktabs, longtable, float}\hypersetup{colorlinks=true, linkcolor=blue,filecolor=magenta,urlcolor=cyan}
+bibliography: ../../bib/lit-review.bib
+classoption: landscape
+---
+
+```{r setup-t3, include=FALSE}
+knitr::opts_chunk$set(fig.width=8, fig.height=8,
+                      fig.align = 'center',
+                      echo=F, warning=FALSE,
+                      message=FALSE, 
+                      results='hide',
+                      comment=NA,
+                      cache=F)
+
+require(tableone)
+require(htmlTable)
+require(Hmisc) 
+require(ggplot2)
+require(reshape2)
+require(nlme)
+require(splines)
+require(sitar)
+require(knitr)
+require(plyr)
+```
+
+<!-- Read in data -->
+
+```{r, child='table3-data-handle-weight.Rmd', eval=T}
+ # produces temp.dat data frame
+```
+
+```{r no-eff, eval=T}
+
+# some data handling
+class(temp.dat$value.wt)
+temp.dat$log.value = log(temp.dat$value.wt)
+nrow(temp.dat)
+sapply(temp.dat[,c("value.wt", "value.ht", "value.wfl")], summary)
+#temp.dat = temp.dat[sample(nrow(temp.dat), 1000),] # for debugging
+
+func.1 = function(df){
+# see https://stackoverflow.com/questions/9139242/splines-inside-nonlinear-least-squares-in-r
+
+# starting values
+starts.no = coef(lm(log.value ~ ns(time2, knots=myknots, Bound=mybounds), 
+        data=df))
+starts.no
+
+# -------------------------------------------
+
+# spline values ------------------------------
+
+m.splines = ns(df$time2, knots=myknots, Bound=mybounds)
+df.splines = data.frame(y=df$log.value, m.splines)
+head(df.splines)
+
+noeff = nls(y ~ alpha0 + s1*X1 + s2*X2 + s3*X3 + s4*X4,
+            data = df.splines,
+            start = c(s1=2.7, s2=3.3, s3=5.2, s4=3.9, alpha0=3.4))
+}
+
+# temp.dat$log.value=log(temp.dat$value.wt)
+# noeff=func.1(temp.dat)
+# summary(noeff)
+# AIC(noeff)
+
+```
+
+```{r}
+
+      # bounds for natural splines, ns
+      # range(temp.dat$time2)
+      mybounds=c(-0.2,5.9) # bounds at 0 to 5 months for spline
+      
+      # get quantiles of growth times
+      # quartile = cut(temp.dat$time2,
+      #                breaks = quantile(temp.dat$time2, probs = seq(0, 1, by = 1/4)),
+      #                right = FALSE)
+      # table(quartile) # 1.1, 2.4, 4.1, 5.7
+
+      # get starting values
+      myknots=c(1.1, 2.1, 4.1) # 3 knots at 1.1, 2.4, and 4.1 (median time points)
+
+# starting values
+func.starts = function(df){
+    starts.r = coef(lm(log.value ~ ns(time2, knots=myknots, Bound=mybounds), 
+            data=df))
+}
+
+# avg times of measures for wt, ht and wfl
+timevars = c('DysbbdaM1m', 'DysbbdaM2m', 'DysbbdaM3m', 'DysbbdaM4m', 'DysbbdaM5m')
+sapply(merge1.rev[timevars], function(x) mean(x, na.rm=T)/30) # mean times of measurement
+
+
+```
+
+
+```{r r2, eval=T}
+
+    fitnlme.f.r2 <- function(age,s1,s2,s3,s4,salpha0){
+      splinecoefs <- as.matrix(cbind(s1,s2,s3,s4))
+      as.vector( salpha0 + t(matrix(rep(1,4),ncol=4) %*%
+        t(splinecoefs*as.matrix(ns(age,
+                                   knots=myknots,
+                                   Boundary.knots=mybounds)))))
+    }
+
+func.2 = function(df){
+
+  starts.r = func.starts(df)
+
+    sim.wt.r2 <-
+      nlme(log.value ~ fitnlme.f.r2(time2,s1,s2,s3,s4,alpha0),
+      data=df,
+      fixed = s1+s2+s3+s4+alpha0 ~ 1,
+      random = alpha0 ~ 1 | id,
+      start = starts.r 
+    )
+  return(sim.wt.r2)    
+}
+
+# temp.dat$log.value=log(temp.dat$value.wt)
+# sim.wt.r2=func.2(temp.dat)
+# sim.wt.r2
+#summary(sim.wt.r2)
+#summary(random.effects(sim.wt.r2))
+
+# check with sitar package
+# m.r2 = sitar(x=time2, y=log(value.wt), data=temp.dat, id=factor(id), 
+#            knots=myknots, fixed=c('a'), random='a')
+# 
+# summary(m.r2)
+# 
+# AIC(m.r2)
+# AIC(sim.wt.r2)
+  
+```
+
+
+```{r r3, eval=T}
+
+# only alpha as fixed effect ------------------
+    fitnlme.f.r3 <- function(age,s1,s2,s3,s4,salpha0, sbeta0){
+      splinecoefs <- as.matrix(cbind(s1,s2,s3,s4))
+      as.vector( salpha0 + t(matrix(rep(1,4),ncol=4) %*%
+        t(splinecoefs*as.matrix(ns((age-sbeta0),
+                                   knots=myknots,
+                                   Boundary.knots=mybounds)))))
+    }
+
+func.3 = function(df){
+
+    starts.r = func.starts(df)
+
+    sim.wt.r3 <-
+      nlme(log.value ~ fitnlme.f.r3(time2,s1,s2,s3,s4,alpha0,beta0),
+      data=df,
+      fixed = alpha0 + s1+s2+s3+s4 ~ 1,
+      random = beta0 ~ 1 | id,
+      start = c(starts.r) # 3kg is close to avg birth weight
+    )
+}
+
+# temp.dat$log.value=log(temp.dat$value.wt)
+# sim.wt.r3 = func.3(temp.dat)
+# summary(sim.wt.r3)
+# summary(random.effects(sim.wt.r3))
+
+# check with sitar package
+# m.r3 = sitar(x=time2, y=log(value), data=temp.dat, id=factor(id), 
+#            knots=myknots, fixed=c('a'), random='b')
+# 
+# summary(m.r3)
+# 
+# AIC(sim.wt.r3)
+# AIC(m.r3)
+  
+```
+
+
+```{r r4, eval=T}
+
+      fitnlme.f.r4 <- function(age,s1,s2,s3, s4,salpha0,sbeta1){
+        splinecoefs <- as.matrix(cbind(s1,s2,s3,s4))
+        as.vector( salpha0 + t(matrix(rep(1,4),ncol=4) %*%
+          t(splinecoefs*as.matrix(ns((age)/exp(-sbeta1),
+                                     knots=myknots,
+                                     Boundary.knots=mybounds)))))
+      }
+    
+
+func.4 = function(df){
+        # starting values
+  
+    starts.r = func.starts(df)
+
+    sim.wt.r4 <-
+      nlme(log.value ~ fitnlme.f.r4(time2,s1,s2,s3,s4,alpha0, beta1),
+      data=df,
+      fixed = alpha0 + s1+s2+s3+s4 ~ 1,
+      random = beta1 ~ 1 | id,
+      start = starts.r 
+    )
+    return(sim.wt.r4)
+}
+
+# temp.dat$log.value=log(temp.dat$value.wt)
+# sim.wt.r4 = func.4(temp.dat)
+# summary(sim.wt.r4)
+# summary(random.effects(sim.wt.r4))
+
+# check with sitar package
+# m.r4 = sitar(x=time2, y=log(value), data=temp.dat, id=factor(id), 
+#            knots=myknots, fixed=c('a'), random='c')
+# 
+# summary(m.r4)
+# 
+# AIC(sim.wt.r4)
+# AIC(m.r4)
+  
+```
+
+
+```{r r5}
+
+    fitnlme.f.r5 <- function(age,s1,s2,s3,s4,salpha0, sbeta0, sbeta1){
+      splinecoefs <- as.matrix(cbind(s1,s2,s3,s4))
+      as.vector( salpha0 + t(matrix(rep(1,4),ncol=4) %*%
+        t(splinecoefs*as.matrix(ns((age-sbeta0)/exp(-sbeta1),
+                                   knots=myknots,
+                                   Boundary.knots=(mybounds))))))
+    }
+
+func.5 = function(df){
+     tryCatch({ # tryCatch function will return a missing value for iterations that don't work
+
+  starts.r = func.starts(df)
+
+  temp.dat.g = groupedData(log.value ~ time2 | id, data=df) # set up grouped data object for plotting
+
+    sim.wt.r5 <-
+      nlme(log.value ~ fitnlme.f.r5(time2,s1,s2,s3,s4,alpha0,beta0, beta1),
+      data=df,
+      fixed = alpha0 + s1+s2+s3+s4 ~ 1,
+      random = beta0 + beta1 ~ 1 | id,
+      start = starts.r
+    )
+     },
+  error = function(err) {return()} # return NULL on error
+)
+}
+
+ temp.dat$log.value=log(temp.dat$value.wt)
+ sim.wt.r5 = func.5(temp.dat)
+ summary(sim.wt.r5)
+ names(temp.dat)
+
+# check with sitar package
+ # m.r5 = sitar(x=time2, y=value.wt, 
+ #              data=temp.dat, id=factor(id), 
+ #              knots=myknots, fixed=c('a'), random='b+c')
+ # 
+ # summary(m.r5)
+ # 
+ # AIC(m.r5)
+ # AIC(sim.wt.r5)
+ # 
+
+# sex specific curves
+func.5.strat = function(df){
+     tryCatch({ # tryCatch function will return a missing value for iterations that don't work
+  starts.r = func.starts(df)
+
+  temp.dat.g = groupedData(log.value ~ time2 | id, data=df) # set up grouped data object for plotting
+
+    sim.wt.r5 <-
+      nlme(log.value ~ fitnlme.f.r5(time2,s1,s2,s3,s4,alpha0,beta0, beta1),
+      data=df,
+      fixed = alpha0 + s1+s2+s3+s4 ~ Sex,
+      random = beta0 + beta1 ~ 1 | id,
+      start =   c( rbind(starts.r, rep(0,length(starts.r)))) # according to appendix A2 code from Beath 2008 paper
+    )
+     },
+  error = function(err) {return()} # return NULL on error
+)
+}
+
+# temp.dat$log.value=log(temp.dat$value.wfl)
+# sim.wt.r5strat = func.5.strat(temp.dat)
+# summary(sim.wt.r5strat)
+
+# Sex specific curves and sex-specific correlation structures for random effects 
+
+func.5.strat2 = function(df){
+     tryCatch({ # tryCatch function will return a missing value for iterations that don't work
+
+    # See Appendix A.2. from Beath 2008
+    df$Male <- ifelse(df$Sex==1,1,0)
+    df$Female <- ifelse(df$Sex==2,1,0)
+
+  starts.r = func.starts(df)
+
+  temp.dat.g = groupedData(log.value ~ time2 | id, data=df) # set up grouped data object for plotting
+
+    sim.wt.r5 <-
+      nlme(log.value ~ fitnlme.f.r5(time2,s1,s2,s3,s4,alpha0,beta0, beta1),
+      data=df,
+      fixed = alpha0 + s1+s2+s3+s4 ~ Sex,
+    random = list(id=pdBlocked(list(
+      pdSymm(beta0+beta1~Male-1),
+      pdSymm(beta0+beta1~Female-1)))),
+      start = c( rbind(starts.r, rep(0,length(starts.r)))) # according to appendix A2 code from Beath 2008 paper
+    )
+     },
+  error = function(err) {return()} # return NULL on error
+)
+}
+
+# temp.dat$log.value=log(temp.dat$value.wfl)
+# sim.wt.r5strat2 = func.5.strat2(temp.dat)
+# summary(sim.wt.r5strat2)
+
+```
+
+
+
+```{r r6, eval=T}
+
+# no extra fixed effects---------------------------------------------
+
+fitnlme.f.r6 <- function(age,s1,s2,s3,s4, salpha0, sbeta0){
+  splinecoefs <- as.matrix(cbind(s1,s2,s3,s4))
+  as.vector(salpha0 + t(matrix(rep(1,4),ncol=4) %*%
+    t(splinecoefs*as.matrix(ns((age-sbeta0),
+                               knots=myknots,
+                               Boundary.knots=(mybounds))))))
+  }
+
+func.6 = function(df){
+   tryCatch({ # tryCatch function will return a missing value for iterations that don't work
+  starts.r = func.starts(df)
+
+  sim.wt.r6 <-
+    nlme(log.value ~ fitnlme.f.r6(time2,s1,s2,s3,s4,alpha0,beta0),
+    data=df,
+    fixed = alpha0 + s1+s2+s3+s4 ~ 1,
+    random = alpha0 + beta0  ~ 1 | id,
+    start = starts.r
+  )
+},
+  error = function(err) {return()} # return NULL on error
+)
+}
+
+#  temp.dat$log.value=log(temp.dat$value.wt)
+#  sim.wt.r6 = func.6(temp.dat)
+#  summary(sim.wt.r6)
+#  summary(ranef(sim.wt.r6))
+# 
+# # check with sitar package
+#  m.r6 = sitar(x=time2, y=log(value), data=temp.dat, id=factor(id), 
+#             knots=myknots, fixed=c('a'), random='a+b')
+#  
+#  summary(m.r6)
+# # 
+#  AIC(sim.wt.r6)
+#  AIC(m.r6)
+
+
+# sex specific curves
+
+func.6.strat = function(df){
+   tryCatch({ # tryCatch function will return a missing value for iterations that don't work
+  starts.r = func.starts(df)
+  
+#  df = temp.dat
+  # df$log.value=log(df$value.wt)
+
+  sim.wt.r6 <-
+    nlme(log.value ~ fitnlme.f.r6(time2,s1,s2,s3,s4,alpha0,beta0),
+    data=df,
+    fixed = alpha0 + s1+s2+s3+s4 ~ Sex,
+    random = alpha0 + beta0  ~ 1 | id,
+    start =   c( rbind(starts.r, rep(0,length(starts.r)))), # according to appendix A2 code from Beath 2008 paper
+    maxIter = 20,
+    msMaxIter = 20 # see https://www.unc.edu/courses/2008fall/ecol/563/001/docs/lectures/lecture28.htm
+
+  )
+},
+  error = function(err) {return()} # return NULL on error
+)
+}
+
+
+
+#  temp.dat$log.value=log(temp.dat$value.wt)
+#  sim.wt.r6.strat = func.6.strat(temp.dat)
+#  summary(sim.wt.r6.strat)
+
+
+```
+
+
+
+```{r r7}
+
+fitnlme.f.r7 <- function(age,s1,s2,s3,s4,salpha0,sbeta1){
+  splinecoefs <- as.matrix(cbind(s1,s2,s3,s4))
+  as.vector( salpha0 + t(matrix(rep(1,4),ncol=4) %*%
+    t(splinecoefs*as.matrix(ns((age/exp(-sbeta1)),
+                               knots=myknots,
+                               Boundary.knots=(mybounds))))))
+}
+
+func.7 = function(df){
+     tryCatch({ # tryCatch function will return a missing value for iterations that don't work
+
+  starts.r = func.starts(df)
+
+  sim.wt.r7 <-
+    nlme(log.value ~ fitnlme.f.r7(time2,s1,s2,s3,s4,alpha0,beta1),
+    data=df,
+    fixed = alpha0 + s1+s2+s3+s4 ~ 1,
+    random = alpha0 + beta1  ~ 1 | id,
+    start = starts.r # 3kg is close to avg birth weight
+  )
+     },
+  error = function(err) {return()} # return NULL on error
+)
+}
+
+# temp.dat$log.value=log(temp.dat$value.wt)
+# sim.wt.r7 = func.7(temp.dat); class(sim.wt.r7)
+# summary(sim.wt.r7)
+
+# check with sitar package
+# m.r7 = sitar(x=time2, y=log(value), data=temp.dat, id=factor(id), 
+#            knots=c(1,3), fixed=c('a'), random='a+c')
+# 
+# summary(m.r7)
+# 
+# AIC(m.r7)
+# AIC(sim.wt.r7)
+
+
+# sex specific curves
+
+func.7.strat = function(df){
+   tryCatch({ # tryCatch function will return a missing value for iterations that don't work
+  starts.r = func.starts(df)
+  
+#  df = temp.dat
+  # df$log.value=log(df$value.wfl)
+
+  sim.wt.r7 <-
+    nlme(log.value ~ fitnlme.f.r7(time2,s1,s2,s3,s4,alpha0, beta1),
+    data=df,
+    fixed = alpha0 + s1+s2+s3+s4 ~ Sex,
+    random = alpha0 + beta1  ~ 1 | id,
+    start =   c( rbind(starts.r, rep(0,length(starts.r)))), # according to appendix A2 code from Beath 2008 paper
+    maxIter = 20,
+    msMaxIter = 20 # see https://www.unc.edu/courses/2008fall/ecol/563/001/docs/lectures/lecture28.htm
+  )
+},
+  error = function(err) {return()} # return NULL on error
+)
+}
+
+# temp.dat$log.value=log(temp.dat$value.wt)
+# sim.wt.r7.strat = func.7.strat(temp.dat); class(sim.wt.r7)
+# summary(sim.wt.r7.strat)
+
+```
+
+
+```{r r8, eval=T}
+
+fitnlme.f.r8 <- function(age,s1,s2,s3,s4,salpha0,sbeta0,sbeta1){
+  splinecoefs <- as.matrix(cbind(s1,s2,s3,s4))
+  as.vector( salpha0 + t(matrix(rep(1,4),ncol=4) %*%
+    t(splinecoefs*as.matrix(ns((age-sbeta0)/exp(-sbeta1),
+                               knots=myknots,
+                               Boundary.knots=mybounds)))))
+  }
+
+func.8 = function(df){
+   tryCatch({ # tryCatch function will return a missing value for iterations that don't work
+  starts.r = func.starts(df)
+
+  temp.dat.g = groupedData(log.value ~ time2 | id, data=df) # set up grouped data object for plotting
+
+  sim.wt.r8 =
+    nlme(log.value ~ fitnlme.f.r8(time2,s1,s2,s3,s4,alpha0,beta0,beta1),
+    data = df,
+    fixed =  alpha0 + s1 + s2 + s3 + s4 ~ 1,
+    random = alpha0 + beta0 + beta1 ~ 1 | id,
+    start = starts.r, # according to appendix A2 code from Beath 2008 paper,
+    maxIter = 40,
+    msMaxIter = 40 # see https://www.unc.edu/courses/2008fall/ecol/563/001/docs/lectures/lecture28.htm
+  )
+   },
+  error = function(err) {return()} # return NULL on error
+)
+}
+
+# temp.dat$log.value = log(temp.dat$value.wfl)
+# test = func.8(temp.dat) # NOTE: does not converge for sex-specific models
+
+# temp.dat$log.value=log(temp.dat$value.wfl)
+# sim.wt.r8 = func.8(temp.dat); class(sim.wt.r8)
+# summary(sim.wt.r8)
+# summary(random.effects(sim.wt.r8))
+
+
+
+```
+
+
+<!-- Stratify shape of curve by sex of child, but keep common random effects -->
+
+```{r r8-strat, eval=T}
+
+func.8.strat = function(df){
+   tryCatch({ # tryCatch function will return a missing value for iterations that don't work
+  starts.r = func.starts(df)
+
+  temp.dat.g = groupedData(log.value ~ time2 | id, data=df) # set up grouped data object for plotting
+  
+  sim.wt.r8.strat =
+    nlme(log.value ~ fitnlme.f.r8(time2,s1,s2,s3,s4,alpha0,beta0,beta1),
+    data = df,
+    fixed = alpha0 + s1 + s2 + s3 + s4 ~ Sex,
+    random = alpha0 + beta0 + beta1 ~ 1 | id,
+    start =   c( rbind(starts.r, rep(0,length(starts.r)))), # according to appendix A2 code from Beath 2008 paper,
+    maxIter = 40,
+    msMaxIter = 40 # see https://www.unc.edu/courses/2008fall/ecol/563/001/docs/lectures/lecture28.htm
+  )
+},
+   error = function(err) {return()} # return NULL on error
+)
+}
+
+summary(temp.dat$log.value)
+# temp.dat$log.value=log(temp.dat$value.wt)
+# sim.wt.r8.strat = func.8.strat(temp.dat); class(sim.wt.r8.strat)
+
+# summary(sim.wt.r8.strat)
+# AIC(sim.wt.r8.strat)
+
+```
+
+<!-- Stratify shape of curve by sex of child, and have individual random effects -->
+
+```{r r8-strat2, eval=T}
+# NOTE: stopped working after I revised data down to 602 (omitting the people in treatment trial (n~70))
+# Error in nlme.formula(log.value ~ fitnlme.f.r8(time2, s1, s2, s3, s4,  : 
+#  maximum number of iterations (maxIter = 50) reached without convergence
+
+func.8.strat2 = function(df){
+   tryCatch({ # tryCatch function will return a missing value for iterations that don't work
+     
+     # df = temp.dat # debugging
+     # df$log.value=log(df$value.wt)
+
+  starts.r = func.starts(df)
+
+    # See Appendix A.2. from Beath 2008
+    df$Male <- ifelse(df$Sex==1,1,0)
+    df$Female <- ifelse(df$Sex==2,1,0)
+
+  temp.dat.g = groupedData(log.value ~ time2 | id, data=df) # set up grouped data object for plotting
+
+  sim.wt.r8.strat2 =
+    nlme(log.value ~ fitnlme.f.r8(time2,s1,s2,s3,s4,alpha0,beta0,beta1),
+    data = df,
+    fixed = alpha0 + s1 + s2 + s3 + s4 ~ Sex,
+    random = list(id=pdBlocked(list(
+      pdSymm(alpha0+beta0+beta1~Male-1),
+      pdSymm(alpha0+beta0+beta1~Female-1)))),
+    start =   c( rbind(starts.r, rep(0,length(starts.r)))), # according to appendix A2 code from Beath 2008 paper,
+    maxIter = 40,
+    msMaxIter = 40 # see https://www.unc.edu/courses/2008fall/ecol/563/001/docs/lectures/lecture28.htm
+  )
+   },
+  error = function(err) {return()} # return NULL on error
+)
+}
+
+# temp.dat$log.value=log(temp.dat$value.wt)
+# sim.wt.r8.strat2 = func.8.strat2(temp.dat); class(sim.wt.r8.strat2)
+# AIC(sim.wt.r8.strat2)
+# summary(sim.wt.r8.strat2)
+
+```
+
+
+```{r r8-sitar, eval=F}
+
+# check with sitar package
+# not running this because takes too long
+m.r8 = sitar(x=time2, y=log(value), data=temp.dat, id=factor(id), 
+             knots=myknots, random='a+b+c', fixed='a+b+c')
+
+summary(m.r8)
+print(fixef(m.r8)['b'])
+
+
+## refit with starting value chosen to minimise b-c correlation and df increased (see sitar package info)
+m.r8.2 <- update(m.r8, bstart=bupdate(m.r8)) # this does not work for these data
+#print(fixef(m.r8.2)['b'])
+summary(m.r8.2)
+
+```
+
+
+<!-- Set up function to get evaluate fit functions above for different combinations of outcomes (weight, height and wfl) and subgroups(male, female or both) -->
+
+```{r run-all-funcs}
+
+# Models
+models = list(func.1, func.2, func.3, func.4, 
+              func.5, func.5.strat, func.5.strat2, func.6, 
+              func.6.strat, func.7, func.7.strat, func.8, 
+              func.8.strat, func.8.strat2)
+
+# model descriptions
+# ==========================
+# func.1: no re
+# func.2: random size (alpha0)
+# func.3: random tempo (beta0)
+# func.4: random velocity (beta1)
+# func.5: random tempo and velocity (beta0 and beta1)
+# func.5.strat = func5 and sex-spec effects
+# func.5.strat2 = func.5.strat + sex-spec corr structures
+# func.6: random size and tempo (alpha0 and beta0)
+# func.6.strat = func6 and sex-spec effects
+# func.7: random size and velocity (alpha0 and beta1)
+# func.7.strat: func.7 and sex-spec effects
+# func.8: random size, tempo and velocity (alpha0, beta0 and beta1)
+# func.8.strat: func.8 and sex-spec effects
+# func.8.strat2: func.8.strat and sex-spec corr structures
+
+
+# prep data for following function
+# pick data frame, the outome of interest and female/male or both
+# ---------------------------------------------------
+
+eval.fit = function(df1, outcome, sex.of.child){
+  
+      # data handling -----------------------------
+      # ------------------------------------------------
+  
+      # df1 = temp.dat # for debugging
+      # sex.of.child=c(1,2) # for debugging
+      # outcome='value.wfl' # for debugging
+  
+      df1 = df1[df1$Sex %in% sex.of.child,]
+      df1$log.value = log(df1[,outcome]) 
+
+      # apply functions to temp.dat data frame
+      # -----------------------------------------
+func.list =list(func.1, func.2, func.3, func.4, 
+              func.5, func.5.strat, func.5.strat2, func.6, 
+              func.6.strat, func.7, func.7.strat, func.8, 
+              func.8.strat, func.8.strat2)
+      
+    names.models = c("1. m1: no random effects",
+                     "2. m2: random size (alpha0)",
+                     "3. m3: random tempo (beta0)",
+                     "4. m4: random velocity (beta1)",
+                     "5. m5: random tempo and velocity (beta0 and beta1)",
+                     "6. m5.strat: m5 + sex-spec effects",
+                     "7. m5.strat2: m5.strat + sex-spec corr structure",
+                     "8. m6: random size and tempo (alpha0 and beta0)",
+                     "9. m6.strat: m6 + sex-spec effects",
+                     "10. m7: random size and velocity (alpha0 and beta1)",
+                     "11. m7.strat: m7 + sex-spec effects",
+                     "12. m8: random size, tempo and velocity (alpha0, beta0, and beta1)",
+                     "13. m8.strat: m8 + sex-spec effects",
+                     "14. m8.strat2: m8.strat + sex-spec corr structure")
+
+    # run functions for this outcome and data 
+    sit.dat = lapply(func.list, function(x) x(df1)) # run and return list of models
+
+    # take out the models that didn't work
+    classes = sapply(sit.dat, class)
+    first.type = lapply(classes, function(l) l[[1]]) # take first model type from each element in the list (can be more than one element for each list for the nlme models (all but the first one))
+    models.that.work = sit.dat[first.type %in% c("nlme")] # list of functions with non-null values
+    names.that.work = names.models[first.type %in% c("nlme")]
+    
+     # compare the models
+      compare.1 = data.frame(do.call(anova, models.that.work))
+      rownames(compare.1) = names.that.work
+      compare.1$model.f = rownames(compare.1)
+
+      compare.1 = rbind.fill(data.frame(Model=0,
+                                      AIC=AIC(sit.dat[[1]]),
+                                      model.f="no random effects"),
+                           compare.1)
+
+      #compare.1 # check
+
+      temp.dat.g = groupedData(log.value ~ time2 | id, data=df1) # set up grouped data object for plotting
+
+      return(list(compare.1, sit.dat, temp.dat.g))
+}
+
+```
+
+
+# Weight data, all
+
+## Compare fit of all models 
+
+```{r compare-fit, results='markup', eval=T}
+
+wt.all = eval.fit(df1=temp.dat, outcome='value.wt', sex.of.child=c(1,2))
+  # NOTE: did not evaluate 3 growth param with sex-specific curves. model not converging.
+save(wt.all, file="wt-all.Rdata")
+
+kable(wt.all[[1]]) # table of fit statistics
+
+wt.all[[2]] # more detailed model results
+```
+
+
+## Diagnostic plots
+
+```{r diagnostic-plots, results='markup', eval=T}
+
+# function to make plots
+
+plot.f = function(dat, model.num) {
+  
+  dat.info = dat[[4]][[5]] # model 5 info
+  
+  # some fitted plots by id (individual)
+  p1 = plot( augPred(dat.info, level = 0:1))[1:12]
+  
+  # standardized residuals versus fitted values by gender
+  p2 = plot(dat.info, resid(., type = "p") ~ fitted(.), abline = 0)
+
+  # observed versus fitted values by Subject for first 12 subjects
+  # line is for perfect fit between observed and fitted.
+  p3 = plot(dat.info, log.value ~ fitted(.) | id, abline = c(0,1))[1:12]
+  
+  # look at any auto-correlation pattern
+  p4 = plot( ACF(dat.info, form = ~ 1 | id), alpha = 0.05 ) 
+
+  return(list(p1,p2,p3,p4))
+}
+
+temp.dat.g = wt.all[[3]] # temp.dat.g
+plots = plot.f(wt.all, 9)
+plots[[1]]
+plots[[2]]
+plots[[3]]
+plots[[4]]
+
+```
+
+
+---
+
+# Height data, all 
+
+## Compare fit of all models 
+
+Note: the model with all 3 growth params and sex-specific shapes does not converge. 
+
+```{r, results='markup', eval=T}
+
+ht.all = eval.fit(df1=temp.dat, outcome='value.ht', sex.of.child=c(1,2))
+save(ht.all, file="ht-all.Rdata")
+
+kable(ht.all[[1]])  # table of fit statistics
+
+ht.all[[2]] # more detailed model results
+```
+
+## Diagnostic plots
+
+```{r, results='markup', eval=T}
+
+temp.dat.g = ht.all[[3]] # temp.dat.g
+plots = plot.f(ht.all, 6)
+plots[[1]]
+plots[[2]]
+plots[[3]]
+plots[[4]]
+
+```
+
+
+---
+
+
+# Weight-for-length (WFL) data, all 
+
+## Compare fit of all models 
+
+Note: the 3-growth parameter model did not coverge for wfl. Most likely because of strong correlation between the growth parameters.
+
+```{r, results='markup', eval=T}
+
+wfl.all = eval.fit(df1=temp.dat, outcome='value.wfl', sex.of.child=c(1,2))
+save(wfl.all, file="wfl-all.Rdata")
+
+kable(wfl.all[[1]]) # table of fit statistics
+
+wfl.all[[2]] # more detailed model results
+```
+
+## Diagnostic plots
+
+
+```{r, results='markup', eval=T}
+
+temp.dat.g = wfl.all[[3]] # temp.dat.g
+plots = plot.f(wfl.all, 6)
+plots[[1]]
+plots[[2]]
+plots[[3]]
+plots[[4]]
+
+```
+
+
+---
+
+
+# Code and output used to make tables
+
+## No random effects
+
+```{r no-eff, echo=T, eval=F}
+```
+
+## Alpha only
+
+```{r r2, echo=T, results='markup', eval=F}
+```
+
+## Beta only
+
+```{r r3, echo=T, results='markup', eval=F}
+```
+
+## Gamma only
+
+```{r r4, echo=T, results='markup', eval=F}
+```
+
+## Beta and gamma only
+
+```{r r5, echo=T, results='markup', eval=FALSE}
+```
+
+## alpha and beta only
+
+```{r r6, echo=T, results='markup', eval=FALSE}
+```
+
+## alpha and gamma only
+
+```{r r7, echo=T, results='markup', eval=F}
+```
+
+## all random effects (alpha, beta and gamma)
+
+<!-- This part takes too long so don't run again. -->
+
+```{r r8, echo=T, results='markup', echo=T, eval=F}
+```
+
+
+### Fit plots
+
+```{r r8-fit1, fig.cap="Predicted values for 12 individuals vs time and population average.", eval=FALSE}
+
+  temp.dat.g = groupedData(log.value ~ time2 | id, data=temp.dat) # set up grouped data object for plotting
+
+# some fitted plots by id (individual)
+plot( augPred(sit.dat[[5]], level = 0:1))[1:12]
+
+```
+
+
+```{r r5-fit2, fig.cap="Standardized residuals", eval=FALSE}
+
+# standardized residuals versus fitted values by gender
+plot.1 = plot(sit.dat[[5]], resid(., type = "p") ~ fitted(.), abline = 0)
+plot.1
+
+# box-plots of residuals by Subject
+#plot(sim.wt.r5, id ~ resid(.)) # too busy
+```
+
+
+```{r r5-fit3, fig.cap="Predicted vs observed by individual. Solid line indicates perfect fit between observed and fitted points.", eval=F}
+# observed versus fitted values by Subject for first 12 subjects
+# line is for perfect fit between observed and fitted.
+plot(sit.dat[[5]], log.value ~ fitted(.) | id, abline = c(0,1))[1:12]
+
+```
+
+
+```{r r5-fit4, fig.cap="Look for evidence of autocorrelation", eval=F}
+plot( ACF(sit.dat[[5]], form = ~ 1 | id), alpha = 0.05 ) # look at any autocorrelation pattern
+```

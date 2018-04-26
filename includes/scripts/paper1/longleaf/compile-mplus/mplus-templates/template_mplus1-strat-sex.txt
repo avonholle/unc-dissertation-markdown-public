@@ -1,0 +1,127 @@
+[[init]]
+iterators = model outcome numclasses sex;
+
+model = 1:2;
+outcome = 1:3;
+numclasses = 1:3; 
+sex = 1:2;
+
+modelnames#model =  "quadratic" "cubic";
+outcomenames#outcome = "wt" "wfl" "ht";
+sexnames#sex = "Female" "Male";
+
+filename = "[[modelnames#model]]-Model--[[outcomenames#outcome]]-Outcome--[[numclasses]]-Classes-[[sexnames#sex]].inp";
+
+outputDirectory = "/proj/epi/CVDGeneNas/avonholle/ms-d1/data-prep/mplus-templates/strat";
+
+[[/init]]
+
+TITLE: [[numclasses]] class [[modelnames#model]] growth model for [[outcomenames#outcome]]
+
+DATA: FILE = "../../../slcs-m2.dat";
+
+VARIABLE: 
+NAMES = id hdl ldl tc tg log_tg wt0 wt1 wt2 wt3 wt4 wt5 ht0 ht1 ht2 ht3 ht4 ht5 wfl0
+     wfl1 wfl2 wfl3 wfl4 wfl5 t0 t1 t2 t3 t4 t5 Sex trt mat_wt mat_ht matsmoke
+     mat_age milkcode hhi yoe gestage graffar_i bmi graffar_i_ctr gestage_ctr mk2;
+
+  USEVARIABLES = [[outcomenames#outcome]]0 - [[outcomenames#outcome]]5 
+    graffar_i_ctr mk2 gestage_ctr;
+
+  CLASSES = uc([[numclasses]]); ! NOTE: I am using cubic model and changing class 
+  ! name due to error in overlapping name.
+  
+  MISSING=.;
+  
+  [[sex=1]]
+  USEOBSERVATIONS = Sex==1; ! subset for females
+  [[/sex=1]]
+
+  [[sex=2]]
+  USEOBSERVATIONS = Sex==0; ! subset for males
+  [[/sex=2]]
+
+IDVARIABLE IS id;
+
+ANALYSIS:	TYPE = MIXTURE ;
+	STARTS = 100 20; ! see tech 14 docmt 
+	!'Using Mplus TECH11 and TECH14 to test the number of latent classes'
+	
+
+[[model=1]]
+MODEL:	
+	%OVERALL%
+	i s q | [[outcomenames#outcome]]0@0  [[outcomenames#outcome]]1@1.1 [[outcomenames#outcome]]2@2.1 [[outcomenames#outcome]]3@3.1 [[outcomenames#outcome]]4@4.1 [[outcomenames#outcome]]5@5.1;
+	[[outcomenames#outcome]]0 [[outcomenames#outcome]]1 (v1); ! hold var constant
+	[[outcomenames#outcome]]2-[[outcomenames#outcome]]5 (v2);
+	q@0; ! hold variance for slope and quadratic terms at 0. 
+	
+		i on  mk2 graffar_i_ctr gestage_ctr;
+    s on  gestage_ctr; ! only variables related to slope
+
+    !Mention variance to include missing vars in analysis + avoid listwise deletion.
+    graffar_i_ctr gestage_ctr; ! hold binary covs variance constant for best fit
+   
+    ! The AR(1). 
+    ! See ~\GitHub\unc-dissertation-markdown-p2\includes\scripts\
+    !   paper2\longleaf\compile-mplus\mplus-templates\ar1.xlsx
+    ! for more details and example 6.17 in Mplus documentation
+
+    [[outcomenames#outcome]]0 pwith [[outcomenames#outcome]]1 (p1); ! only including first order. 
+      !only sign corr. see ex.inp file in template folder
+    [[outcomenames#outcome]]1 pwith [[outcomenames#outcome]]2 (p2);
+    [[outcomenames#outcome]]2-[[outcomenames#outcome]]4 pwith [[outcomenames#outcome]]3-[[outcomenames#outcome]]5 (p3);
+    
+
+MODEL CONSTRAINT:
+  	NEW (v3 corr);
+    v3 = sqrt(v1)*sqrt(v2);
+    p1 = v1 * corr;
+    p2 = v3 * corr;
+    p3 = v2 * corr;
+
+[[/model=1]]
+
+
+[[model=2]]
+MODEL:	
+	%OVERALL%
+	i s q c | [[outcomenames#outcome]]0@0  [[outcomenames#outcome]]1@1.1 [[outcomenames#outcome]]2@2.1 [[outcomenames#outcome]]3@3.1 [[outcomenames#outcome]]4@4.1 [[outcomenames#outcome]]5@5.1;
+	[[outcomenames#outcome]]0 [[outcomenames#outcome]]1 (v1); ! hold var constant
+	[[outcomenames#outcome]]2-[[outcomenames#outcome]]5 (v2);
+  ! time points 2 to 5 (months).
+	q@0 c@0; ! hold variance for slope and quadratic/cubic terms at 0. 
+	
+		i on mk2 graffar_i_ctr gestage_ctr;
+    s on gestage_ctr; ! only variables related to slope
+
+    !Mention variance to include missing vars in analysis + avoid listwise deletion.
+    mk2@ graffar_i_ctr gestage_ctr; ! hold binary covs variance constant for best fit
+   
+    ! The AR(1). 
+    ! See ~\GitHub\unc-dissertation-markdown-p2\includes\scripts\
+    !   paper2\longleaf\compile-mplus\mplus-templates\ar1.xlsx
+    ! for more details and example 6.17 in Mplus documentation
+
+    [[outcomenames#outcome]]0 pwith [[outcomenames#outcome]]1 (p1); ! only including first order. 
+      !only sign corr. see ex.inp file in template folder
+    [[outcomenames#outcome]]1 pwith [[outcomenames#outcome]]2 (p2);
+    [[outcomenames#outcome]]2-[[outcomenames#outcome]]4 pwith [[outcomenames#outcome]]3-[[outcomenames#outcome]]5 (p3);
+    
+MODEL CONSTRAINT:
+  	NEW (v3 corr);
+    v3 = sqrt(v1)*sqrt(v2);
+    p1 = v1 * corr;
+    p2 = v3 * corr;
+    p3 = v2 * corr;
+
+[[/model=2]]
+
+OUTPUT:	TECH1 TECH11 TECH14 ;
+! TECH11 and TECH14 produce vlmr and blrt;
+
+SAVEDATA:
+   file is [[modelnames#model]]-[[outcomenames#outcome]]-[[numclasses]]-class-[[sexnames#sex]].txt;
+
+PLOT: type is plot3;
+  ! TECH11 and TECH14 produce vlmr and blrt;

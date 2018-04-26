@@ -1,0 +1,97 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+  classoption: landscape
+---
+
+
+```{r, include=F}
+
+knitr::opts_knit$set(root.dir = "~/GitHub/unc-dissertation-markdown-p2/includes/scripts/paper3")
+
+knitr::opts_chunk$set(echo = F, warning = F, message = FALSE, results='markup')
+
+```
+
+```{r}
+require(knitr)
+require(kableExtra)
+
+```
+
+
+
+```{r}
+
+# load files for use in Appendices of dissertation.
+
+
+load(file="ms3-diffs.Rdata") # data frames distal.wide2.all (diffs in means across latent class groups), mean.wide.all (means by latent class groups) from ms3-read-all-pdfversion.Rmd
+
+```
+
+
+
+<!-- \setcounter{table}{0} -->
+<!-- \renewcommand{\thetable}{A\arabic{table}} -->
+
+\begin{landscape}
+
+\chapter{Manuscript 3: All pairwise growth class differences in lipid distal outcome and mean lipid distal outcomes by latent class groups.\label{tab:appb1}}
+
+```{r, results='markup', tab.cap='Pairwise growth class differences in lipid distal outcome. (mg/dL)', eval=T}
+
+## Latent growth class pairwise differences in coefficient of association between distal lipid outcome (mg/dL) and candidate SNPs
+
+distal.wide2.all[is.na(distal.wide2.all)==T]="--" # get rid of missing values
+distal.wide2.all$snp = gsub("_", ".", distal.wide2.all$snp) # have to be careful with snp names having underscores, need to replace for the latex table to work with escape=F option
+# table(distal.wide2.all$snp) # check
+# names(distal.wide2.all)
+
+kable(distal.wide2.all, 
+      booktabs=T,
+      longtable=T,
+      #escape=F,
+      format="latex",
+      row.names=F,
+      caption="All latent growth class pairwise differences in coefficient of association between distal lipid outcome (mg/dL) and candidate SNP",
+      col.names = c("Risk\nscore", "Sex of\n child", "Trajectory\n type", "Lipid", "SNP",
+                     rep(c("Not adjusted", "Adjusted$^a$"), 2))) %>%
+  add_header_above(c("Categories"=5, "Low vs High"=2, 
+                     "Overall Wald test: p-value, (Chi-sq, df)"=2)) %>%
+  kable_styling(latex_options=c("repeat_header", "striped"), font_size=8) %>%
+  footnote(general="Note: Bold values indicate Bonferroni corrected statistical significance at alpha level = 0.05.",
+           alphabet="Adjusted for sex of child in pooled sample, randomization status, and socioeconomic status." )
+
+```
+
+
+\clearpage
+\newpage
+
+
+
+```{r, results='markup', eval=T}
+
+## Coefficients of association between all snps and lipid outcomes by growth class
+
+kable(mean.wide.all, 
+      longtable=T,
+      booktabs=T,
+      format="latex",
+      caption="Additive association between SNP and distal outcome by growth class, sex of child, adjusted status, snp and lipid outcome\\label{tab:appb2}",
+      row.names = F,
+#      escape=F,
+      col.names = c("Risk\nscore", "Sex of\n child", "Trajectory\n type", "Lipid", "SNP", 
+                    rep(c("Not adjusted", "Adjusted"),2))) %>%
+#  collapse_rows(columns= c(1:3)) %>% # need to fix; , latex_hline = "major"
+  add_header_above(c(" "=5, "Low Growth"=2, "High Growth"=2)) %>%
+  add_header_above(c("Categories"=5, "Latent Growth Class$^a$"=4), escape=F) %>%
+  kable_styling(latex_options = c("repeat_header", "striped", "scale_down"), font_size=8) %>%
+  footnote(alphabet = c("Bold values indicate statistical significance at Bonferroni corrected alpha level of 0.05."),
+           general = c("Note: Adjusted estimates include sex of child (for pooled analyses), randomization status and socioeconomic status."))
+
+```
+
+\end{landscape}

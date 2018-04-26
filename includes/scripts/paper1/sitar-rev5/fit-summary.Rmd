@@ -1,0 +1,236 @@
+---
+title: "SITAR model fit summary."
+author: "Ann Von Holle"
+date: '`r format(Sys.time(), "%d %B, %Y")`'
+output:
+  html_document:
+    number_sections: yes
+    toc: yes
+    toc_depth: 3
+    toc_float: no
+  pdf_document:
+    number_sections: yes
+    toc: yes
+    toc_depth: 3
+header-includes: \usepackage{hyperref, booktabs, longtable, float}\hypersetup{colorlinks=true,
+  linkcolor=blue,filecolor=magenta,urlcolor=cyan}
+classoption: landscape
+bibliography: ../../../bib/lit-review.bib
+editor_options: 
+  chunk_output_type: console
+---
+
+
+
+```{r opts-wt, include=FALSE}
+knitr::opts_chunk$set(fig.width=8, fig.height=8,
+                      echo=FALSE, warning=FALSE,
+                      message=FALSE, 
+                      results='hide',
+                      comment=NA)
+
+
+knitr::opts_knit$set(root.dir = "~/Github/unc-dissertation-markdown-p2/includes/scripts/paper1")
+#knitr::opts_knit$set(root.dir = "~/dissertation/unc-dissertation-markdown-p2/includes/scripts/paper1")
+```
+
+```{r pkg-wt}
+set.seed(4321)
+require(kableExtra)
+require(data.table)
+require(plyr)
+require(knitr)
+require(nlme)
+require(stringr)
+```
+
+
+```{r handle1}
+
+# ====================
+# read in wt fit data
+# ====================
+load("model-fit/wt-all.Rdata") # contains the wt.all object, list of model fit objects from ~\GitHub\unc-dissertation-markdown-p2\includes\scripts\paper1\longleaf\model-fit\table3-w-fcns.Rmd (run on Longleaf)
+
+wt.fit = wt.all[[1]]
+wt.fit$traj="wt"
+wt.fit$model.f
+
+wt.corr = wt.all[[2]] # a list of all model fits
+length(wt.corr)
+
+
+# GET varcorr for each model
+# =======================================
+    
+# Make a function to extract out vc components from mixed effect models
+
+get.vc = function(dat1, dat2) {
+  
+    # dat1 = wt.corr # debug
+    # dat2 = wt.fit; class(dat2)
+
+    wt.corr.2 = dat1[!unlist(lapply(dat1, is.null))] # take out null values, with no model fit
+    
+    # make list of varcorr element from each element of the list, a model fit
+    wt.corr.3 = lapply(wt.corr.2, function(x) { 
+      tryCatch({ 
+        nr = nrow(VarCorr(summary(x)))
+        nc = ncol(VarCorr(summary(x)))
+        df1 = data.frame(VarCorr(summary(x))[1:nr,1:nc])
+        #df1 = data.frame(VarCorr(summary(x))[1:3,1:3])
+        return(df1)
+        }, error = function(err) {return()} # return NULL on error
+       )}
+      )
+    
+    names(wt.corr.3) = dat2$model.f # names for list
+
+    wt.corr.4 =  do.call("rbind.fill", wt.corr.3) # combine all data frames
+    
+    wt.corr.4n = lapply(wt.corr.3[!unlist(lapply(wt.corr.3, is.null))], 
+                         function(x) data.frame(names = rownames(x)))
+    
+    nm = do.call("rbind", wt.corr.4n); nm
+    vc = cbind(wt.corr.4, nm); vc
+    vc$model = rownames(vc)
+
+    return(vc)
+}
+
+wt.vc = get.vc(wt.corr, wt.fit)
+wt.vc$traj = "wt"
+wt.vc    
+
+
+# ====================
+# length
+# read in ht fit data
+# ====================
+
+load("model-fit/ht-all.Rdata") # contains the ht.all object, list of model fit objects from /imp-fit/table3-w-fcns.Rmd (run on Longleaf)
+
+ht.fit = ht.all[[1]]
+ht.fit$traj="ht"
+ht.corr = ht.all[[2]] # a list of all model fits
+
+# GET varcorr for each model
+# =======================================
+
+ht.vc = get.vc(ht.corr, ht.fit)
+ht.vc$traj = "ht"
+names(ht.vc)
+
+# ====================
+# read in wfl fit data
+# ====================
+
+load("model-fit/wfl-all.Rdata") # contains the wfl.all object, list of model fit objects from /imp-fit/table3-w-fcns.Rmd (run on Longleaf)
+
+wfl.fit = wfl.all[[1]]
+wfl.fit$traj = "wfl"
+wfl.corr = wfl.all[[2]] # a list of all model fits
+
+# GET varcorr for each model
+# =======================================
+
+    wfl.vc = get.vc(wfl.corr, wfl.fit)
+    wfl.vc
+    wfl.vc$traj = "wfl"
+    names(wfl.vc)
+
+# COMBINE ALL BIC TOGETHER INTO ONE DATA FRAME
+# ======================================================
+fit.all = rbind.fill(wt.fit, ht.fit, wfl.fit)
+
+dim(fit.all) # 28 by 11
+names(fit.all)
+
+vars.t = c("traj", "model.f", "bic.bold")
+
+
+# find lowest bic by trajectory type across all the models run
+
+test2 <- data.table(fit.all)[, min.BIC := .(BIC == min(BIC, na.rm=T)), by = traj][, bic.bold := ifelse(min.BIC==T, paste0("**", round(BIC,1), "**"), paste0(round(BIC,1)))]
+
+# see awesome_table_in_pdf-1.pdf
+test2 <- test2[, min.BIC := .(BIC == min(BIC, na.rm=T)), by = traj][, bic.bold2 := ifelse(min.BIC==T, paste0(text_spec(paste0(round(BIC,2)), 'latex', bold=T)),  paste0(round(BIC,1)))]
+
+data.frame(test2)
+
+
+# COMBINE ALL MODEL FITS TOGETHER FOR PRINTING
+
+vc.all = rbind.fill(wt.vc, ht.vc, wfl.vc); rownames(vc.all)
+
+rownames(vc.all) = NULL
+vc.all$model
+
+```
+
+# BIC by trajectory type and model fit
+
+```{r, results='markup'}
+
+
+# see https://stackoverflow.com/questions/7069076/split-column-at-delimiter-in-data-frame
+split <- data.frame(do.call('rbind', strsplit(as.character(test2$model),':',fixed=TRUE)))
+split$X2 = as.character(split$X2)
+names(split) = c("model.id", "model.description")
+test2 = cbind(test2, split)
+
+
+#levels(factor(test2$traj))
+test2$traj = factor(test2$traj, labels = c("Height", "WFL", "Weight"))
+vars.t = c("traj", "model.id", "model.description", "bic.bold")
+
+# save for /sitar-rev5/tables-ms.Rmd
+t2 = data.frame(test2)
+save(t2, file="../bic-fit.Rdata")
+
+kable(data.frame(test2)[vars.t],
+      format="html",
+      booktabs=T, escape=F,
+      col.names=c("Trajectory type", "Model ID", "Model description", "BIC")) %>%
+  kable_styling("striped") %>%
+  collapse_rows(col=1:2)
+
+```
+
+# Variance and correlation for random effects in each model by trajectory type
+
+
+```{r, results='markup', eval=T}
+
+vc.all = within(vc.all, {
+  StdDev = round(as.numeric(as.character(StdDev)), 2)
+  Variance = round(as.numeric(as.character(Variance)), 2)
+  model.num = substr(model,1,2)
+  model.type = strsplit(model, ':', fixed=T)[[1]][[1]]
+})
+
+# see https://stackoverflow.com/questions/7069076/split-column-at-delimiter-in-data-frame
+split <- data.frame(do.call('rbind', strsplit(as.character(vc.all$model),':',fixed=TRUE)))
+split$X2 = as.character(split$X2)
+split$X2 = with(split, 
+                substr(X2, 1, nchar(X2)-2))
+names(split) = c("model.id", "model description")
+vc.all = cbind(vc.all, split)
+
+
+#levels(factor(vc.all$traj))
+vc.all$traj = factor(vc.all$traj, labels = c("Height", "WFL", "Weight"))
+
+# save for /sitar-rev5/tables-ms.Rmd
+save(vc.all, file="../vc-fit.Rdata")
+
+kable(vc.all[c("traj", "model.id", "model description", "names", "Variance", "StdDev", "Corr")],
+      format="html",
+      booktabs=T, escape=F,
+      col.names=c("Trajectory type", "Model id", "Model type", "random effect", "Variance", "SD", "Correlation"),
+      row.names=F) %>%
+  kable_styling("striped") %>%
+  collapse_rows(col=c(1:3))
+
+```
+

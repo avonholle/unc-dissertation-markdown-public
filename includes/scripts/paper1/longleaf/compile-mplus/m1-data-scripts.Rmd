@@ -1,0 +1,120 @@
+---
+title: "Model fit for/from Mplus"
+author: "Ann Von Holle"
+date: '`r format(Sys.time(), "%d %B, %Y")`'
+output:
+  html_document:
+    toc: true # table of content true
+    toc_float: true
+    depth: 3  # upto three depths of headings (specified by #, ## and ###)
+    number_sections: true  ## if you want number sections at each table header
+    theme: united  # many options for theme, this one is my favorite.
+    highlight: tango  # specifies the syntax highlighting style
+  pdf_document:
+    number_sections: yes
+    toc: yes
+    toc_depth: 3
+header-includes: \usepackage{hyperref, booktabs, longtable, float}\hypersetup{colorlinks=true,
+  linkcolor=blue,filecolor=magenta,urlcolor=cyan}
+classoption: landscape
+---
+
+```{r setup1, include=FALSE}
+#bibliography: includes/bib/lit-review.bib
+
+knitr::opts_chunk$set(fig.width=8, fig.height=8,
+                      echo=T, warning=FALSE,
+                      message=T, 
+                      results='markup',
+                      comment=NA)
+```
+
+```{r}
+
+# NOTES
+
+# 1) 
+#    This program is run on Longleaf at /proj/epi/CVDGeneNas/avonholle/ms-d1/data-prep
+#    At the command prompt type, "sbatch run-files-data.sh &"
+#    In the shell script I specify one node as required by Mplus
+
+# 2)
+# this script based on the export-mplus.Rmd file in the
+# ~\Documents\GitHub\unc-dissertation-markdown-p2\includes\scripts\paper1 directory
+
+# 3)
+# transfer slcs-m2.dat and slcs-m2-subset.dat
+# to longleaf at /proj/epi/CVDGeneNas/avonholle/ms-d2/data-prep dir
+# from ~/GitHub/unc-dissertation-markdown-p2/includes/scripts/paper2/lgmm
+# created in ~\GitHub\unc-dissertation-markdown-p2\includes\scripts\paper1\lgmm\export-mplus.Rmd
+
+```
+
+
+
+```{r}
+
+# export-mplus.R
+# Export the slcs data to a mplus format
+# export nhanes data for mplus use (txt file)
+require(knitr)
+
+#install.packages("MplusAutomation", repos="http://cran.r-project.org", lib="/pine/scr/v/o/vonholle/Rlibs", dependencies=TRUE)
+require(MplusAutomation, lib.loc="/pine/scr/v/o/vonholle/Rlibs")
+
+#require(MplusAutomation)
+require(plyr)
+require(ggplot2)
+require(reshape2)
+# install.packages("kableExtra", 
+#                  repos="http://cran.r-project.org", 
+#                  lib="/pine/scr/v/o/vonholle/Rlibs", 
+#                  dependencies=TRUE)
+# require(kableExtra, lib.loc="/pine/scr/v/o/vonholle/Rlibs")
+#require(mice)
+
+```
+
+
+```{r, eval=T}
+
+# create mplus models
+# from template
+
+# FOR THE ANALYSES POOLED OVER GENDER OF CHILD
+# ----------------------------------------------------
+
+setwd("/proj/epi/CVDGeneNas/avonholle/ms-d1/data-prep/mplus-templates")
+
+# Model fit templates
+# -----------------------------------------
+# Create Mplus .inp files to run across 3 different models (linear, quad and cubic),
+# 3 different outcomes (wt, wfl and ht) and 5 different number of classes.
+
+createModels("template_mplus1-pooled-fit.txt") # pooled by sex of child -- 
+createModels("template_mplus1-strat-sex.txt") # stratifying analyses by sex of child
+
+
+```
+
+
+
+```{r, eval=T}
+# Run Mplus models
+
+# Pooled data --------------------------------
+# -------------------------------------------
+
+runModels(target="/proj/epi/CVDGeneNas/avonholle/ms-d1/data-prep/mplus-templates/pooled", 
+          replaceOutfile= "modifiedDate") #always", "modifiedDate", "never"
+
+# Stratified data --------------------------------
+# -------------------------------------------
+runModels(target="/proj/epi/CVDGeneNas/avonholle/ms-d1/data-prep/mplus-templates/strat",
+          replaceOutfile="modifiedDate") # "always", "modifiedDate", "never"
+
+warnings()
+
+```
+
+

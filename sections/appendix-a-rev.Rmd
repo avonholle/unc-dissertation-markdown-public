@@ -1,0 +1,37 @@
+
+
+```{r}
+#dat = read_excel("./includes/table-data/Copy of Full_list_lipids_known_loci_02102017-annotated.xlsx")
+
+dat = read_excel("~/GitHub/unc-dissertation-markdown/includes/table-data/Copy of Full_list_lipids_known_loci_02102017-annotated.xlsx")
+#colnames(dat)
+
+dat.hl = dat[(dat$Ancestry %in% c("Hispanic", "Hispanic ") & dat$significance=="gw_sig"),
+             colnames(dat) %in% c("Author", "Trait", "rsid", "Chr", "Effect allele", "EAF",
+                                  "Beta (SE)")]
+dat.hl$`Beta (SE)` = round(as.numeric(dat.hl$`Beta (SE)`), 3)
+dat.hl$`Effect allele` = substr(dat.hl$`Effect allele`,1,1)
+dat.hl$EAF = round(as.numeric(dat.hl$EAF),3)
+colnames(dat.hl) = c("Author", "Trait", "rsid", "Chromosome", "Effect allele", "Allele frequency",
+                                  "Beta")
+```
+
+\begin{landscape}
+
+\chapter{Manuscript 3: Lipid loci in Hispanic ancestry populations at genome-wide significance.\label{appA}}
+
+```{r, results='markup'}
+kable(dat.hl[order(dat.hl$Trait, dat.hl$Chromosome, dat.hl$rsid),], 
+      row.names=F, 
+      longtable=T,
+      booktabs=T,
+      format="latex",
+      caption="Lipid loci in Hispanic ancestry populations at genome-wide significance.\\label{appa1}") %>%
+    kable_styling(latex_options=c("HOLD_position", "repeat_header"), font_size=10) 
+```
+
+\end{landscape}
+
+
+```{r snp-power-table, child='c:/users/ann/documents/GitHub/unc-dissertation-markdown/includes/scripts/power/aim3/print-aim3-power-snps.R', eval=T, warning=F, error=F, results="markdown"}
+```

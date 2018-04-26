@@ -1,0 +1,190 @@
+---
+title: "table3-data-handle-weight1"
+author: "Ann Von Holle"
+date: "July 3, 2017"
+output: html_document
+---
+
+```{r data-handle-wt1, echo=T, results='markup'}
+
+require(reshape2)
+# read in data from descriptive_statistics.Rmd
+
+# Data handling section
+# ===============================================
+
+
+# read in data
+# year 1 cohort data (located in C:\Users\ann\Documents\)
+load("merged-data.Rdata") # has merge1.rev, merge1 and merge1.all data frame from descriptive_statistics.Rmd
+
+merge1 = merge1.rev # NOTE: if you want to go back to original age 5 sample then delete this line.
+dim(merge1) # 1471 by 76
+
+wt = c("Wgh.gr..aB",  "Wg.gr..a1M",
+       "Wg.gr..a2M",  "Wg.gr..a3M",  "Wg.gr..a4M",
+       "Wg.gr..a5M")
+
+names(merge1)
+colnames(merge1)[1]="id"
+
+# transform weight data to long style data frame
+merge1.sub.wt = melt(merge1[,c("id", wt)],
+                     id.vars = c("id"))
+merge1.sub.wt$value = merge1.sub.wt$value/1000 # transform from g to kg
+colnames(merge1.sub.wt)[3]="value.wt"
+head(merge1.sub.wt)
+nrow(merge1.sub.wt)
+
+# transform wf, data to long style data frame
+merge1.sub.wfl = melt(merge1[c("id", "wfl.0", "wfl.1", "wfl.2", "wfl.3", "wfl.4", "wfl.5")],
+                     id.vars = c("id"))
+colnames(merge1.sub.wfl)[3]="value.wfl"
+head(merge1.sub.wfl)
+
+ht = c("Hgh.cm..aB",
+       "Hg.cm..a1M", "Hg.cm..a2M",
+       "Hg.cm..a3M", "Hg.cm..a4M", 
+       "Hg.cm..a5M")
+
+# transform height data to long style data frame
+merge1.sub.ht = melt(merge1[c("id", ht)],
+                     id.vars = c("id"))
+colnames(merge1.sub.ht)[3]="value.ht"
+head(merge1.sub.ht)
+ 
+# get time to anthropometric measure
+merge1$DysbbdaM0m = 0
+
+merge1.sub.time = melt(merge1[,c("id", 
+                                 'DysbbdaM0m',
+                                 "DysbbdaM1m",  "DysbbdaM2m",
+                                 "DysbbdaM3m",  "DysbbdaM4m",  
+                                 "DysbbdaM5m")],
+                     id.vars = c("id"))
+
+head(merge1.sub.time)
+
+merge1.sub.time = within(merge1.sub.time, {
+  time = ifelse(variable == 'DysbbdaM0m', 0,
+                ifelse(variable == 'DysbbdaM1m', 1, 
+                       ifelse(variable == 'DysbbdaM2m', 2,
+                              ifelse(variable == 'DysbbdaM3m', 3, 
+                                     ifelse(variable == 'DysbbdaM4m', 4, 
+                                            ifelse(variable == 'DysbbdaM5m', 5, NA) 
+                )))))
+})
+
+summary(merge1.sub.time)
+colnames(merge1.sub.time)[3] = 'time2'
+summary(merge1.sub.time)
+
+
+
+# create time variables for merging
+
+merge1.sub.wt = within(merge1.sub.wt, {
+  time = ifelse(variable == 'Wgh.gr..aB', 0,
+                ifelse(variable == 'Wg.gr..a1M', 1, 
+                       ifelse(variable == 'Wg.gr..a2M', 2,
+                              ifelse(variable == 'Wg.gr..a3M', 3, 
+                                     ifelse(variable == 'Wg.gr..a4M', 4, 
+                                            ifelse(variable == 'Wg.gr..a5M', 5, NA) 
+                )))))
+})
+
+
+merge1.sub.ht = within(merge1.sub.ht, {
+  time = ifelse(variable == 'Hgh.cm..aB', 0,
+                ifelse(variable == 'Hg.cm..a1M', 1, 
+                       ifelse(variable == 'Hg.cm..a2M', 2,
+                              ifelse(variable == 'Hg.cm..a3M', 3, 
+                                     ifelse(variable == 'Hg.cm..a4M', 4, 
+                                            ifelse(variable == 'Hg.cm..a5M', 5, NA) 
+                )))))
+})
+
+merge1.sub.wfl = within(merge1.sub.wfl, {
+  time = ifelse(variable == 'wfl.0', 0,
+                ifelse(variable == 'wfl.1', 1, 
+                       ifelse(variable == 'wfl.2', 2,
+                              ifelse(variable == 'wfl.3', 3, 
+                                     ifelse(variable == 'wfl.4', 4, 
+                                            ifelse(variable == 'wfl.5', 5, NA) 
+                )))))
+})
+
+# Merge all data frames together
+# ----------------------------------------------
+
+temp.dat = merge(merge1.sub.wt[,c(-2)], 
+                 merge1.sub.time[,c("id", "time", "time2")],
+                 by=c("id", "time"))
+head(temp.dat)
+nrow(temp.dat)
+
+temp.dat = merge(temp.dat,
+                 merge1.sub.ht[,c(-2)],
+                 by=c("id", "time"))
+nrow(temp.dat)
+head(temp.dat)
+
+temp.dat = merge(temp.dat,
+                 merge1.sub.wfl[,c(-2)],
+                 by=c("id", "time"))
+head(temp.dat)
+nrow(temp.dat)
+
+temp.dat = merge(temp.dat, 
+                 merge1[colnames(merge1) %in% c('Sex','id')],
+                 by=c("id"))
+head(temp.dat)
+nrow(temp.dat)
+temp.dat[temp.dat$id %in% c(709),]
+
+temp.dat = temp.dat[complete.cases(temp.dat),]
+nrow(temp.dat)
+
+summary(temp.dat)
+length(unique(temp.dat$id))
+
+temp.dat$time2 = round(temp.dat$time2/30, digits=1) # convert time2 to months
+summary(temp.dat)
+
+temp.dat[temp.dat==999] = NA # convert 999 for any numeric variable to missing
+nrow(temp.dat)
+
+# Remove people with fewer than 5 obs -------------------
+
+# id.remove = which(table(temp.dat$id)<5); id.remove
+# temp.dat[temp.dat$id %in% 10541,]
+# temp.dat.sub = temp.dat[!(as.numeric(temp.dat$id) %in% names(id.remove)),]
+# 
+# length(unique(temp.dat$id)) # check
+# length(unique(temp.dat.sub$id))# check
+# length(unique(temp.dat$id)) - length(unique(temp.dat.sub$id))# check
+# length(id.remove)# check
+# 
+# temp.dat = temp.dat.sub
+
+
+
+# center time2
+temp.dat$time2.c = scale(temp.dat$time2, scale=F)
+summary(temp.dat$time2.c)
+
+# get quantiles of growth times, centered
+quartile = cut(temp.dat$time2.c,
+               breaks = quantile(temp.dat$time2.c, probs = seq(0, 1, by = 1/4)),
+               right = FALSE)
+table(quartile) # 1.1, 2.4, 4.1, 5.7
+
+
+# get starting values
+myknots.c=c(-1.47, -0.173, 1.53) # 3 knots (quartiles)
+range(temp.dat$time2.c)
+mybounds.c = c(-2.7, 3.22)
+
+nrow(temp.dat)
+length(table(unique(temp.dat$id))) # 1412
+```

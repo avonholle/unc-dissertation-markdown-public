@@ -1,0 +1,23 @@
+
+To determine which single variants to select for a linear additive model we considered conditions under which we could achieve power = 0.8 in testing the association between a variant and a continuous outcome/trait (in unrelated individuals). We assume that we pool both males and females in the analysis (n=600) and adjust for sex of child. We assume power would be lower and more conservative in the circumstances provided below absent any adjustment.
+
+The linear model would be:
+
+$$ Y = \beta_0 + \beta_1 X + \epsilon $$
+
+To test the effect of $\beta_1$ under $H_0: \beta_1 = 0$ versus $H_a: \beta_1 \ne 0$, we assume the following (copied from [http://faculty.washington.edu/tathornt/SISG2014/2014_SISG_10_5.pdf](http://faculty.washington.edu/tathornt/SISG2014/2014_SISG_10_5.pdf)):
+
+$$ T = \frac{\hat\beta_1}{\sqrt{var(\hat\beta_1)}} \sim \textbf{t}_{N-2} \approx N(0,1) \textrm{ for large N} $$
+
+$$ T^2 = \frac{\hat\beta_1^2}{var(\hat\beta_1)} \sim \textbf{F}_{1,N-2} \approx \chi_1^2 \textrm{ for large N} $$
+
+and
+
+$$ var(\hat\beta_1) = \frac{\sigma_{\epsilon}^2}{S_{XX}} $$ where $S_{XX}$ is the corrected sum of squares for the $X_i's$. In this context we assume $Var(X) = 2p(1-p)$ where $p$ = MAF.
+
+The non-centrality parameter (NCP) for this model is: 
+<!-- [@sham_statistical_2014] -->
+
+$$\lambda = N \times \frac{\beta^2 Var(X)}{\sigma_{\epsilon}^2}$$
+
+Next, we used the NCP, $\lambda$, in a 1 df chi-square test for equality of means. We made the plots below to examine power across different levels of MAF, standard deviation of the trait and varying $\beta_1$ values all based on the SNPs listed in Appendix \ref{appA} of my dissertation proposal.

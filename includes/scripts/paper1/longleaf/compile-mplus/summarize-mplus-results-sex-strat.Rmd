@@ -1,0 +1,364 @@
+---
+title: "Summarize Mplus fit for growth models stratified by sex of child."
+author: "Ann Von Holle"
+date: '`r format(Sys.time(), "%d %B, %Y")`'
+output:
+  html_document:
+    toc: true # table of content true
+    toc_float: false
+    depth: 3  # up to three depths of headings (specified by #, ## and ###)
+    number_sections: true  ## if you want number sections at each table header
+    theme: united  # many options for theme, this one is my favorite.
+    highlight: tango  # specifies the syntax highlighting style
+  pdf_document:
+    number_sections: yes
+    toc: yes
+    toc_depth: 3
+header-includes: \usepackage{hyperref, booktabs, longtable, float}\hypersetup{colorlinks=true,
+  linkcolor=blue,filecolor=magenta,urlcolor=cyan}
+classoption: landscape
+bibliography: ../../../../bib/lit-review.bib
+---
+
+```{r setup1, include=FALSE}
+#bibliography: includes/bib/lit-review.bib
+
+knitr::opts_chunk$set(fig.width=8, fig.height=8,
+                      echo=FALSE, warning=FALSE,
+                      message=FALSE, 
+                      results='hide',
+                      comment=NA)
+```
+
+```{r}
+
+# export-mplus.R
+# Export the slcs data to a mplus format
+
+# export nhanes data for mplus use (txt file)
+require(knitr)
+require(MplusAutomation)
+require(plyr)
+require(ggplot2)
+require(reshape2)
+require(kableExtra)
+require(data.table)
+```
+
+```{r, eval=FALSE}
+
+# Extract model summary statistics from .out files.
+setwd("~/GitHub/unc-dissertation-markdown-p2/includes/scripts/paper1/longleaf/compile-mplus/mplus-templates/strat/")
+output = readModels()
+
+save(output, file="output.Rdata")
+```
+
+```{r}
+setwd("~/GitHub/unc-dissertation-markdown-p2/includes/scripts/paper1/longleaf/compile-mplus/mplus-templates/strat/")
+load(file="output.Rdata") # has output list
+
+# get results into data frame
+summaries = do.call("rbind.fill",sapply(output,"[", "summaries"))
+summaries # including aic, bic, etc...
+names(summaries)
+
+
+# make fit plot similar to what was presented in sap1.pdf, figure 3,
+# a plot of bic vs number of classes by model type (and will separate out by outcome)
+# ------------------------------------------------------------------
+
+# first, use Filename variable to extract out the type of model, outcome and number of classes
+summaries$model.type = sapply(strsplit(as.character(summaries$Filename),"-"), "[", 1)
+levels(factor(summaries$model.type))
+
+levels(factor(summaries$model.type))
+summaries$model.type = factor(summaries$model.type, levels=c("quadratic",
+                                                             "cubic")) # change order of levels
+
+summaries$outcome = sapply(strsplit(as.character(summaries$Filename),"-"), "[", 4)
+table(summaries$outcome) # check
+
+summaries$classes = sapply(strsplit(as.character(summaries$Filename),"-"), "[", 7)
+table(summaries$classes) # check
+
+summaries$sex.c = sapply(strsplit(as.character(summaries$Filename),"-"), "[", 9)
+levels(factor(summaries$sex.c))
+summaries$sex.c = factor(summaries$sex.c, labels=c("female", "male"))
+table(summaries$sex.c) # check
+
+
+```
+
+
+```{r}
+# Make table of fit statistics by outcome value and type of model
+# ---------------------------------------------------------------
+
+# will have number of classes in rows and fit statistics in columns.
+# within fit column headers will separate by model. 
+# make separate tables for each outcome: wt, wfl and ht.
+
+names(summaries)
+summaries = within(summaries, {
+  blrt = paste0(BLRT_2xLLDiff, " (", BLRT_ParamDiff, "); ", 
+                                        BLRT_PValue)
+  #vlmr = paste0(T11_VLMR_2xLLDiff, "(", T11_VLMR_ParamDiff, "); ",
+  #              T11_VLMR_PValue)
+})
+
+sub.sum = summaries[c("model.type", "outcome", "classes", "sex.c",
+                      "AIC", "aBIC", 'blrt', #'vlmr', 
+                      "Entropy", "Observations")]
+head(sub.sum)
+
+sub.sum.long = melt(sub.sum, id=c("model.type", "outcome", "classes", "sex.c"))
+head(sub.sum.long)
+
+fit.wt = dcast(sub.sum.long,
+               sex.c + outcome + classes ~ variable + model.type, value.var = 'value')
+fit.wt
+dim(fit.wt)
+levels(factor(fit.wt$outcome))
+```
+
+# Table of LGMM model fit characteristics.
+
+## Males
+
+```{r, results='markup'}
+
+table(fit.wt$sex.c)
+males = fit.wt[fit.wt$sex.c=="male",-c(1:2)]
+
+kable(males, booktabs=T,
+      #      format="latex",
+      format="html",
+      col.names =  c("Number of classes", rep(c("cubic", "quadratic"), 5)),
+      caption='LGMM fit statistics by type of outcome, Males',
+      row.names = F) %>%
+  kable_styling(bootstrap_options = c("striped")) %>%
+   add_header_above(c(" "=1, "AIC"=2, "aBIC"=2, "BLRT"=2, #"VLMR"=2,
+                      "Entropy"=2, "Observations"=2)) %>%
+   group_rows("Height", 1, 3) %>%
+   group_rows("WFL", 4, 6) %>%
+   group_rows("Weight", 7, 9)
+
+```
+
+## Females
+
+```{r, results='markup'}
+
+females = fit.wt[fit.wt$sex.c=="female",-c(1:2)]
+rownames(females)=NULL
+kable(females, booktabs=T,
+      #      format="latex",
+      format="html",
+      col.names =  c("Number of classes", rep(c("cubic", "quadratic"), 5)),
+      caption='LGMM fit statistics by type of outcome, Males',
+      row.names = F) %>%
+  kable_styling(bootstrap_options = c("striped")) %>%
+   add_header_above(c(" "=1, "AIC"=2, "aBIC"=2, "BLRT"=2, #"VLMR"=2,
+                      "Entropy"=2, "Observations"=2)) %>%
+   group_rows("Height", 1, 3) %>%
+   group_rows("WFL", 4, 6) %>%
+   group_rows("Weight", 7, 9)
+
+```
+
+
+```{r}
+# function to extract out model info from file title
+
+handle1 = function(dat){
+dat = within(dat, {
+      # set up labels for outcome and sex of child groups (for facetting below)
+    sex = ifelse(grepl(".Female.|.female.", id.model)==T, "Female",
+                 ifelse(grepl(".Male.|.male.", id.model)==T, "Male", NA))
+    
+    outcome = ifelse(grepl(".ht.", id.model)==T, "Height",
+                 ifelse(grepl(".wt.", id.model)==T, "Weight", 
+                        ifelse(grepl(".wfl.", id.model)==T, "WFL", NA)))
+    
+    #snps = c("rs12740374", "rs9282541", "rs1077835", "rs1532624",
+    #         "rs247617", "rs2278426", "rs7412")
+
+    class = ifelse(grepl(".2.Class", id.model)==T, 2,
+                   ifelse(grepl(".3.Class", id.model)==T, 3, 
+                          ifelse(grepl(".1.Class", id.model)==T, 1,
+                                 ifelse(grepl(".4.Class", id.model)==T, 4, 
+                                        ifelse(grepl(".5.Class", id.model)==T, 5, NA)))))
+    
+    model.type = ifelse(grepl("cubic", id.model)==T, "cubic", 
+                        ifelse(grepl("quadratic", id.model)==T, "quadratic", NA))
+
+    })
+}
+```
+
+# Counts
+
+```{r}
+
+# get class counts and select with at least 50 in each group
+lapply(output, function(x) x$class_counts)[[1]] # check names
+       
+df.cc = lapply(output, function(x) x$class_counts$mostLikely)
+combine.cc = do.call("rbind.fill", df.cc)
+head(combine.cc)
+colnames(combine.cc)[1]="LatentClass"
+
+length(sapply(df.cc, nrow))
+length(paste0(names(output)))
+combine.cc$id.model = rep(paste0(names(output)), sapply(df.cc, nrow))
+
+head(combine.cc$id.model)
+combine.cc = handle1(combine.cc)
+head(combine.cc)
+
+# table for printing
+cc.wide <- dcast(combine.cc, sex + outcome + class + model.type ~ LatentClass, value.var="count")
+cc.wide
+
+# Make a data frame with final subset of models based on minimum sample size per 
+# group and lowest aBIC.
+# ==========================================================
+# exclude these models because of small class size
+exclude.count = combine.cc[combine.cc$count<30,]
+exclude.count2 = unique(exclude.count[c("class", "outcome", 'sex', 'model.type')])
+exclude.count2 # exclude these models because of small class size
+exclude.count2$id.mod = with(exclude.count2, paste0(class, '.', outcome, '.', sex,
+                                                    '.', model.type))
+
+# get model fit and pick model for each combo (sex of child and outcome) with lowest abic
+# -----------------------------------------------------
+df.fit = lapply(output, function(x) x$summaries)
+names(df.fit[[2]]) # check
+combine.fit = do.call("rbind.fill", df.fit)
+head(combine.fit)
+
+colnames(combine.fit)[which(colnames(combine.fit) %in% "Filename")] = "id.model"
+combine.fit = handle1(combine.fit)
+table(combine.fit$outcome) # check
+combine.fit = combine.fit[!(colnames(combine.fit) %in% "id.model")]
+combine.fit$id.mod = with(combine.fit, paste0(class, '.', outcome, '.', sex,
+                                              ".", model.type))
+head(combine.fit)
+
+keep.vals = setdiff(combine.fit$id.mod, exclude.count2$id.mod) # combos in combine.fit not in exclude.count2
+keep.vals
+
+# get the models to evaluate for bic based on acceptable numbers in latent classes
+keep.data = combine.fit[combine.fit$id.mod %in% keep.vals,]
+
+# select out model with lowest aBIC (and acceptable numbers in latent classes)
+select.bic = setDT(keep.data)[, .SD[which.min(aBIC)], by = c("sex", "outcome")]
+
+# select out model with  highest entropy (and acceptable numbers in latent classes)
+setDT(keep.data)[, .SD[which.max(Entropy)], by = c("sex", "outcome")]
+
+select.model = as.data.frame(select.bic)[c("sex", "outcome", "class", "model.type")]
+select.model
+
+# Not sure if I should restrict to n<30 for male weight traj.
+# NOTE: need to revise model selection for male weight traj. 
+# When restricting data to non-missing genetic and phenotype data the 3-class solution for weight
+# no longer sits above 30 people so revise to 2-class
+
+select.model$class = with(select.model, {
+  class = ifelse(sex=="Male" & outcome=="Weight", 2, class)
+})
+
+select.model # check
+
+setwd("~/GitHub/unc-dissertation-markdown-p2/includes/scripts/paper1/lgmm")
+save(select.model, file="select-model.Rdata") # can use this later if needed.
+```
+
+## Males
+
+```{r, results='markup'}
+
+# Counts of people in each class
+
+kable(cc.wide[cc.wide$sex=="Male",-1], booktabs=T,
+      format="html",
+      caption='Males: counts of people in each latent class',
+      row.names=F) %>%
+  kable_styling(bootstrap_options = c("striped")) %>%
+  add_header_above(c("Categories"=3, "Latent Classes"=3)) #%>%
+
+
+```
+
+
+## Females
+
+```{r, results='markup'}
+# Counts of people in each class
+
+kable(cc.wide[cc.wide$sex=="Female",-1], booktabs=T,
+      format="html",
+      caption='Females: counts of people in each latent class',
+      row.names=F) %>%
+  kable_styling(bootstrap_options = c("striped")) %>%
+  add_header_above(c("Categories"=3, "Latent Classes"=3)) #%>%
+
+```
+
+## List of final class selection based on minimum class size of 30 combined with lowest aBIC
+
+```{r, results='markup'}
+  kable(select.model)
+```
+
+# Plots of model fit (aBIC and Entropy) characteristics by outcome type and number of latent classes
+
+## Males
+
+```{r}
+
+# take out linear model because fit is so bad relative to other 2 the scale is messed up in plot
+summaries.2 = summaries[!(summaries$model.type=="linear"),]
+
+id.vars = c("classes", "model.type", "outcome", 'sex.c')
+summaries.2.long = melt(summaries.2[c(id.vars, 
+                             "aBIC", 
+                             "Entropy")],
+                        id=c(id.vars))
+head(summaries.2.long)
+summaries.2.long$value = as.numeric(as.character(summaries.2.long$value))
+head(summaries.2.long)
+     
+ggplot(summaries.2.long[summaries.2.long$sex.c=="male",], 
+       aes(x=classes, y=value, group=model.type, colour=model.type)) +
+  geom_point() +
+  geom_line() +
+  facet_wrap(outcome ~ variable, scales = "free", strip.position = "right", nrow=3) +
+  theme_bw()
+
+```
+
+## Females
+
+```{r}
+
+ggplot(summaries.2.long[summaries.2.long$sex.c=="female",], 
+       aes(x=classes, y=value, group=model.type, colour=model.type)) +
+  geom_point() +
+  geom_line() +
+  facet_wrap(outcome ~ variable, scales = "free", strip.position = "right", nrow=3) +
+  theme_bw()
+
+```
+
+
+
+# Model fit evaluations
+
+Infant physical trajectories are different by sex of child so analyses were stratifed by sex of child as were choice of appropriate model based on fit statistics and latent class groups interpretation. Also, it's difficult to fit a non-linear model or splines, which may offer better fit [@warrington_modelling_2013] and using a cubic model may perform just as well when considering model fit for infant growth trajectories when evaluating residuals [@preedy_handbook_2012; chapter 138]
+
+
+# References
+

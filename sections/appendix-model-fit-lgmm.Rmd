@@ -1,0 +1,89 @@
+---
+author: "Ann Von Holle"
+date: '`r format(Sys.time(), "%d %B, %Y")`'
+header-includes:
+   - \usepackage{color, booktabs, pdflscape, graphicx, float, longtable, lscape}
+output:
+  pdf_document:
+    keep_tex: true
+geometry: "left=0.5cm, right=0.5cm, top=1cm, bottom=1.5cm"
+editor_options: 
+  chunk_output_type: console
+---
+
+<!-- NOTE: copied this file from ../includes/scripts/paper2/bch-read-all-bf-pdfversion.Rmd -->
+
+```{r , include=FALSE}
+
+# classoption: landscape
+
+knitr::opts_chunk$set(fig.width=8, fig.height=8,
+                      echo=FALSE, warning=FALSE,
+                      message=FALSE, 
+                      results='hide',
+                      comment=NA)
+
+#knitr::opts_chunk$set(root.dir = "~GitHub/unc-dissertation-markdown-p2/includes/scripts/paper1/sitar-rev5")
+
+#knitr::opts_knit$set(root.dir = "~/dissertation/unc-dissertation-markdown-p2/includes/scripts/paper2")
+knitr::opts_knit$set(root.dir = "~/GitHub/unc-dissertation-markdown-p2/includes/scripts/paper2")
+
+
+```
+
+```{r}
+require(knitr)
+require(kableExtra)
+```
+
+\afterpage{
+\begin{landscape}
+
+\chapter{LGMM model fit\label{appfitb}}
+
+
+```{r }
+
+## Fit statistics for the LGMM model
+
+load(file="fit-lgmm-pooled.Rdata") # contains fit.wt data frame from ~\GitHub\unc-dissertation-markdown-p2\includes\scripts\paper1\lgmm\virtuallab\pooled-fit\summarize-mplus-results-sex-pooled.Rmd
+
+
+fit.wt$outcome = factor(fit.wt$outcome, labels=c("Height", "WFL", "Weight"))
+
+# see https://stackoverflow.com/questions/9063889/how-to-round-a-data-frame-in-r-that-contains-some-character-variables
+
+round_df <- function(df, digits) {
+  nums <- vapply(df, is.numeric, FUN.VALUE = logical(1))
+
+  df[,nums] <- round(df[,nums], digits = digits)
+
+  (df)
+}
+
+#sapply(fit.wt, class)
+#names(fit.wt)
+
+fit.wt[,c(3:6)] = apply(fit.wt[,c(3:6)], 2, function(x) as.numeric(as.character(x)))
+fit.wt = round_df(fit.wt[], digits=0)
+```
+
+```{r, results='markup'}
+# TO DO: need to re-run with reduced sample size (on Linux server?)
+# -------------------------------------------------------------------
+
+kable(fit.wt, booktabs=T,
+      format="latex",
+      col.names =  c("Outcome", "Number of classes", rep(c("quadratic", "cubic"), 6)),
+      caption='LGMM fit statistics by type of outcome, pooled sample',
+      row.names = F) %>%
+   add_header_above(c(" "=2, "AIC"=2, "aBIC"=2, "BLRT: chi-sq (df); p-value"=2, "VLMR: chi-sq (df); p-value"=2,
+                      "Entropy"=2, "Observations"=2)) %>%
+  kable_styling(latex_options = c("HOLD_position", "scale_down") )%>%
+  collapse_rows(columns = 1:2, latex_hline = "major")
+
+
+```
+
+\end{landscape}
+}

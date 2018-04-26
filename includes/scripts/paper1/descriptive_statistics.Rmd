@@ -1,0 +1,454 @@
+---
+title: "Descriptive Statistics"
+author: "Ann Von Holle"
+date: '`r format(Sys.time(), "%d %B, %Y")`'
+output:
+  html_document:
+    toc: yes
+    toc_depth: '2'
+  pdf_document:
+    toc: yes
+    toc_depth: 2
+classoption: landscape
+---
+
+```{r setup-desc-stat, include=FALSE}
+knitr::opts_chunk$set(fig.width=12, fig.height=8,
+                      echo=FALSE, warning=FALSE,
+                      message=FALSE, 
+                      results='hide',
+                      comment=NA,
+                      tidy=T)
+require("tableone")
+require("knitr")
+require("Hmisc")
+require("ggplot2")
+require('reshape2')
+options(width=400)
+```
+
+
+```{r}
+
+# read in SAS  data using haven package -- no label option
+setwd("~/")
+
+load("GitHub/unc-dissertation-markdown-p2/includes/scripts/paper1/sasdat.Rdata") 
+# load("dissertation/unc-dissertation-markdown-p2/includes/scripts/paper1/sasdat.Rdata") # load data from read-phenotypes.Rmd, includes sasdat.df, labels, date.vars (the 2017 data release -- infancy cohort -- larger sample size)
+summary(sasdat.df) # has the weight, length and weight for length
+nrow(sasdat.df) # 1792
+str(sasdat.df)
+data.frame(names(sasdat.df))
+
+load("dat-2014.Rdata") # load efc.sub data frame from Descriptive.Rmd (the 2014 data release -- age 5 cohort)
+names(efc.sub)
+summary(efc.sub)
+
+# load full.ses data for use in table1.Rmd
+load("dat-2017-full.Rdata") # has full.ses data frame from Descriptive2.Rmd
+summary(full.ses)
+# has graffar and income from full sample at infancy
+```
+
+
+```{r}
+
+setwd("~/")
+# merge the full data set I got in 2017
+# with the 2017 version
+
+efc.sub$id = efc.sub$ID.f1
+head(efc.sub$id)
+
+df2 = sasdat.df
+nrow(df2) # 1792
+
+names(sasdat.df)
+summary(sasdat.df$LDLChlstrl)
+df2$id = df2$subject.id
+#names(df2)
+#label(df2)
+
+kable(data.frame(label=label(df2)))
+
+# check milkcode variable here. Note: no milkcode variable in the 2017 data set.
+summary(efc.sub$milkcode) # 71 missing
+table(efc.sub$milkcode)
+
+names(df2)
+merge1 = merge(x=efc.sub[efc.sub$milkcode %in% c(1,3), # do not leave in people with missing randomization code for prevention trial, keep 1=high iron and 3=no added iron. omit 2=low iron
+                         c("id", "T1137",
+                            "T1131",
+                            "R.momsmoke",
+                            'v.momage.i',
+                            "milkcode", "graffar.index", "actua.ses.q26")],
+               y=df2,
+               by="id",
+               all.x=T)
+nrow(merge1) # start with 790
+
+
+# sample with all randomization codes
+# ---- sensitivity analysis for sample NOT omitting people in treatment trial.
+
+merge1.sens = merge(x=efc.sub[, # do not leave in people with missing randomization code for prevention trial, keep 1=high iron and 3=no added iron. omit 2=low iron
+ 
+                         c("id", "T1137",
+                            "T1131",
+                            "R.momsmoke",
+                            'v.momage.i',
+                            "milkcode", "graffar.index", "actua.ses.q26")],
+               y=df2,
+               by="id",
+               all.x=T)
+nrow(merge1.sens) # start with 888
+
+# -------------------- START of part that has a revised version of data for m1 analyses
+# set up a data frame for ms1 analysis (using all infancy data)
+# -------------------------------------------------
+
+# do not leave in people with missing randomization code for prevention trial
+miss.random = efc.sub[ is.na(efc.sub$milkcode)==T, "id"]
+
+length(miss.random)  #71
+names(full.ses)
+
+merge1.rev. = merge(x=full.ses,
+               y=df2,
+               by.x = "ID_v1",
+               by.y="id",
+               all.x=T)
+
+nrow(df2) # 1792
+nrow(full.ses) # 1541
+nrow(merge1.rev.) # start with 1541
+
+# Take out people who are missing randomization status -- not in preventive trial
+merge1.rev = merge1.rev.[!(merge1.rev.$ID_v1 %in% miss.random), ]
+nrow(merge1.rev) # 1471
+
+# -------------------- END of part that has a revised version of data for m1 analyses
+
+# how many individuals that are missing milkcode are also missing graffar?
+summary(merge1[is.na(merge1$milkcode)==T,]$graffar.index) # only 17
+# how many individuals that are missing milkcode are also missing lipids?
+summary(merge1[is.na(merge1$milkcode)==T,]$HDLchlstrl) # only 16
+summary(merge1$HDLchlstrl)
+nrow(merge1[is.na(merge1$HDLchlstrl)==F,])
+
+# how many individuals with cvd testing at 17 years are missing milkcode?
+summary(merge1[is.na(merge1$HDLchlstrl)==F,]$milkcode) # 55
+
+# use this data frame for imputation
+merge1.all = merge(x=efc.sub[efc.sub$milkcode %in% c(1,3),], # do not leave in people with missing randomization code for prevention trial (assuming they are part of the treatment trial for iron-deficient infants with anemia doi:10.3945/jn.108.100735)
+                   y=df2,
+                   by='id',
+                   all.x=T)
+
+# left outer join. See  https://stackoverflow.com/questions/1299871/how-to-join-merge-data-frames-inner-outer-left-right
+
+# format some of variables
+
+merge1 = within(merge1, {
+  Sex.f = factor(Sex, labels=c("male", "female"))
+})
+str(merge1)
+
+# will exclude all people with >5sd of the lipid values and any people with missing values for sex of child.
+
+# NOTE: take out people more than 5 sd outside of their lipid values
+# in sample
+
+# see https://stackoverflow.com/questions/10568369/removing-outliers-in-r
+# for the following solution
+
+#create function that looks for values > +/- 5 sd from mean
+# TO DO: would be interesting to do some sort of sensitivity analysis 
+# with the sd exclusions esp with the lgmm.
+
+nrow(merge1) # start with 888
+summary(merge1$HDLchlstrl)
+merge1 = merge1[(complete.cases(merge1$HDLchlstrl) | complete.cases(merge1$LDLChlstrl) |
+                  complete.cases(merge1$trg.mg.dL.)),] # take out 211 missing people missing lipid values, so have 604 people left. (people at 17 year study)
+nrow(merge1)
+
+merge1.sens = merge1.sens[(complete.cases(merge1.sens$HDLchlstrl) | complete.cases(merge1.sens$LDLChlstrl) |
+                  complete.cases(merge1.sens$trg.mg.dL.)),] # take out 211 missing people missing lipid values, so have 677 people left. (people at 17 year study)
+nrow(merge1.sens)
+
+# next from the remaining 620 people with at least one non-missing lipid value (ldl, hdl, and tg), remove any people with lipid values greater than 5 sd
+outdet <- function(x) abs(scale(x)) >= 5
+
+#index with the function to remove values more than x sd from mean
+lipid.vars = c('HDLchlstrl', 'LDLChlstrl', 'Ttlchlstrl', 'trg.mg.dL.')
+
+merge2 = merge1[!apply(sapply(merge1[lipid.vars], outdet), 1, any), ] # use this data set for sensitivity analyses
+nrow(merge2) # now have 598, down from 604
+
+merge1.sens = merge1.sens[!apply(sapply(merge1.sens[lipid.vars], outdet), 1, any), ] # use this data set for sensitivity analyses
+nrow(merge1.sens) # now have 671, down from 677
+
+
+merge1 = merge1[complete.cases(merge1$Sex),]
+nrow(merge1) # now have 602
+
+merge2 = merge2[complete.cases(merge2$Sex),]
+nrow(merge2) # now have 595
+
+summary(merge1)
+summary(merge1$LDLChlstrl)
+summary(merge2$LDLChlstrl)
+
+
+save(merge1, merge1.all, merge2, merge1.rev, merge1.sens, file="merged-data.Rdata")
+
+```
+
+# Summary statistics of first year cohort
+
+
+```{r, results='markup'}
+
+describe(sasdat.df)
+```
+
+# Descriptive statistics by sex of child, 1st year cohort
+
+```{r, results='markup'}
+
+f = summary(Sex ~ ., 
+             data=sasdat.df, 
+             method="reverse", test=F)
+
+print(f, rmarkdown=T)
+
+```
+
+
+# Summary statistics of merged data (only 5 year)
+
+```{r, results='markup'}
+
+describe(merge1)
+
+```
+
+
+
+
+```{r, results='markup', eval=FALSE}
+# Plots of variables by sex of child
+plot(f)
+```
+
+```{r, eval=FALSE}
+
+# try Gmisc: see https://cran.r-project.org/web/packages/Gmisc/vignettes/Descriptives.html ? No.
+# try Hmisc? maybe later.
+summaryM(d8+v51 ~ . , data=sasdat.df)
+
+```
+
+
+
+```{r, results='markup',eval=FALSE}
+# Summary statistics with tableone package
+
+# trying tableone package for descriptive statistics
+
+tableOne <- CreateTableOne(data = sasdat.df[,!(colnames(sasdat.df) %in% c("subject id"))])
+
+table1 = print(tableOne, printToggle = FALSE, noSpaces = TRUE)
+#class(table1)
+
+#kable(table1, caption="Characteristics of study population at the baseline.")
+
+summary(tableOne$ContTable)
+```
+
+
+# Violin plots for weight-for-length outcome variables
+
+```{r}
+
+# take wfl data and transform from wide to long
+
+sasdat.df$Sex.f = factor(sasdat.df$Sex, labels=c("Male", "Female"))
+table(complete.cases(sasdat.df$Sex.f))
+complete = sasdat.df[complete.cases(sasdat.df$Sex.f),]
+table(complete.cases(complete$Sex.f))
+
+sasdat.df.long = melt(complete[, 
+                               c("wfl.0", "wfl.1", "wfl.2",
+                                  'wfl.3', 'wfl.4', 'wfl.5',
+                                  'Sex.f', 'subject.id')],
+  id.vars = c("subject.id", 'Sex.f'))
+head(sasdat.df.long)
+
+
+  sasdat.df.long$variable.f = factor(sasdat.df.long$variable, 
+                             levels=c("month 0",
+                                      "month 1",
+                                      "month 2",
+                                      "month 3", 
+                                      "month 4",
+                                      "month 5"))
+  levels(sasdat.df.long$variable.f)
+
+table(complete.cases(sasdat.df.long$Sex.f))
+
+# see http://www.cookbook-r.com/Graphs/Colors_%28ggplot2%29/
+# The palette with black:
+cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+# The palette with grey:
+cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+# The palette with grey:
+cbbbPalette <- c("#000000", "#000000", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+
+# function to plot values
+# -------------------------------------------------
+
+make.plot = function(label.y, dat.long) {
+  # dat.long = sasdat.df.long # for testing
+  # label.y = 'test' # for testing
+  dat.long$variable.f = factor(dat.long$variable, 
+                             labels=c("month 0",
+                                      "month 1",
+                                      "month 2",
+                                      "month 3", 
+                                      "month 4",
+                                      "month 5"))
+
+  ggplot(data=dat.long,
+                 aes(y=value, x=Sex.f, color=Sex.f)) +
+  facet_grid(~variable.f) +
+  geom_violin(color="black", lwd=1) +
+  geom_boxplot(width=0.15) +
+  ylab(label.y) +
+  stat_summary(fun.y=mean, geom="point", shape=5, size=4) +
+  scale_colour_manual(values=c("red", "blue"), name="Sex of child") +
+  theme_bw() +
+  theme(
+    plot.background = element_blank()
+   ,panel.border = element_blank()
+   ,legend.title = element_text(colour="black", size=16)
+   ,legend.text = element_text(colour="black", size = 16)
+   ,text = element_text(size=16)
+) +
+  #draws x and y axis line
+  theme(axis.line = element_line(color = 'black'),
+        axis.line.x = element_line(color="black"),
+        axis.ticks.y= element_line(colour="black"),
+        axis.text.x=element_blank(),
+        axis.title.x = element_blank(),
+#        axis.text.x = element_text(size=16),
+        axis.text.y = element_text(size=16),
+        axis.title.y=element_text(vjust=0.5),
+        legend.position="bottom")
+}
+
+make.plot("weight-for-length (wfl)", sasdat.df.long)
+
+
+```
+
+
+# Violin plots for weight outcome variables
+
+```{r}
+
+# take weight data and transform from wide to long
+
+weight.vars =  c('Wgh.gr..aB', 'Wg.gr..a1M',
+            'Wg.gr..a2M', 'Wg.gr..a3M',
+            'Wg.gr..a4M', 'Wg.gr..a5M')
+
+sasdat.df.long.wt = melt(complete[, 
+                               c(weight.vars,
+                                  'Sex.f', 'subject.id')],
+  id.vars = c("subject.id", 'Sex.f'))
+
+make.plot("weight (g)", sasdat.df.long.wt)
+
+```
+
+
+# Violin plots for length outcome variables
+
+```{r}
+
+length.vars = c('Hgh.cm..aB', 'Hg.cm..a1M', 'Hg.cm..a2M', 'Hg.cm..a3M', 'Hg.cm..a4M', 'Hg.cm..a5M')
+
+sasdat.df.long.ht = melt(complete[, 
+                               c(length.vars,
+                                  'Sex.f', 'subject.id')],
+  id.vars = c("subject.id", 'Sex.f'))
+
+make.plot("Length (cm)", sasdat.df.long.ht)
+
+```
+
+
+# Violin plots for lipid variables
+
+```{r}
+
+lipid.vars = c('HDLchlstrl', 'LDLChlstrl', 'Ttlchlstrl', 'trg.mg.dL.')
+lipid.rename = c("hdl", "ldl", "tc", "tg")
+lipid.dat = merge1[c("id", "Sex", lipid.vars)]
+names(lipid.dat)
+
+colnames(lipid.dat)[which(colnames(lipid.dat) %in% lipid.vars)] = lipid.rename
+
+lipid.dat$Sex = factor(lipid.dat$Sex, labels=c("Male", "Female"))
+head(lipid.dat)
+
+# take out people that have no lipid values measured
+lipid.dat2 = lipid.dat[rowSums(is.na(lipid.dat[lipid.rename]))!=4, ]
+nrow(lipid.dat2) - nrow(lipid.dat)
+# 677 have at least one non-missing lipid value. this will be the sample
+# I will use in the analyses.
+# TO DO: go back and fix estimates based on this sample
+
+# add log transformed lipid vars
+lipid.dat3 = cbind(lipid.dat2,
+      setNames(lapply(lipid.dat2[which(colnames(lipid.dat2) %in% lipid.rename)],
+                      function(x) {log(x)}),
+                   paste0("log.", names(lipid.dat2[which(colnames(lipid.dat2) %in% lipid.rename)]))))
+
+# to do : need to explain omitting people with extreme lipids (>4sd) and 
+# people with the missing Sex values
+lipid.dat.long = melt(lipid.dat3, id.vars = c("id", 'Sex'))
+head(lipid.dat.long)
+
+
+# Plot of all people in sample with non-missing lipid values
+# and no ldl>200 (1 person) and no tg>300 (5 people who also are missing ldl)
+  ggplot(data=lipid.dat.long,
+                 aes(y=value, x=Sex, color=Sex)) +
+  facet_wrap(~variable, scales = "free", ncol=4) +
+  geom_violin(color="black", lwd=1) +
+  geom_boxplot(width=0.15) +
+  ylab("mg/dL") +
+  stat_summary(fun.y=mean, geom="point", shape=5, size=4) +
+  scale_colour_manual(values=c("red", "blue"), name="Sex of child") +
+  theme_bw() +
+  theme(
+    plot.background = element_blank()
+   ,panel.border = element_blank()
+   ,legend.title = element_text(colour="black", size=16)
+   ,legend.text = element_text(colour="black", size = 16)
+   ,text = element_text(size=16)
+) +
+  #draws x and y axis line
+  theme(axis.line = element_line(color = 'black'),
+        axis.line.x = element_line(color="black"),
+        axis.ticks.y= element_line(colour="black"),
+        axis.text.x=element_blank(),
+        axis.title.x = element_blank(),
+#        axis.text.x = element_text(size=16),
+        axis.text.y = element_text(size=16),
+        axis.title.y=element_text(vjust=0.5),
+        legend.position="bottom")
+
+```

@@ -1,0 +1,96 @@
+---
+author: "Ann Von Holle"
+date: '`r format(Sys.time(), "%d %B, %Y")`'
+header-includes:
+   - \usepackage{color, booktabs, pdflscape, graphicx, float, longtable, lscape}
+output:
+  pdf_document:
+    keep_tex: true
+geometry: "left=0.5cm, right=0.5cm, top=1cm, bottom=1.5cm"
+editor_options: 
+  chunk_output_type: console
+---
+
+<!-- NOTE: copied this file from ../includes/scripts/paper2/bch-read-all-bf-pdfversion.Rmd -->
+
+```{r , include=FALSE}
+
+# classoption: landscape
+
+knitr::opts_chunk$set(fig.width=8, fig.height=8,
+                      echo=FALSE, warning=FALSE,
+                      message=FALSE, 
+                      results='hide',
+                      comment=NA)
+
+#knitr::opts_chunk$set(root.dir = "~GitHub/unc-dissertation-markdown-p2/includes/scripts/paper1/sitar-rev5")
+
+#knitr::opts_knit$set(root.dir = "~/dissertation/unc-dissertation-markdown-p2/includes/scripts/paper2")
+knitr::opts_knit$set(root.dir = "~/GitHub/unc-dissertation-markdown-p2/includes/scripts/paper2")
+
+
+```
+
+```{r}
+require(knitr)
+require(kableExtra)
+```
+
+ <!-- see https://tex.stackexchange.com/questions/84506/landscape-mode-causes-a-blankpage -->
+
+\afterpage{
+\begin{landscape}
+
+\chapter{SITAR model fit\label{appfita}}
+
+
+```{r, results='markup'}
+
+## Nonlinear mixed effects model fit evaluation: BIC for all evaluated models
+
+# load the data from /paper1/sitar-rev5/fit-summary.Rmd
+# for bic
+
+load(file="../bic-fit.Rdata") # t2 data frame
+
+vars.t = c("traj", "model.id", "model.description", "bic.bold2")
+t2.sub = t2[vars.t]
+
+kable(t2.sub,
+      format="latex",
+      longtable=T,
+      escape=F,
+      booktabs=T, 
+      caption="Nonlinear mixed effects model fit evaluation: BIC for all evaluated models",
+      col.names=c("Trajectory type", "Model ID", "Model description", "BIC$^a$")) %>%
+  collapse_rows(col=1) %>%
+  kable_styling(latex_options=c("HOLD_position", "striped", "scale_down", "repeat_header"), font_size=9) %>% # "repeat_header" "scale_down",
+  footnote(alphabet="Bold values indicate lowest value within a trajectory evaluation.")
+
+```
+
+\clearpage
+\newpage
+
+
+
+```{r, results='markup', eval=T}
+## Model variance and covariance for random effects of all evaluated models
+
+# load the data from /model-fit/fit-summary.Rmd
+load(file="../vc-fit.Rdata") # vc.all data 
+
+kable(vc.all[c("traj", "model.id", "model description", "names", "Variance", "StdDev", "Corr")],
+      format="latex",
+      booktabs=T, escape=F,
+      col.names=c("Trajectory type", "Model id", "Model type", "random effect", "Variance", "SD", "Correlation"),
+      caption="Model variance and covariance for random effects of all evaluated models",
+      longtable=T,
+      row.names=F) %>%
+  kable_styling(latex_options=c("HOLD_position", "striped", "scale_down", "repeat_header"), font_size=9) %>%
+  collapse_rows(col=c(1:3))#, latex_hline=c("major")) #, font_size=9
+
+```
+
+\end{landscape}
+}
