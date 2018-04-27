@@ -3,6 +3,7 @@
 
 #library(biomaRt)
 library(readxl)
+library(plyr)
 
 # read in list of snps from Misa
 # from fine mapping paper by Zubair et al, 2016 (doi: 10.1093/hmg/ddw358)
@@ -88,6 +89,10 @@ eur.dat.df$eur = 1 # make a marker for non-hl population snps
 head(eur.dat.df)
 
 # concatenate onto the HL-specific snps
+setwd("~/GitHub/unc-dissertation-markdown/includes/table-data")
+df1 = read_excel("Copy of Full_list_lipids_known_loci_02102017-annotated.xlsx", 
+                                  sheet = 'GWASCAT+nonGWASCAT_lipids')
+head(df1)
 df1$eur=0
 df.allele = rbind.fill(df1[df1$significance=="gw_sig",], 
                        eur.dat.df)
