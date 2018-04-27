@@ -1,0 +1,377 @@
+---
+title: "Mplus fit work"
+author: "Ann Von Holle"
+date: '`r format(Sys.time(), "%d %B, %Y")`'
+output:
+  html_document:
+    toc: true # table of content true
+    toc_float: true
+    depth: 3  # upto three depths of headings (specified by #, ## and ###)
+    number_sections: true  ## if you want number sections at each table header
+    theme: united  # many options for theme, this one is my favorite.
+    highlight: tango  # specifies the syntax highlighting style
+  pdf_document:
+    number_sections: yes
+    toc: yes
+    toc_depth: 3
+header-includes: \usepackage{hyperref, booktabs, longtable, float}\hypersetup{colorlinks=true,
+  linkcolor=blue,filecolor=magenta,urlcolor=cyan}
+classoption: landscape
+bibliography: ../../../bib/lit-review.bib
+---
+
+```{r setup1, include=FALSE}
+#bibliography: includes/bib/lit-review.bib
+
+knitr::opts_chunk$set(fig.width=8, fig.height=8,
+                      echo=FALSE, warning=FALSE,
+                      message=FALSE, 
+                      results='hide',
+                      comment=NA)
+```
+
+```{r}
+
+# export-mplus.R
+# Export the slcs data to a mplus format
+
+# export nhanes data for mplus use (txt file)
+require(knitr)
+require(MplusAutomation)
+require(plyr)
+require(ggplot2)
+require(reshape2)
+require(kableExtra)
+require(mice)
+require(data.table)
+```
+
+
+```{r}
+setwd("~/")
+# Look at missing data patterns for lipids
+
+# year 1 cohort data
+# bring in phenotype data from descriptive_statistics.Rmd
+load("merged-data.Rdata") # data frame is merge1, merge2 is a subset taking out lipid outliers
+summary(merge1)
+nrow(merge1)
+nrow(merge1.sens)
+
+lipid.vars = c('HDLchlstrl', 'LDLChlstrl', 'Ttlchlstrl', 'trg.mg.dL.', 'Sex')
+nrow(merge1) # 674 observations
+
+lipid.dat = merge1[lipid.vars]
+lipid.dat$log.tg = log(lipid.dat$trg.mg.dL.)
+summary(lipid.dat)
+
+md.pattern(lipid.dat) # no missing data for lipid variables for the 667 people
+# no need for imputation
+
+# for the cfa latent distal outcome get means of lipid variables by sex of child to fix in analyses (and free up params)
+setDT(lipid.dat)[, lapply(.SD, mean, na.rm=T), by = Sex]
+```
+
+```{r, eval=T}
+# make data for Mplus
+# only run this if need to change data
+
+# read in data
+setwd("~/")
+
+# weight, height and wfl vars
+# --------------------------------
+
+wfl = c("wfl.0", "wfl.1", "wfl.2", "wfl.3", "wfl.4", "wfl.5")
+ht = c("Hgh.cm..aB",
+       "Hg.cm..a1M", "Hg.cm..a2M",
+       "Hg.cm..a3M", "Hg.cm..a4M", 
+       "Hg.cm..a5M")
+
+wt = c("Wgh.gr..aB",  "Wg.gr..a1M",
+       "Wg.gr..a2M",  "Wg.gr..a3M",  "Wg.gr..a4M",
+       "Wg.gr..a5M")
+
+days = c("DysbbdaM0m", "DysbbdaM1m",  "DysbbdaM2m",
+         "DysbbdaM3m",  "DysbbdaM4m", "DysbbdaM5m")
+
+# function to create data set for export (and analysis in Mplus. see export-mplus-m2.Rmd)
+
+makedat = function(initial.dat){
+  
+  # initial.dat=merge1 # debug
+  initial.dat$DysbbdaM0m = 0
+  colnames(initial.dat)
+  table(initial.dat$Sex) # male=1, female=2
+  initial.dat$Sex = initial.dat$Sex-1 # now male=0 and female=1
+  initial.dat$trt = ifelse(initial.dat$milkcode==1, 1, 
+                      ifelse(initial.dat$milkcode==3, 0, NA))
+  
+  export.dat = initial.dat[c("id", wt, ht, wfl, days, "Sex", "trt")]
+  
+  summary(export.dat)
+  
+  # convert weight from g to kg
+  export.dat[c(wt)] = apply(export.dat[c(wt)], 2, function(x) {x/1000})
+  
+  # convert height from cm to m 
+  #export.dat[c(ht)] = apply(export.dat[c(ht)], 2, function(x) {x/100})
+  
+  # convert time from days to months (approximate)
+#  export.dat[c(days)] = apply(export.dat[c(days)], 2, function(x) {round(x/30,digits=1)})
+  export.dat[c(days)] = apply(export.dat[c(days)], 2, function(x) {round(x,digits=1)})
+  # change column names to more accessible format
+  
+  # wt
+  colnames(export.dat)[which(colnames(export.dat) %in% wt)] = c("wt0", "wt1",
+                                                                "wt2", "wt3",
+                                                                "wt4", "wt5")
+  
+  # ht
+  colnames(export.dat)[which(colnames(export.dat) %in% ht)] = c("ht0", "ht1",
+                                                                "ht2", "ht3",
+                                                                "ht4", "ht5")
+  
+  # wfl
+  colnames(export.dat)[which(colnames(export.dat) %in% wfl)] = c("wfl0", "wfl1",
+                                                                "wfl2", "wfl3",
+                                                                "wfl4", "wfl5")
+  
+  colnames(export.dat)
+  
+  # days to measurement
+  days.rename = c("t0", "t1", "t2", "t3", "t4", "t5")
+  colnames(export.dat)[which(colnames(export.dat) %in% days)] = days.rename
+  
+  # get average time per time point
+  summary(export.dat[days.rename])
+  head(export.dat)
+  
+  # Means of month measure by time points
+  sapply(export.dat[c('t0', 't1', 't2',
+                      't3', 't4', 't5')], function(x) {mean(x, na.rm=T)})
+  
+  # 2nd data set for association analyses
+  # -------------------------------------
+  
+  maternal.vars = c("T1137", "T1131", "R.momsmoke" ,
+                    "v.momage.i", "milkcode",
+                    "actua.ses.q26",
+                    "MthrsTTyoe", "GestatnlAg",
+                    'graffar.index')
+  
+  maternal.vars2 = c("mat.wt",
+                     "mat.ht",
+                     "matsmoke",
+                     'mat.age',
+                     "milkcode",
+                     "hhi",
+                     "yoe",
+                     "gestage",
+                     'graffar.i')# Mplus only has 8 char variable names
+  maternal.dat = initial.dat[c("id", maternal.vars)] 
+  colnames(maternal.dat)[which(colnames(maternal.dat) %in% maternal.vars)] = maternal.vars2
+  
+  export.dat2 = merge(maternal.dat, export.dat, by="id")
+  export.dat2[export.dat2==999 | export.dat2==999.999 | export.dat2==999.9] = NA # create missing values in R data frame
+  export.dat2$bmi = with(export.dat2, mat.wt/(mat.ht/100)^2)
+  #hist(export.dat2$bmi)
+  summary(export.dat2) # check
+  
+  # 3rd data set for association analyses
+  # -------------------------------------
+  lipid.vars = c('HDLchlstrl', 'LDLChlstrl', 'Ttlchlstrl', 'trg.mg.dL.')
+  lipid.vars2 = c('hdl', 'ldl', 'tc', 'tg')
+  lipid.dat = initial.dat[c("id", lipid.vars)]
+  colnames(lipid.dat)[which(colnames(lipid.dat) %in% lipid.vars)]=lipid.vars2
+  lipid.dat$log.tg = log(lipid.dat$tg)
+  
+  export.dat3 = merge(lipid.dat, export.dat, by="id")
+  export.dat3 = merge(export.dat3, 
+                      export.dat2[c(maternal.vars2, "bmi", "id")], 
+                      by="id")
+  
+  return(export.dat3)
+}
+
+export.dat3 = makedat(merge2) # this was originally merge1 -- the full data set, 
+# however I decided to take out any lipid exceeding 5sd (6 people with high TG and/or high LDL)
+export.dat3.subset = makedat(merge2)
+nrow(export.dat3)  # 596
+nrow(export.dat3.subset) # 596
+
+export.dat3.all = makedat(merge1.sens)
+nrow(export.dat3.all) # 671
+
+# save so I can use the growth params for m3
+setwd("~/GitHub/unc-dissertation-markdown-p2/includes/scripts/paper2") # new carbon
+#setwd("~/dissertation/unc-dissertation-markdown-p2/includes/scripts/paper1/lgmm") # old carbon
+save(export.dat3, export.dat3.subset, export.dat3.all, file="exportdat3.Rdata")
+
+```
+
+
+```{r, eval=FALSE}
+
+# Export data to mplus format -- only do this if there is a change
+setwd("~/GitHub/unc-dissertation-markdown-p2/includes/scripts/paper1/lgmm") # new carbon
+#setwd("~/dissertation/unc-dissertation-markdown-p2/includes/scripts/paper1/lgmm") # old carbon
+getwd()
+
+summary(export.dat)
+
+prepareMplusData(export.dat, "slcs2.dat") # export data out to an mplus file
+#prepareMplusData(export.dat2, "slcs-m1.dat") # export data out to an mplus file
+prepareMplusData(export.dat3, "slcs-m1.dat") # export data out to an mplus file
+
+# ------------------ m2 ----------------------------------
+setwd("~/GitHub/unc-dissertation-markdown-p2/includes/scripts/paper2/lgmm") # new carbon
+#setwd("~/dissertation/unc-dissertation-markdown-p2/includes/scripts/paper2/lgmm") # old carbon
+
+# before export make a binary trt alloc variable
+summary(export.dat3)
+table(export.dat3$milkcode)
+export.dat3.rev = export.dat3
+
+export.dat3.rev = within(export.dat3.rev, {
+  mk2 = ifelse(milkcode==1, 1,
+               ifelse(milkcode==3, 0, NA))
+  gestage.ctr = scale(gestage, scale=F) # center gest age
+  graffar.i.ctr = scale(graffar.i, scale=F) # center graffar
+})
+table(export.dat3.rev$mk2) #check
+
+# the full sample: all eligible for randomized trial.
+sum(table(export.dat3.all$milkcode))
+
+export.dat3.all = within(export.dat3.all, {
+  mk2 = ifelse(!(milkcode %in% c(1,3)), 4, milkcode) # 4 is the other group
+  mk1 = ifelse(mk2==1, 1, 0) # binary to use in categorical analyses with other as ref
+  mk3 = ifelse(mk2==3, 1, 0)) # binary to use in categorical analyses with other as ref
+  gestage.ctr = scale(gestage, scale=F) # center gest age
+  graffar.i.ctr = scale(graffar.i, scale=F) # center graffar
+})
+
+table(export.dat3.all$mk2) #check
+sum(table(export.dat3.all$mk1)) #check
+sum(table(export.dat3.all$mk3)) #check
+nrow(export.dat3.all)
+
+e3.sub = export.dat3.subset
+e3.sub = within(e3.sub, {
+  mk2 = ifelse(milkcode==1, 1,
+               ifelse(milkcode==3, 0, NA))
+  gestage.ctr = scale(gestage, scale=F) # center gest age
+  graffar.i.ctr = scale(graffar.i, scale=F) # center graffar
+})
+table(e3.sub$mk2)
+
+summary(export.dat3.rev)
+
+names(export.dat3.rev)
+
+# look at hist of lipid vals for exclusion
+ggplot(export.dat3.rev,
+       aes(x=ldl)) +
+  geom_histogram()+ 
+  theme_bw()
+
+# take out person with ldl above 275
+export.dat3.rev = export.dat3.rev[export.dat3.rev$ldl<275,]
+
+# look at hist of lipid vals for exclusion
+ggplot(export.dat3.rev,
+       aes(x=ldl)) +
+  geom_histogram()+ 
+  theme_bw()
+
+# look at hist of lipid vals for exclusion
+ggplot(export.dat3.rev,
+       aes(x=hdl)) +
+  geom_histogram()+ 
+  theme_bw()
+
+# look at hist of lipid vals for exclusion
+ggplot(export.dat3.rev,
+       aes(x=log.tg)) +
+  geom_histogram()+ 
+  theme_bw()
+
+ggplot(export.dat3.rev,
+       aes(x=tg)) +
+  geom_histogram()+ 
+  theme_bw()
+
+nrow(export.dat3.rev)
+
+nrow(export.dat3.all)
+table(is.na(export.dat3.all$mk3))
+
+head(export.dat3.rev)
+names(export.dat3.rev)
+
+id.from2 = export.dat3.rev$id
+
+nrow(export.dat3.rev) # 596
+names(export.dat3.rev)
+
+```
+
+```{r}
+# create a new data frame for export to m2 analyses with breastfeeding variable
+
+# this code borrowed from /paper2/misc-table-compare-bf.Rmd
+
+# Load in bf data.
+# See 3/7/2018 email
+
+bf = read.csv(file="~/../Dropbox/unc.grad.school/dissertation/data/m2/breastfeeding/bfvars_Mar6_2018.csv")
+
+names(bf) # use the stillbf6. has largest association with ldl at outcome (see  /paper2/misc-table-compare-bf.html)
+
+# mom1mam: age at first bottle (months) (n=1730)
+# edad1mam: age at first bottle (months) (days) (n=1730)
+# weanmnth: age when weaned from breast milk (months) (n=1117)
+# edadultpecho: age when weaned from breast milk (day) (n=1705)
+
+names(export.dat3.rev)
+
+table(bf$id %in% export.dat3.rev$id) # check
+
+export.dat3.rev.bf = merge(export.dat3.rev,
+                           bf[,c("id","stillbf6")],
+                           by="id",
+                           all.x=T)
+
+table(export.dat3.rev.bf$stillbf6)
+nrow(export.dat3.rev.bf)
+
+```
+
+```{r}
+
+# Export the data for use in Mplus
+prepareMplusData(export.dat3.rev, "slcs-m2.dat") # export data out to an mplus file
+prepareMplusData(export.dat3.all, "slcs-m2-all.dat") # export data out to an mplus file
+prepareMplusData(e3.sub, "slcs-m2-subset.dat") # export data out to an mplus file
+prepareMplusData(export.dat3.rev.bf, "slcs-m2-bf.dat") # export data out to an mplus file
+
+```
+
+```{r, revise3}
+
+# reduce phenotype data for m3 to match that from m2
+
+# save so I can use the growth params for m3
+setwd("~/GitHub/unc-dissertation-markdown-p2/includes/scripts/paper3") # new carbon
+#setwd("~/dissertation/unc-dissertation-markdown-p2/includes/scripts/paper1/lgmm") # old carbon
+subset3 = export.dat3[export.dat3$id %in% id.from2,]
+dim(subset3) # 596 by 42
+
+export.dat3 = subset3
+save(export.dat3, export.dat3.subset, export.dat3.all, file="exportdat3.Rdata")
+```
+
+
+# References
+
