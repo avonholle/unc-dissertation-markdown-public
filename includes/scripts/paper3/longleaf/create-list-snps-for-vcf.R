@@ -117,7 +117,7 @@ out.2 = unique(df.allele[c("rsid", "Pos_hg19", "Chr")]) # df.allele has 252 rows
 # snps are in df.allele more than once because of multiple traits and different authors, same rsid.
 # so just get unique rsid
 nrow(out.2) # 208 snps
-nrow(unique(df.allele[c("rsid", "Pos_hg19", "Chr", "Trait", "Author")]))
+nrow(unique(df.allele[c("rsid", "Pos_hg19", "Chr", "Trait", "Author")])) # 252
 
 # Add files to output files
 # -----------------------------------------------------
