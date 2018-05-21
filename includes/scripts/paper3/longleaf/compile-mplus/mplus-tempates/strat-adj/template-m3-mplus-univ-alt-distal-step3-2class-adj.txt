@@ -5,24 +5,18 @@ distalv = 1:3;
 trajvar = 1:3;
 numclasses = 2;
 sex = 1:2;
-snps = 1:23;
+snps = 1:13;
 
 
 trajvarnames#trajvar = "ht" "wfl" "wt";
 distalnames#distalv = "ldl" "hdl" "log_tg";
-snpnames#snps =    "rs12740374"
-"rs629301" "rs1260326"
-"rs78536982" "rs62436827"
-"rs79236614" "rs28680850"
-"rs4360309" "rs9282541" 
-"rs964184" "rs1077835"
-"rs5880" "rs1532624" 
-"rs247617" "rs11076175"
-"rs3764261" "rs72925845" 
-"rs6511720" "rs7412" 
-"rs4420638"
-"un_grs_hdl" "un_grs_ldl" 
-"un_grs_tg"
+
+snpnames#snps =
+    "rs12740374" "rs964184" "rs3135506" "rs11604424" "rs3741298" "rs247617" 
+    "rs11076175" "rs7412" "rs1260326" "rs12678919"
+      "un_grs_hdl"       
+      "un_grs_ldl"       
+      "un_grs_tg" 
 ;
 
 sexnames#sex = "Male" "Female";
@@ -42,10 +36,9 @@ VARIABLE:
 NAMES = [[trajvarnames#trajvar]]0 - [[trajvarnames#trajvar]]5 
 graf2 gestage_  mk22
     HDL LDL LOG_TG
-    rs12740374 rs629301 rs1260326 rs78536982 rs62436827
-    rs79236614 rs28680850 rs4360309 rs9282541 rs964184
-    rs1077835 rs5880 rs1532624 rs247617 rs11076175
-    rs3764261 rs72925845 rs6511720 rs7412 rs4420638
+    rs12740374 rs964184 rs3135506 rs11604424
+    rs3741298 rs247617 rs11076175
+    rs7412 rs1260326 rs12678919
     un_grs_hdl un_grs_ldl un_grs_tg 
     pc1-pc5
     sex mk2 graf

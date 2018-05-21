@@ -27,8 +27,16 @@ require("markdown")
 # that has cross walk between geno and pheno ids
 # from ~\Dropbox\unc.grad.school\my-papers\ms-201608-1\programs\kure-analysis
 
-knit("get-snp-data.Rmd") 
-markdownToHTML('get-snp-data.md', 'get-snp-data.html') # creates html file
+
+# have run this separately with 
+# run-files-data-geno.sh at 
+# at ~\GitHub\unc-dissertation-markdown-p2\includes\scripts\paper3\longleaf\compile-mplus
+# on local computer
+# and /proj/epi/CVDGeneNas/avonholle/ms-d3/data-prep
+# on longleaf
+
+#knit("get-snp-data.Rmd") 
+#markdownToHTML('get-snp-data.md', 'get-snp-data.html') # creates html file
 
 
 # 3) make Mplus .inp files

@@ -40,12 +40,14 @@ require(kableExtra)
 
 # read in data
 setwd("~/")
-load("re-wt.Rdata") # (re.vals.df, has wt random effects from sitar model (see ../paper2/table2-mice.Rmd  for data source)
+load("re-wt.Rdata") # (re.vals.df, has wt random effects from sitar model (see ~\GitHub\unc-dissertation-markdown-p2\includes\scripts\paper1\sitar-rev5\table2-mice.Rmd  for data source)
 re.wt = re.vals.df
+nrow(re.wt)
 colnames(re.wt) = c("alpha0.wt", 'beta0.wt', 'beta1.wt', 'id')
 
 load("re-ht.Rdata") 
 re.ht = re.vals.df
+nrow(re.ht) # 602
 colnames(re.ht) = c("beta0.ht", "beta1.ht", 'id')
 
 load("re-wfl.Rdata")
@@ -65,12 +67,12 @@ head(re.ht)
 setwd("~/")
 load("merged-data.Rdata") # data frame is merge1
 #str(merge1)
-colnames(merge1)
+colnames(merge2)
 out.vars = c('HDLchlstrl', 'LDLChlstrl', 'trg.mg.dL.', 'GestatnlAg', 
              'graffar.index',
              'Sex.f', 'milkcode')
 #'Ttlchlstrl'
-sub.phen = merge1[c("id", out.vars)]
+sub.phen = merge2[c("id", out.vars)]
 head(sub.phen)
 
 ```

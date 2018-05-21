@@ -92,8 +92,6 @@ sub.dat$milkcode = factor(sub.dat$milkcode,
 # 3=no added iron
 # missing milkcode means they were part of the neuromaturation study.
 
-
-
 new.names = c("Maternal Age (years)",
               "Graffar Index", 
               "Maternal education (years)",

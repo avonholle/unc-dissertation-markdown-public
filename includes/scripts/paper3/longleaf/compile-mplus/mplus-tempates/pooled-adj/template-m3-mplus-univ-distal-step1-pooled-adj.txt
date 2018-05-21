@@ -17,15 +17,14 @@ TITLE: [[numclasses]] class cubic growth model for univariate distal with i and 
 DATA: FILE = "/proj/epi/CVDGeneNas/avonholle/ms-d3/data-prep/aim3.dat";
 
 VARIABLE: 
-NAMES = id rs12740374 rs629301 rs1260326 rs78536982 rs62436827 rs79236614 rs28680850
-     rs4360309 rs9282541 rs964184 rs1077835 rs5880 rs1532624 rs247617 rs11076175
-     rs3764261 rs72925845 rs6511720 rs7412 rs4420638 PC1 PC2 PC3 PC4 PC5 alpha0_wt
-     beta0_wt beta1_wt beta0_ht beta1_ht beta0_wfl beta1_wfl hdl ldl log_tg
-     GestatnlAg graffar_index Sex_f milkcode w_grs un_grs_hdl un_grs_ldl un_grs_tg
-     graffar_i_ctr gestage_ctr mk2 wt0 wt1 wt2 wt3 wt4 wt5 ht0 ht1 ht2 ht3 ht4 ht5
-     wfl0 wfl1 wfl2 wfl3 wfl4 wfl5 sex;
-     
+NAMES = id rs12740374 rs964184 rs3135506 rs11604424 rs3741298 rs247617 rs11076175
+     rs7412 rs1260326 rs12678919 PC1 PC2 PC3 PC4 PC5 alpha0_wt beta0_wt beta1_wt
+     beta0_ht beta1_ht beta0_wfl beta1_wfl hdl ldl tg GestatnlAg graffar_index Sex_f
+     milkcode w_grs un_grs_hdl un_grs_ldl un_grs_tg graffar_i_ctr gestage_ctr mk2
+     log_tg wt0 wt1 wt2 wt3 wt4 wt5 ht0 ht1 ht2 ht3 ht4 ht5 wfl0 wfl1 wfl2 wfl3 wfl4
+     wfl5 sex; 
 MISSING=.;
+
 CLASSES = uc([[numclasses]]);
 
 IDVARIABLE is ID;
@@ -34,9 +33,9 @@ USEVARIABLES = [[trajvarnames#trajvar]]0 - [[trajvarnames#trajvar]]5 gestage_ctr
   sex2 graf2 mk22 ;
 
 AUXILIARY = hdl ldl log_tg 
-rs12740374 rs629301 rs1260326 rs78536982 rs62436827 rs79236614 rs28680850
-     rs4360309 rs9282541 rs964184 rs1077835 rs5880 rs1532624 rs247617 rs11076175
-     rs3764261 rs72925845 rs6511720 rs7412 rs4420638
+  rs12740374 rs964184 rs3135506 rs11604424 
+  rs3741298 rs247617 rs11076175
+  rs7412 rs1260326 rs12678919
   un_grs_hdl un_grs_ldl un_grs_tg pc1-pc5
   sex  mk2 graffar_i_ctr ;
   

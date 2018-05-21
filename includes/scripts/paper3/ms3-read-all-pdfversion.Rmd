@@ -25,6 +25,7 @@ header-includes: \usepackage{hyperref}\hypersetup{colorlinks=true, linkcolor=blu
   \usepackage{amsmath} \usepackage{float} \usepackage[font=large,labelfont=bf]{caption} \usepackage{longtable} \usepackage{lscape}
 editor_options:
   chunk_output_type: console
+bibliography: ../../bib/lit-review.bib
 ---
 
 # Tables
@@ -32,6 +33,8 @@ editor_options:
 
 ```{r setup-ms3-t, include=FALSE, purl=FALSE}
 knitr::opts_chunk$set(fig.width=12, fig.height=8,
+                      fig.keep = "none",
+                      fig.pos='H',
 #                      fig.path = '~/GitHub/unc-dissertation-markdown-p2/includes/figures/',
                       echo=F, warning=FALSE,
                       message=FALSE, 
@@ -57,11 +60,48 @@ require(kableExtra)
 require(data.table)
 require(tidyr)
 require(gridExtra)
+require(grid)
 require(captioner)
 require(magick)
 
 ```
 
+
+
+```{r}
+
+load(file="includes/scripts/paper3/longleaf/compile-mplus/table1/m3-summary-stat.Rdata") # just summary statistics, wt2.adj$id,  tab1, tab1.subset and all.tab2 tableone objects from ~\GitHub\unc-dissertation-markdown-p2\includes\scripts\paper3\longleaf\compile-mplus\table1\m3-get-table1.Rmd. Run on longleaf
+
+summary(ids)
+tab1 = print(tab1)
+tab1.p = print(tab1.subset)
+tab2.p = print(all.tab2, showAllLevels=T)
+
+
+dim(tab2.p)
+head(tab2.p)
+rownames(tab2.p)[2:4] = c("HDL-C risk score", "LDL-C risk score", "TG risk score")
+
+
+```
+
+
+
+```{r, results='markup', eval=FALSE}
+
+# see https://stackoverflow.com/questions/45409750/get-rid-of-addlinespace-in-kable
+#linesep = if (booktabs) c('', '', '', '', '\\addlinespace') else '\\hline'
+
+kable(tab2.p[,-4],
+      "latex",
+      booktabs=T, 
+      longtable=T,
+      linesep = "",
+      caption = "(MS3: Table 1) Descriptive statistics for selected SNPs and genetic risk scores.",
+      col.names = c("Number of alleles", "Male", "Female", "Overall")) %>%
+  kable_styling(latex_options = c("striped", "repeat_header", "HOLD_position"))
+
+```
 
 
 ```{r readd}
@@ -70,8 +110,6 @@ load(file="includes/scripts/paper3/table1.Rdata") # get descriptive summary stat
 
 ```
 
-\clearpage
-\newpage
 
 ```{r, results='markup'}
 
@@ -85,11 +123,45 @@ kable(all.1, "latex",
 
 ```
 
+\clearpage
+\newpage
 
+<!-- \section{Comparison of overall additive association with lipid traits} -->
 
+```{r, results='markup'}
+
+# from ~\GitHub\unc-dissertation-markdown-p2\includes\scripts\paper3\ms3-snp-assoc.Rmd
+
+load(file="~/GitHub/unc-dissertation-markdown-p2/includes/scripts/paper3/snp-compare.Rdata") # includes both2.sub.sub data frame
+
+kable(sls.est.sub[,-13],
+      booktabs=T,
+#      longtable=T,
+      format="latex",
+      row.names=F,
+      escape=F,
+      caption='(MS3: Table 2) Comparison of candidate SNP-lipid associations from literature and in the SLS sample.',
+      col.names = c("p-value<0.05$^a$", 
+                    "SNP", "Author$^b$", "Chr", "Trait", "Coded allele", "Beta", "EAF",
+                     "Coded allele$^c$", "Uncoded allele", "Estimate (SE), p-value", "MAF")) %>%
+    collapse_rows(columns=1:2) %>%
+    add_header_above(c(" "=2, "Source Studies"=6, "SLS estimates"=4)) %>%
+    kable_styling(latex_options=c("HOLD_position", "scale_down", "repeat_header")) 
+
+```
+
+^a^ p-value < 0.05 for SNP-lipid additive association in Santiago Longitudinal Study (SLS)
+
+^b^ Sources (and reference for beta units): Ko 2014 [@ko_amerindian-specific_2014], Below 2016 [@below_meta-analysis_2016], Teslovich 2010 [@teslovich_biological_2010], Zubair 2016 [@zubair_fine-mapping_2016]
+
+^c^ Coded allele in SLS is minor allele.
+
+\clearpage
+\newpage
 
 ```{r, eval=F, purl=F}
 
+setwd("~/GitHub/unc-dissertation-markdown-p2/includes/scripts/paper3")
 # only re-run if new data
 
 #  read in parameters from Mplus run on longleaf
@@ -105,7 +177,8 @@ list.dat = list(pun = params.pool.univ.noadj,
                 sun = params.strat.univ.noadj,
                 sua = params.strat.univ.adj)
 
-save(list.dat, file="includes/scripts/paper3/longleaf/compile-mplus/mplus-tempates/params.Rdata")
+
+save(list.dat, file="longleaf/compile-mplus/mplus-tempates/params.Rdata")
 
 ```
 
@@ -269,7 +342,6 @@ vars. = c("sex", "outcome", "class")
 names(lipid.distal2.)
 unique(lipid.distal2.[vars.])
 
-
 lipid.distal2 = merge(select.model.[vars.],
                       lipid.distal2.,
                       by=c("sex", "outcome", "class"),
@@ -312,28 +384,59 @@ head(distal.wide)
 ```{r h4-un-ms3}
 
 # make formatted info for formatted table
+  
+# from C:\Users\ann\Documents\GitHub\unc-dissertation-markdown-p2\includes\scripts\power\aim3\power-calcs-ind-assoc.Rmd
+snp.dat = read.csv(file="~/GitHub/unc-dissertation-markdown/includes/scripts/power/aim3/sig-snp.csv")
+head(snp.dat)
+rn1 = c("Trait", "rsid", "Author", "Chr", "Effect allele", "beta")
+snp.dat$primary = with(snp.dat, paste0(rsid, "-", Trait))
+head(snp.dat$primary)
+
 handle2 = function(dat){
   
 # dat = lipid.distal2 # for debugging
+  names(dat)
+  test2 = dat[c("snp", "lipid")]
+  nrow(unique(test2)) # 69 unique snps and lipid combos
+  nrow(dat)
+  table(dat$snp); table(dat$lipid)
+  table(snp.dat$rsid); table(snp.dat[!(snp.dat$Trait %in% c("TC")),]$Trait)
+  snp.dat2 = snp.dat[!(snp.dat$Trait %in% "TC"),c("rsid", "Trait")]
 
+  
+  dat$primary = with(dat, ifelse(paste0(snp, "-", lipid) %in% snp.dat$primary, 1, 0)) # these snp and trait combos match the primary trait.
+  table(dat$primary) # check 144 match, 648 not primary
+
+  select.primary = merge(dat, snp.dat[!(snp.dat$Trait %in% "TC"),c("rsid", "Trait")],
+                         by.x = c("snp", "lipid"),
+                         by.y = c("rsid", "Trait"))
+  nrow(select.primary) # 168, check
+  
 # take out risk score assn with other lipids
-dat$exclude.some1 = with(dat, {
-                                   ifelse( (snp=="rs_hdl" & lipid %in% c("TG", "LDL")) |
+dat$exclude.some1 = with(dat, {ifelse( (snp=="rs_hdl" & lipid %in% c("TG", "LDL")) |
                               (snp=="rs_tg" & lipid %in% c("HDL", "LDL")) |
                                (snp=="rs_ldl" & lipid %in% c("TG", "HDL")), 1, 0)
 })
 
-table(dat$exclude.some1)
+table(dat$exclude.some1) # 0, n=792
 dat = dat[dat$exclude.some1==0,]
 
 # calculate adjusted p-value by type of genetic variable (snp or grs)
 dat$risk.score = with(dat, {ifelse(grepl("rs_", snp)==T, "yes", "no")})
 
+# -- make indicators for primary trait or not.
+# stratify adjustment status by this indicator 
+# create three groups: risk score, snp and primary trait, snp and other traits
+dat$strat.type = with(dat, ifelse(risk.score == "yes", "risk score", 
+                                  ifelse(primary == 1, "primary", 'other')))
+table(dat$strat.type) # 72 risk score, 144 primary and 576 other
+head(dat)
+
 dat <- setDT(dat)[, adjusted.p := .SD[,p.adjust(as.numeric(as.character(pval)),
                                                                        method='bonf')],
-                                          by=c("risk.score")][, sig.val := .SD[,ifelse(adjusted.p<0.05, 1, 0)],
-                                                        by=c("risk.score")]
-class(dat)
+                                          by=c("strat.type", "adj")][, sig.val := .SD[,ifelse(adjusted.p<0.05, 1, 0)],
+                                                        by=c("strat.type")]
+# stratify Bonferroni adjustment by primary trait status and if adjusted.
 dat = data.frame(dat)
 
 #dat$sig.val = ifelse(dat$adjusted.p<0.05, 1, 0)
@@ -341,12 +444,16 @@ dat$nom.sig = ifelse(dat$pval<0.01, 1, 0)
 table(dat$sig.val)
 table(dat$nom.sig)
 
+dat[dat$nom.sig==1 & complete.cases(dat$nom.sig)==T,]
+
 names(dat)
 dat.order = dat[order(dat$pval),]
-vnames = names(dat.order)[c(1:4,6:8,10,13,14,16,17)]
+vnames = names(dat.order)[c(1:5,6:8,10,12,13,14,16,17,18,19)]
 head(dat.order[vnames])
   
-head(dat.order[dat.order$risk.score=="yes", vnames])
+head(dat.order[dat.order$strat.type=="risk score", vnames])
+head(dat.order[dat.order$strat.type=="primary", vnames])
+head(dat.order[dat.order$strat.type=="other", vnames])
 
 dat.order[dat.order$nom.sig==1,vnames]
 
@@ -362,7 +469,6 @@ dat = within(data.frame(dat), {
     est.n = as.numeric(as.character(est.))
     se.n = as.numeric(as.character(se.))
 
-    
         reverse.sign = ifelse(param.rev %in% c("Medium vs Low", "High vs Low", "High vs Medium"), "yes", "no") # these are class switches
 
     val.ci = ifelse(reverse.sign=="no", 
@@ -401,6 +507,7 @@ return(dat)
 
 ```{r get-traj-ms3, eval=F, purl=F}
 
+setwd("~/GitHub/unc-dissertation-markdown-p2/includes/scripts/paper3")
 # only re-run if new data
 
 #  read in parameters from Mplus run on longleaf
@@ -416,7 +523,7 @@ list.dat.traj = list(pun = params.pool.univ.noadj,
                 sun = params.strat.univ.noadj,
                 sua = params.strat.univ.adj)
 
-save(list.dat.traj, file="includes/scripts/paper3/longleaf/compile-mplus/mplus-tempates/params-traj.Rdata")
+save(list.dat.traj, file="longleaf/compile-mplus/mplus-tempates/params-traj.Rdata")
 
 ```
 
@@ -479,20 +586,30 @@ cp.wide
 cp.wide$id = rownames(cp.wide)
 cp.wide[is.na(cp.wide)] = 0
 
+nrow(select.model.)
+nrow(cp.wide)
 cp.wide. = merge(select.model.,
                       cp.wide,
                       by=c("sex", "outcome", "class"),
                       all.x=T)
-head(cp.wide.)
+nrow(cp.wide.)
 
 cp.wide2 = cp.wide.[c("sex", "outcome", "adj", "LatentClass",
                      "I", "S", "Q")]
 
 # Label the classes according to gradients of slopes
 class.labels = setDT(cp.wide2)
+nrow(class.labels) # 48
+
+class.labels = unique(class.labels) 
+nrow(class.labels) # 36. not sure why there are duplicates?
 
 class.labels[, class.order := frank(S), by=c("sex", "adj", "outcome")]
 levels(factor(class.labels$class.order))
+
+class.labels[class.labels$sex=="Both" & class.labels$outcome=="Height" &
+               class.labels$adj=="yes",]
+
 class.labels$class.order = factor(class.labels$class.order, labels=c("Low",
                                                                      "High"))
 class.labels
@@ -517,8 +634,8 @@ cp.wide
 
 convert.prep = lipid.distal2[c("sex", "outcome", "class", "param", "type.f", "adj", "lipid", "snp")] # this information contains all unique identifiers for these data
 head(convert.prep)
-nrow(convert.prep)
-nrow(unique(convert.prep)) # 1242
+nrow(convert.prep) # 936
+nrow(unique(convert.prep)) # 702
 
 convert.prep = lipid.distal2[c("sex", "outcome", "class", "param", "type.f", "adj")] 
 
@@ -602,12 +719,17 @@ df.sums.2.sub = merge(select.model.,
                       df.sums.2,
                       by=c("sex", "outcome", "class"),
                       all.x=T)
-nrow(df.sums.2.sub) # 2070
+nrow(df.sums.2.sub) # 936
 
+names(lipid.distal2)
 ld2.select = lipid.distal2[lipid.distal2$sig.val %in% c(1) &
                              complete.cases(lipid.distal2)==T,]
 nrow(ld2.select)
 ld2.select
+
+ld2.select.extra = lipid.distal2[lipid.distal2$nom.sig==1 &
+                             complete.cases(lipid.distal2)==T,]
+ld2.select.extra
 
 # prepare mean differences ......
 # =======================================
@@ -616,6 +738,7 @@ levels(lipid.distal2$param.rev)
 table(lipid.distal2$param.rev)
 
 lipid.distal2$param.rev = factor(lipid.distal2$param.rev, levels = c("Low vs High"))
+ld2.select.extra$param.rev = factor(ld2.select.extra$param.rev, levels = c("Low vs High"))
 
 ld2.select = data.frame(lipid.distal2)
 #ld2.select[order(ld2.select$pval),c("pval", "adjusted.p")]
@@ -625,7 +748,7 @@ table(ld2.select$param.rev)
 
 #ld2.select[ld2.select$nom.sig==1 & is.na(ld2.select$est.ci.bold)==F,]$param.rev
 
-nrow(ld2.select) # 1890
+nrow(ld2.select) # 792
 ld2.select = ld2.select[complete.cases(ld2.select)==T,]
 nrow(ld2.select)
 
@@ -635,15 +758,19 @@ sig.sel = unique(ld2.select[ld2.select$sig.val==1 ,
                      unique.vars])
 sig.sel
 
+sig.sel2 = unique(ld2.select[ld2.select$nom.sig==1 , 
+                     unique.vars])
+sig.sel2
+
 ld2.select. = merge(ld2.select,
-                    sig.sel,
+                    sig.sel2,
                     by=unique.vars)
-nrow(ld2.select.) # 8
+nrow(ld2.select.) # 13
 
 distal.wide2.prep <- dcast(ld2.select.,  
                      sex + outcome + class + lipid  + snp ~ param.rev + adj , 
                      value.var="est.ci.bold4")
-nrow(distal.wide2.prep) # 4
+nrow(distal.wide2.prep) # 
 
 names(ld2.select)
 
@@ -683,30 +810,27 @@ write.csv(distal.wide2, file="includes/scripts/presentations/aha-2018-m3/tables/
 ```{r}
 # make a table with all comparisons and tests for appendix
 
-distal.wide2.prep2 <- dcast(ld2.select,  
-                     risk.score + sex + outcome + class + lipid  + snp ~ param.rev + adj , 
+distal.wide2.prep2 <- dcast(unique(ld2.select),  
+                     strat.type + sex + outcome + class + lipid  + snp ~ param.rev + adj , 
                      value.var="est.ci.bold4")
-nrow(distal.wide2.prep2) # 567
+nrow(distal.wide2.prep2) # 297
 tail(distal.wide2.prep2)
 
 distal.wide2.all = merge(distal.wide2.prep2, 
                      wald.prep[c("sex", "outcome", "class", "lipid", "snp", "no", "yes")],
                      by = c("sex" ,"outcome", "class", "lipid", "snp"),
                      all.x=T)
-nrow(distal.wide2.all) # 567
+nrow(distal.wide2.all) # 297
 
 # nm = cat(paste(shQuote(names(distal.wide2.all), type="cmd"), collapse=",")) # make a list of names to re-order
 
-distal.wide2.all = distal.wide2.all[with(distal.wide2.all, order(risk.score, sex, outcome, lipid, snp)),
-                                    c("risk.score","sex","outcome","lipid","snp","Low vs High_no","Low vs High_yes","no","yes")]
+distal.wide2.all = distal.wide2.all[with(distal.wide2.all, order(strat.type, sex, outcome, lipid, snp)),
+                                    c("strat.type","sex","outcome","lipid","snp","Low vs High_no","Low vs High_yes","no","yes")]
 names(distal.wide2.all)
 head(distal.wide2.all)
 tail(distal.wide2.all)
 
 ```
-
-\clearpage
-\newpage
 
 
 
@@ -715,12 +839,12 @@ tail(distal.wide2.all)
 # get mean distal outcome estimates by growth classes
 
 sapply(all[c("paramHeader", "param", "type")], table) # check
-nrow(all) # 30222
+nrow(all) # 9672
 
 # have to be careful in selecting out means. Don't want the means for lipids from the ratio analyses except the ratios themselves.
 combine.means. = all[(all$paramHeader %in% c("LOG_TG.ON", "HDL.ON", "LDL.ON") &
                        !(all$param %in% c("SEX2", "MK2", "PC1", "PC2", "PC3", "PC4", "PC5"))),] # exclude other covariates
-nrow(combine.means.) # 11316
+nrow(combine.means.) # 1404
 
 combine.means. = handle1(combine.means.)
 names(combine.means.)
@@ -732,7 +856,7 @@ combine.means. = handle2(combine.means.)
 names(combine.means.)
 sapply(combine.means.[c("LatentClass", "lipid")], table)
 
-nrow(combine.means.) # 10332
+nrow(combine.means.) # 1188
 
 # sig vals from table above.
 vals.keep = distal.wide2[c("sex", "outcome", "class", "lipid", "snp")]
@@ -740,8 +864,10 @@ vals.keep
 
 combine.means = merge(combine.means.,
                        vals.keep,
-                       by=c("sex", "outcome", "class", "lipid", "snp"))
-nrow(combine.means) # 46
+                       by=c("sex", "outcome", "class", "lipid", "snp"),
+                      all.y=T)
+nrow(combine.means) # 28
+combine.means
 
 sapply(combine.means[c("LatentClass", "lipid")], table)
 
@@ -749,15 +875,21 @@ colnames(combine.means)
 head(combine.means[,c("outcome", "class", "LatentClass", "paramHeader", "param", "snp", "est", "se")])
 
 names(cp.wide)
-nrow(combine.means) # 46
+nrow(combine.means) # 28
+
 combine.means.merge = merge(combine.means,
                             cp.wide[c("sex", "adj", "outcome", "LatentClass", "class.order")],
                             by=c("sex", "adj", "outcome", "LatentClass"))
-nrow(combine.means.merge) # 46
+nrow(combine.means.merge) # 28
+
+combine.means.merge.all = merge(combine.means.,
+                            cp.wide[c("sex", "adj", "outcome", "LatentClass", "class.order")],
+                            by=c("sex", "adj", "outcome", "LatentClass"))
+nrow(combine.means.merge.all) # 1188
 
 levels(factor(combine.means.merge$lipid))
 combine.means.merge$lipid = factor(combine.means.merge$lipid, 
-                                   labels = c("HDL-C", "LDL-C"))
+                                   labels = c( "HDL-C", "LDL-C"))
 table(combine.means.merge$lipid)
 names(combine.means.merge)
 
@@ -783,16 +915,16 @@ head(mean.wide2)
 
 combine.means.$param.rev=NA
 combine.means.all = handle2(combine.means.)
-nrow(combine.means.all) # 4158
+nrow(combine.means.all) # 1188
 
 combine.means.all.merge = merge(combine.means.all,
                             cp.wide[c("sex", "adj", "outcome", "LatentClass", "class.order")],
                             by=c("sex", "adj", "outcome", "LatentClass"),
                             all.x=T)
-nrow(combine.means.all.merge) # 4158
+nrow(combine.means.all.merge) # 1188
 head(combine.means.all.merge)
 reduce.1 = combine.means.all.merge[(complete.cases(combine.means.all.merge$class.order))==T & combine.means.all.merge$class==2,]
-nrow(reduce.1) # 2268
+nrow(reduce.1) # 1188
 head(reduce.1)
 
 # Make a total table for the appendix
@@ -800,8 +932,8 @@ table(reduce.1$paramHeader)
 table(reduce.1$class,reduce.1$class.order)
 table(reduce.1$lipid)
 mean.wide.all <- dcast(unique(reduce.1),
-                   risk.score + sex + outcome + lipid + snp ~ class.order + adj, value.var="val.ci")
-nrow(mean.wide.all)
+                   strat.type + sex + outcome + lipid + snp ~ class.order + adj, value.var="val.ci")
+nrow(mean.wide.all) # 297
 
 head(mean.wide.all)
 
@@ -926,7 +1058,7 @@ plot.traj = ggplot(data=cp.wide.2[cp.wide.2$adj=="no",],
 cp.wide.2p = cp.wide.2
 levels(cp.wide.2p$class.order)
 cp.wide.2p$class.order = factor(cp.wide.2$class.order,
-                                labels = c("Slow", "Fast"))
+                                labels = c("Slower", "Faster"))
 
 plot.traj.aha = ggplot(data=cp.wide.2p[cp.wide.2p$adj=="no" & cp.wide.2p$outcome %in%  c("Weight (kg)", "WFL (g/cm)"),], 
                aes(x=age, y=value, group=id, 
@@ -949,7 +1081,7 @@ plot.traj.aha = ggplot(data=cp.wide.2p[cp.wide.2p$adj=="no" & cp.wide.2p$outcome
        x="Age (months)",
        y="") 
 
-# export figure for AHA 2018 m2 pres slides
+# export figure for AHA 2018 m3 poster
 
 png(file="includes/scripts/presentations/aha-2018-m3/figures/traj.png", height=8, width=14, units='in', res=600)
   plot.traj.aha
@@ -979,7 +1111,7 @@ kable(cp.wide.extra,
       format="latex",
       row.names=F,
       escape=F,
-      caption='(MS3 Table 2) Parameters for the growth classes\\label{tab:ms3params}',
+      caption='(MS3: Table 3) Parameters for the growth classes\\label{tab:ms3params}',
       col.names = c("Sex of child", "Trajectory type", "Class Order", 
                     rep(c("Not adjusted", "Adjusted$^a$"),3))) %>%
     kable_styling(latex_options=c("HOLD_position", "scale_down", "repeat_header")) %>%
@@ -987,8 +1119,6 @@ kable(cp.wide.extra,
     add_header_above(c("Categories"=3, "Intercept"=2, "Slope"=2, "Quadratic"=2)) %>%
   add_footnote("Adjusted for sex of child in pooled sample, randomization status, and socioeconomic status.", notation="alphabet")
   
-
-
 ```
 
 \end{landscape}
@@ -1002,7 +1132,7 @@ kable(cc.wide.s,
       format="latex",
       row.names=F,
       col.names = c("Sex of child", "Trajectory type", rep(c("no", "yes"), 2)),
-      caption='(MS3 Table 3) Counts of people in each latent class, n\\label{tab:ms3counts}') %>%
+      caption='(MS3: Table 4) Counts of people in each latent class, n\\label{tab:ms3counts}') %>%
   kable_styling(latex_options=c("HOLD_position")) %>%
   collapse_rows(columns = 1:2) %>%
   add_header_above(c("Categories"=2, "Low"=2, "High"=2))
@@ -1015,20 +1145,21 @@ kable(cc.wide.s,
 
 # Estimated latent growth class pairwise differences in coefficient of association between distal lipid outcome and candidate SNP by stratification status, type of lipid distal outcome and adjustment status
 
+# for some reason when debugging
 
 distal.wide2[is.na(distal.wide2)==T]="--" # get rid of missing values
 
-t1 = kable(distal.wide2[, -c(3)], 
+t1 = kable(distal.wide2[distal.wide2$snp %in% c("rs11076175"), -c(3)], 
       escape=F,
       booktabs=T,
       format="latex",
-      caption="(MS3: Table 4) Latent growth class pairwise differences (95\\% CI) in coefficient of association between distal lipid outcome (mg/dL) and candidate SNP.\\label{tab:ms3t2}",
+      caption="(MS3: Table 5) Latent growth class pairwise differences (95\\% CI) in coefficient of association between distal lipid outcome (mg/dL) and candidate SNP at nominal significance levels.\\label{tab:ms3t2}",
       col.names = c("Sex of child", "Outcome", "Lipid", "SNP",
                      rep(c("Not adjusted", "Adjusted$^a$"), 2))) %>%
-  collapse_rows(columns = 1) %>%
+  #collapse_rows(columns = 1) %>%
   kable_styling(latex_options=c("HOLD_position", "scale_down"), 
                 font_size=30) %>% # make large font size for m3 poster (take picture in pdf and paste into paint -- save as table1.png for use in ~GitHub\unc-dissertation-markdown-p2\includes\scripts\presentations\aha-2018-m3\figures)
-  add_header_above(c("Categories"=4, "Low vs High"=2, 
+  add_header_above(c("Categories"=4, "Slower vs Faster"=2, 
                      "Overall test: p-value, (Chi-sq, df)"=2)) %>%
   footnote(alphabet="Adjusted for sex of child in pooled sample, randomization status, and socioeconomic status.",
            general="Bold values indicate Bonferroni corrected statistical significance at alpha level = 0.05.")
@@ -1037,6 +1168,9 @@ t1
 
 
 ```
+
+\clearpage
+\newpage
 
 \begin{landscape}
 
@@ -1048,13 +1182,421 @@ t1
 # coefficient for assn between snp-lipid by class and type of distal outcome
 
 #colnames(mean.wide)
+test = mean.wide2[mean.wide2$snp %in%  "rs11076175",]
+test[is.na(test)==T]="  " # get rid of missing values
+mean.wide2[is.na(mean.wide2)==T]="  " # get rid of missing values
+```
+
+```{r, results='markup', eval=T}
+kable(test, 
+      booktabs=T,
+      format="latex",
+      escape=F,
+      caption='(MS3: Table 6) Coefficient for association between lipid distal outcome and SNP.\\label{tab:ms3t3}',
+      col.names = c("Sex", "Outcome", "Lipid", "snp",
+                    rep(c("Not adjusted", "Adjusted$^a$"), 2))) %>%
+  kable_styling(bootstrap_options = c("striped"), 
+                latex_options=c("HOLD_position", "scale_down" )) %>%
+#  collapse_rows(columns= c(1:2)) %>% # need to fix; , latex_hline = "major"
+  add_header_above(c("Categories"=4, "Slower"=2, "Faster"=2)) %>%
+  add_header_above(c(" "=4, "Latent Class Growth Groups"=4)) %>%
+  footnote(alphabet="Adjusted for sex of child in pooled sample, randomization status, and socioeconomic status.")
+
+
+```
+
+\clearpage
+\newpage
+
+
+```{r}
+
+# TO DO: add table with SITAR results?
+
+
+# bring in results from sitar gxe analysis
+# from ~\GitHub\unc-dissertation-markdown-p2\includes\scripts\paper3\longleaf\compile-mplus\m3-data-scripts-sitar.Rmd
+# run on longleaf linux cluster
+# outputs summary statistics in sitar-m3.Rdata: other, list4, params. First 2 objects are p-values and last is parameters.
+
+load(file="includes/scripts/paper3/longleaf/compile-mplus/sitar-m3.Rdata")
+
+list4 = list4[!(list4$p==1),] # take out snps with evidence for gxe
+nrow(list4) #82
+head(list4)
+
+sitar.t.primary = dcast(list4,
+                snp + outcome + growth.measure ~ distal,
+                value.var = "p")
+sitar.t.primary
+
+other = other[!(other$p==1),]
+nrow(other)
+sitar.t.other = dcast(unique(other),
+                snp + outcome + growth.measure ~ distal,
+                value.var = "p")
+sitar.t.other
+
+str(params)
+head(params)
+
+
+```
+
+```{r}
+
+# make a multi-panel figure with plots of interactions for top five SNPS for primary traits and the rs11076175 SNP assoc found with LDL weight traj analyses.
+head(params)
+vals = c("Estimate", "snp", "outcome", "growth.measure", "distal", "nms", "vals")
+
+# convert from wide to long
+params.long = dcast(params[vals], vals + snp + outcome + growth.measure + distal ~ nms,
+                    value.var="Estimate")
+head(params.long)
+dim(params.long) # 420 by 11
+
+# merge p-value onto params.
+head(list4)
+nrow(params.long) # 420
+```
+
+```{r}
+# NOTE: decided to leave these plots out. NS and don't want to spend time discussing them if artifact. Will only use the snp I found in LGMM and plot the SITAR GxE to verify.
+
+# get plot for primary traits
+params.long2 = merge(list4[c("vals", "p")], params.long, by="vals")
+nrow(params.long2) # 82
+colnames(params.long2)[which(colnames(params.long2) %in% "(Intercept)")]="I" # rename intercept
+head(params.long2)
+
+# get terms for plotting
+# eq 3 from Aliev 2014: P = g0 + g1 G + g2 E + g3 G*E + g4 G*G + g5 G*G*E
+# DOI 10.1007/s10519-014-9642-1
+
+params.long2 = within(params.long2, {
+  geno0.int = I + E
+  geno1.int = I + G + G_G
+  geno2.int = I + 2*G + 4*G_G
+  geno0.slope = E
+  geno1.slope = E + G_E + G2_E
+  geno2.slope = E + 2*G_E + 4*G2_E
+})
+
+head(params.long2)
+
+# sort by p-value
+params.long2 = params.long2[order(params.long2$p),]
+head(params.long2)
+
+# make plots
+
+# now add plots by allele freq
+top.5 = params.long2[1:5,]
+#name.vals = rep(unique(top.5$vals),each=2)
+name.vals. = c("rs1077835 \n HDL \n Velocity \n Weight",
+              "rs1077835 \n HDL \n Tempo \n WFL",
+              "rs12740374 \n LDL \n Tempo \n Ht",
+              "rs629301 \n LDL \n Tempo \n Ht",
+              "rs28680850 \n TG \n Tempo \n WFL")
+name.vals =rep(name.vals., each=2)
+
+# fix scales for each lipid in each panel
+# see https://chrischizinski.github.io/rstats/using_geom_blank/
+blank_data.ex <- data.frame(group = c("A", "A", "B", "B", "C", "C"), x = 0, y = c(0, 
+    8, 0, 40, 0, 50))
+blank_data.ex
+
+blank_data = data.frame(vals = name.vals,
+                        x = 0,
+                        y=c(0, 80, 
+                            0, 80,
+                            50, 120,
+                            2, 6,
+                            50, 120))
+
+
+levels(factor(blank_data$vals))
+levels(blank_data$vals) # check
+blank_data
+
+top.5$vals = factor(top.5$vals, 
+                         labels = name.vals.)
+levels(top.5$vals)
+top.5
+
+# make an empty plot
+df <- data.frame() 
+
+p1 = ggplot() + 
+  geom_point(data=blank_data, aes(x=x, y=y)) + 
+  facet_wrap(~vals, scales="free") + 
+  xlim(-1,1) +
+  xlab("SITAR growth parameter") + ylab("Lipid traits (mg/dL)")
+
+
+wt.plots = p1 +
+  geom_abline(data=top.5, aes(intercept=geno0.int, slope=geno0.slope,
+                     colour="geno=0"), lwd=2) +
+  geom_abline(data=top.5, aes(intercept=geno1.int, slope=geno1.slope,
+                     colour="geno=1"), lwd=2) +
+  geom_abline(data=top.5, aes(intercept=geno2.int, slope=geno2.slope,
+                     colour="geno=2"), lwd=2) + 
+  facet_wrap(~vals, scale="free") + 
+  labs(colour="Number of alleles") +
+  theme_bw()+
+  theme(legend.position="bottom",
+        legend.title=element_text(size=15), 
+        legend.text=element_text(size=5),
+        axis.title=element_text(size=15))
+
+
+wt.plots
+
+
+
+png(file="includes/scripts/presentations/defense-May-2018/figures/aim3-sitar-extra.png", height=6, width=10, units='in', res=300)
+  wt.plots
+dev.off()
+
+```
+
+```{r}
+# get plot for other traits
+params.long3 = merge(other[c("vals", "p")], params.long, by="vals")
+nrow(params.long3) # 180
+colnames(params.long3)[which(colnames(params.long3) %in% "(Intercept)")]="I" # rename intercept
+head(params.long3)
+
+# get terms for plotting
+# eq 3 from Aliev 2014: P = g0 + g1 G + g2 E + g3 G*E + g4 G*G + g5 G*G*E
+# DOI 10.1007/s10519-014-9642-1
+
+
+params.long3 = within(params.long3, {
+  geno0.int = I + E
+  geno1.int = I + G + G_G
+  geno2.int = I + 2*G + 4*G_G
+  geno0.slope = E
+  geno1.slope = E + G_E + G2_E
+  geno2.slope = E + 2*G_E + 4*G2_E
+})
+
+head(params.long3)
+
+# sort by p-value
+params.long3 = params.long3[order(params.long3$p),]
+head(params.long3)
+
+# make plots
+
+# now add plots by allele freq
+top.5o = params.long3[1:5,]
+levels(factor(top.5o$vals))
+
+
+#name.vals = rep(unique(top.5$vals),each=2)
+name.vals. = c("rs28680850 \n HDL \n Size \n Weight",
+               "rs28680850 \n HDL \n Tempo \n WFL",
+               "rs5880 \n LDL \n Velocity \n Height",
+              "rs78536982 \n HDL \n Tempo \n Weight",
+              "rs78536982 \n LDL \n Size \n Weight"
+              )
+name.vals =rep(name.vals., each=2)
+
+blank_data = data.frame(vals = name.vals,
+                        x = 0,
+                        y=c(0, 80,
+                            0, 80,
+                            50, 120,
+                            0, 80,
+                            50, 120))
+
+
+levels(factor(blank_data$vals))
+levels(blank_data$vals) # check
+blank_data
+
+top.5o$vals = factor(top.5o$vals, 
+                         labels = name.vals.)
+levels(top.5o$vals)
+top.5o
+
+# make an empty plot
+df <- data.frame() 
+
+p1 = ggplot() + 
+  geom_point(data=blank_data, aes(x=x, y=y)) + 
+  facet_wrap(~vals, scales="free") + 
+  xlim(-1,1) +
+  xlab("SITAR growth parameter") + ylab("Lipid traits (mg/dL)")
+
+
+wt.plotso = p1 +
+  geom_abline(data=top.5o, aes(intercept=geno0.int, slope=geno0.slope,
+                     colour="geno=0"), lwd=2) +
+  geom_abline(data=top.5o, aes(intercept=geno1.int, slope=geno1.slope,
+                     colour="geno=1"), lwd=2) +
+  geom_abline(data=top.5o, aes(intercept=geno2.int, slope=geno2.slope,
+                     colour="geno=2"), lwd=2) + 
+  facet_wrap(~vals, scale="free") + 
+  labs(colour="Number of alleles") +
+  theme(legend.position="bottom") +
+  theme(text = element_text(size=20))
+
+
+wt.plotso
+
+```
+
+
+```{r}
+# plot the results for rs11076175 with weight traj and velocity parameter
+
+coefs = params[params$snp=="rs11076175" & params$outcome=="Weight" & params$growth.measure=="velocity" & params$distal=="ldl",][,1]
+
+geno0.int = coefs[1]
+geno1.int = coefs[1] + coefs[2] + coefs[5]
+geno2.int = coefs[1] + 2*coefs[2] + 4*coefs[5]
+
+geno0.slope = coefs[3]
+geno1.slope = coefs[3] + coefs[4] + coefs[6]
+geno2.slope = coefs[3] + 2*coefs[4] + 4*coefs[6]; geno2.slope
+
+# get summary of sitar characteristics for weight
+# from ~\GitHub\unc-dissertation-markdown-p2\includes\scripts\paper1\sitar-rev5\table2-mice.Rmd. has re.vals.df and re.vals.df.sub data frame with ms1 and ms2 data, respectively
+
+setwd("~/")
+load(file="re-wt-rev.Rdata")  # re.vals.df
+summary(re.vals.df) # beta1 range is from -0.88 to 0.71
+
+load(file="re-wt.Rdata")  # re.vals.df
+summary(re.vals.df) # beta1 range is from -0.59 to 0.62
+
+# get ldl for the rug plot below
+load("merged-data.Rdata") # has merge2 data frame
+nrow(merge2) # 596
+names(merge2)
+
+# get summary of ldl for group
+# 31 to 300 (based on summary I got in ~\GitHub\unc-dissertation-markdown-p2\includes\scripts\paper1\sitar-rev5\table2-mice.Rmd
+
+# make an empty plot
+df <- data.frame() 
+p1 = ggplot(df) + geom_point() + xlim(-.7,.7) + ylim(50,125) +
+  xlab("Weight velocity growth parameter") + ylab("LDL-C (mg/dL)")
+
+# The color-blind-friendly palette with black:
+# frome http://www.cookbook-r.com/Graphs/Colors_(ggplot2)/
+cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+
+
+# now add plots by allele freq
+wt.plot = p1 + geom_abline(aes(intercept=geno0.int, slope=geno0.slope,
+                     colour="0"), lwd=2) +
+  scale_color_manual(values=cbbPalette[c(1,5:6)]) +
+  geom_rug(data=re.vals.df, aes(x=beta1), inherit.aes=F) +
+  geom_rug(data=merge2, aes(y=LDLChlstrl), inherit.aes=F) +
+  geom_abline(aes(intercept=geno1.int, slope=geno1.slope,
+                     colour="1"), lwd=2) +
+  geom_abline(aes(intercept=geno2.int, slope=geno2.slope,
+                     colour="2"), lwd=2) + 
+  labs(colour="Coded G alleles:") +
+  geom_vline(xintercept=0, lty=3, lwd=1) +
+  theme_bw(base_size=18) +
+  theme(legend.position="bottom") +
+  theme(text = element_text(size=20))
+
+wt.plot
+
+
+
+```
+
+
+
+```{r, eval=F}
+# plot the results for rs11076175 with WFL traj and velocity parameter
+
+coefs = params[params$snp=="rs11076175" & params$outcome=="WFL" & params$growth.measure=="velocity" & params$distal=="ldl",][,1]
+
+geno0.int = coefs[1]
+geno1.int = coefs[1] + coefs[2] + coefs[5]
+geno2.int = coefs[1] + 2*coefs[2] + 4*coefs[5]
+
+geno0.slope = coefs[3]
+geno1.slope = coefs[3] + coefs[4] + coefs[6]
+geno2.slope = coefs[3] + 2*coefs[4] + 4*coefs[6]; geno2.slope
+
+# get summary of sitar characteristics for weight
+setwd("~/")
+load(file="re-wt-rev.Rdata")  # re.vals.df
+summary(re.vals.df) # beta1 range is from -0.88 to 0.71
+
+# get summary of ldl for group
+# 31 to 300 (based on summary I got in ~\GitHub\unc-dissertation-markdown-p2\includes\scripts\paper1\sitar-rev5\table2-mice.Rmd
+
+# make an empty plot
+df <- data.frame() 
+p1 = ggplot(df) + geom_point() + xlim(-1,1) + ylim(50,125) +
+  xlab("WFL velocity growth parameter") + ylab("LDL-C (mg/dL)")
+
+# now add plots by allele freq
+p1 + geom_abline(aes(intercept=geno0.int, slope=geno0.slope,
+                     colour="geno=0")) +
+  geom_abline(aes(intercept=geno1.int, slope=geno1.slope,
+                     colour="geno=1")) +
+  geom_abline(aes(intercept=geno2.int, slope=geno2.slope,
+                     colour="geno=2"))
+
+```
+
+
+```{r, eval=F}
+# plot the results for rs11076175 with height traj and velocity parameter
+
+coefs = params[params$snp=="rs11076175" & params$outcome=="Height" & params$growth.measure=="velocity" & params$distal=="ldl",][,1]
+
+geno0.int = coefs[1]
+geno1.int = coefs[1] + coefs[2] + coefs[5]
+geno2.int = coefs[1] + 2*coefs[2] + 4*coefs[5]
+
+geno0.slope = coefs[3]
+geno1.slope = coefs[3] + coefs[4] + coefs[6]
+geno2.slope = coefs[3] + 2*coefs[4] + 4*coefs[6]; geno2.slope
+
+# get summary of sitar characteristics for weight
+setwd("~/")
+load(file="re-wt-rev.Rdata")  # re.vals.df
+summary(re.vals.df) # beta1 range is from -0.88 to 0.71
+
+# get summary of ldl for group
+# 31 to 300 (based on summary I got in ~\GitHub\unc-dissertation-markdown-p2\includes\scripts\paper1\sitar-rev5\table2-mice.Rmd
+
+# make an empty plot
+df <- data.frame() 
+p1 = ggplot(df) + geom_point() + xlim(-1,1) + ylim(50,125) +
+  xlab("Height velocity growth parameter") + ylab("LDL-C (mg/dL)")
+
+# now add plots by allele freq
+p1 + geom_abline(aes(intercept=geno0.int, slope=geno0.slope,
+                     colour="geno=0")) +
+  geom_abline(aes(intercept=geno1.int, slope=geno1.slope,
+                     colour="geno=1")) +
+  geom_abline(aes(intercept=geno2.int, slope=geno2.slope,
+                     colour="geno=2"))
+
+```
+
+```{r}
+# make table of p-values here?
+#colnames(mean.wide)
 mean.wide2[is.na(mean.wide2)==T]="  " # get rid of missing values
 
 kable(mean.wide2, 
       booktabs=T,
       format="latex",
       escape=F,
-      caption='(MS3: Table 5) Coefficient for association between lipid distal outcome and SNP.\\label{tab:ms3t3}',
+      caption='(MS3: Table 6) Coefficient for association between lipid distal outcome and SNP.\\label{tab:ms3t3}',
       col.names = c("Sex", "Outcome", "Lipid", "snp",
                     rep(c("Not adjusted", "Adjusted$^a$"), 2))) %>%
   kable_styling(bootstrap_options = c("striped"), 
@@ -1069,9 +1611,8 @@ kable(mean.wide2,
 ```
 
 
+
 \end{landscape}
-
-
 
 
 # Figures
@@ -1085,7 +1626,7 @@ kable(mean.wide2,
 
 
 
-```{r, fig.cap = "(MS3: Figure 2) Growth trajectories by type of trajectory, sex of child and adjustment status.", fig.pos="H"}
+```{r, fig.cap = "(MS3: Figure 2) Growth trajectories by type of trajectory, sex of child and adjustment status.", fig.pos="H", fig.keep='all'}
 ## Most likely latent class trajectories by sex of child, distal outcome and adjustment status
 
 plot.traj + labs(
@@ -1094,6 +1635,8 @@ plot.traj + labs(
        y="units for growth trajectory measure") 
 
 ```
+
+
 
 
 ```{r}
@@ -1115,32 +1658,33 @@ head(plot.mean.dat)
 
 
 
-```{r, fig.cap="Plot of coefficients for snp-lipid associations by class and type of distal outcome by type of trajectory, lipid outcome, sex of child, and adjustment status", fig.pos="H"}
+```{r, fig.cap="Plot of coefficients for snp-lipid associations by class and type of distal outcome by type of trajectory, lipid outcome, sex of child, and adjustment status", fig.pos="H", fig.keep='none'}
 
 ## Mean distal lipid values for most likely latent class trajectories by sex of child, distal outcome and adjustment status
 
 pd <- position_dodge(0.8) # move them 0.8 to the left and right
 
-cn
-
 nrow(mean.wide2)
 cn = combine.means.merge
 
-cn = combine.means.merge
 names(cn)
 levels(factor(cn$lipid))
 sapply(cn, class)
+cn$est. = as.numeric(as.character(cn$est.))
+cn$se. = as.numeric(as.character(cn$se.))
 
-# names(plot.mean.dat)
-# names(cp.wide)
-# plot.mean.dat2 = merge(plot.mean.dat,
-#                        cp.wide[c("sex", "adj", "outcome", "LatentClass", "class.order")],
-#                        by = c("sex", "adj" , "outcome", "LatentClass"))
-# names(plot.mean.dat2)
-# head(plot.mean.dat2)
-# sapply(plot.mean.dat2, class)
-# plot.mean.dat2$est = as.numeric(as.character(plot.mean.dat2$est))
+names(plot.mean.dat)
+names(cp.wide)
+plot.mean.dat2 = merge(plot.mean.dat,
+                       cp.wide[c("sex", "adj", "outcome", "LatentClass", "class.order")],
+                       by = c("sex", "adj" , "outcome", "LatentClass"))
+names(plot.mean.dat2)
+head(plot.mean.dat2)
+sapply(plot.mean.dat2, class)
+plot.mean.dat2$est = as.numeric(as.character(plot.mean.dat2$est))
+```
 
+```{r, eval=F}
 
 # hdl-c
 hdl.plot = ggplot(cn[cn$lipid=="HDL-C",],
@@ -1180,11 +1724,40 @@ dev.off()
 ```
 
 
-```{r}
+```{r, fig.cap="(MS3: Figure 3) Plot of coefficients for SNP-lipid associations by class and type of distal outcome by type of trajectory, lipid outcome, sex of child, and adjustment status", fig.pos="H", fig.keep='all'}
 
 # ldl-c
 
-ldl.plot = ggplot(cn[cn$lipid=="LDL-C",],
+sapply(cn,class)
+
+# get more data for defense slides plot
+table(combine.means.$snp)
+table(combine.means.$lipid)
+ldl.sub = combine.means.merge.all[combine.means.merge.all$lipid=="LDL" &
+                           combine.means.merge.all$snp=="rs11076175" &
+                           combine.means.merge.all$outcome %in% c("Weight", "WFL") &
+                             combine.means.merge.all$class==2,]
+nrow(ldl.sub) # 24
+ldl.sub
+
+
+# get more data for check of most sig SITAR gxe interaction
+# rs1077835, HDL, velocity, weight (NOTE: for some reason this snp was not included in the aim 3 mplus analyses?)
+ldl.sub2 = combine.means.merge.all[combine.means.merge.all$lipid=="LDL" &
+                           combine.means.merge.all$snp=="rs5880" &
+                             combine.means.merge.all$outcome %in% c("Height") &
+                             combine.means.merge.all$class==2,]
+nrow(ldl.sub) # 12
+ldl.sub2
+
+```
+
+```{r}
+# export figure for AHA 2018 m2 pres slides
+dim(cn)
+cn
+
+ldl.plot = ggplot(cn[cn$lipid=="LDL-C" & cn$snp=="rs11076175" & cn$outcome=="Weight",],
        aes(x=class.order, y=est., shape=adj, color=class.order)) +
   facet_grid(. ~ snp + sex + outcome, scale='free') + # label_parsed allows greek symbols in the strip text
     geom_errorbar(aes(ymin=est.-1.96*se., ymax=est.+1.96*se.), 
@@ -1195,38 +1768,189 @@ ldl.plot = ggplot(cn[cn$lipid=="LDL-C",],
   scale_shape_manual("Adjusted", values = c(0,15)) +
   xlab(" ") +
   ylab("Coefficient of association") +
-  theme_bw(base_size=18) +
-  theme(axis.text.x = element_blank(), #element_text(angle = 45, hjust = 1),
-        strip.background =element_rect(fill="white"),
-        legend.position = "bottom",
-        plot.caption = element_text(size = 10, hjust = 0.5)) +
+  theme_bw(base_size=20) +
+  theme(#axis.text.x = element_text(angle = 45, hjust = 1),
+        axis.title=element_text(size=18),
+        axis.text.x = element_blank(),
+        strip.background = element_rect(fill="white"),
+       strip.text.y = element_text(size = 18, colour = "black"),
+       strip.text.x = element_text(size = 18, colour = "black"),
+       plot.caption = element_text(size = 12, hjust = 0.5),
+       legend.position = "bottom") +
+  # theme(axis.text.x = element_blank(), #element_text(angle = 45, hjust = 1),
+  #       strip.background =element_rect(fill="white"),
+  #       legend.position = "bottom",
+  #       plot.caption = element_text(size = 12, hjust = 0.5),
+  #       strip.text.x = element_text(size = 15, colour = "black"),
+  #       axis.title=element_text(size=15)) +
         # strip.placement = "outside",
         # strip.background = element_blank(),
         # #element_rect(fill=NA,colour="grey50"),
         # panel.spacing=unit(0,"cm"),
         # panel.border = element_rect(fill=NA, colour = "black")) +
    expand_limits(y = 0) +
- labs(title="Coefficent of snp-lipid associations.",
-      subtitle = "For LDL-C distal outcomes, by lipid, snp, sex of child, and type of trajectory",
-      caption="Note: Adjusted analyses includes sex of child (for pooled sample), randomization status, and socioeconomic status.") 
+ labs(#title="Coefficent of snp-lipid associations.",
+      #subtitle = "For LDL-C distal outcomes, by lipid, snp, sex of child, and type of trajectory",
+      caption="Note: Adjusted analyses includes sex of child (for pooled sample), randomization status, socioeconomic status and principal components.")
 
 ldl.plot
-
-# export figure for AHA 2018 m2 pres slides?
 
 png(file="includes/scripts/presentations/aha-2018-m3/figures/ldl.png", height=8, width=14, units='in', res=300)
   ldl.plot
 dev.off()
+```
+
+```{r}
+
+
+ldl.sub[ldl.sub$sex=="Male" & ldl.sub$outcome=="WFL",
+       c("class.order", "est.", "se.", "adj", "snp", "sex", "outcome", "LatentClass")]
+# NOTE: WFL male adj value did not converge due to PC3. Just omit for now. but note that unadj values do show same relationship.
+
+ldl.sub. = ldl.sub[ldl.sub$outcome=="Weight",]
+levels(ldl.sub.$class.order)
+ldl.sub.$class.order = factor(ldl.sub.$class.order,
+                              labels = c("Slower", "Faster"))
+  
+ldl.plot2 = ggplot(ldl.sub.,
+       aes(x=class.order, y=est., shape=adj, color=class.order)) +
+  facet_grid(sex~., scale='free') + # label_parsed allows greek symbols in the strip text
+    geom_errorbar(aes(ymin=est.-1.96*se., ymax=est.+1.96*se.), 
+                  width=.1, position=pd, size=1.5) +
+    geom_point(position=pd, size=10) +
+  geom_hline(yintercept = 0, color="black", lwd=1, lty=3) +
+  scale_color_manual("Latent Class Groups", values = cbbPalette) +
+  scale_shape_manual("Adjusted", values = c(0,15)) +
+  xlab(" ") +
+  ylab("Coefficient of rs11076175 / LDL-C (mg/dL) association") +
+  theme_bw(base_size=18) +
+  theme(#axis.text.x = element_text(angle = 45, hjust = 1),
+#        axis.title=element_text(size=18),
+    axis.text.y = element_text(size=8),
+        axis.text.x = element_blank(),
+        legend.text=element_text(size=18),
+        strip.background = element_rect(fill="white"),
+       strip.text.y = element_text(size = 18, colour = "black"),
+       strip.text.x = element_text(size = 18, colour = "black"),
+       plot.caption = element_text(size = 12, hjust = 0.5),
+       legend.position = "bottom") +
+   expand_limits(y = 0)#
+# labs(#title="Coefficent of snp-lipid associations.",
+      #subtitle = "For LDL-C distal outcomes, by lipid, snp, sex of child, and type of trajectory",
+#      caption="Note: Adjusted analyses includes sex of child (for pooled sample),\n randomization status, socioeconomic status and principal components.")
+
+ldl.plot2
+
 
 ```
 
 
 ```{r}
 
+cp2. = cp.wide.2p[cp.wide.2p$adj=="no" & cp.wide.2p$outcome %in%  c("Weight (kg)"),]
+
+cp2.$class.order = factor(cp2.$class.order, 
+                          labels=c("Slower", "Faster"))
+
+plot.traj.def = ggplot(data=cp2., 
+               aes(x=age, y=value, group=id, 
+                   colour=class.order)) +
+  geom_line(lwd=1.5, lty=1) +
+  facet_grid(sex ~ ., scales = "free") +
+  theme_bw(base_size=18) +
+  scale_color_manual(name = "Latent Class",
+                     values = cbbPalette) +
+  guides( colour = guide_legend(override.aes = list(size=3, alpha=1)),
+         linetype = guide_legend(override.aes = list(size = 3))) +
+  theme_bw(base_size=20) +
+  theme(#axis.text.x = element_text(angle = 45, hjust = 1),
+        axis.title=element_text(size=18),
+        axis.text.x = element_blank(),
+        strip.background = element_rect(fill="white"),
+       strip.text.y = element_text(size = 18, colour = "black"),
+       strip.text.x = element_text(size = 18, colour = "black"),
+       plot.caption = element_text(size = 12, hjust = 0.5),
+       legend.position = "bottom") +
+  labs(#title="Growth trajectories",
+       #caption="Note: Dotted lines represent curves in analyses adjusting for sex of child (for pooled sample), randomization status, and socioeconomic status.",
+       x="Age (months)",
+       y="Weight (kg)") 
+
+plot.traj.def
+
+
+#extract legend
+#https://github.com/hadley/ggplot2/wiki/Share-a-legend-between-two-ggplot2-graphs
+g_legend<-function(a.gplot){
+  tmp <- ggplot_gtable(ggplot_build(a.gplot))
+  leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
+  legend <- tmp$grobs[[leg]]
+  return(legend)}
+
+# see https://stackoverflow.com/questions/13649473/add-a-common-legend-for-combined-ggplots
+mylegend<-g_legend(ldl.plot2)
+
+grid.arrange(arrangeGrob(plot.traj.def + theme(legend.position="none"),
+                         ldl.plot2 + theme(legend.position="none"),
+                         nrow=1),
+             mylegend, nrow=2,heights=c(10, 1),
+             top=textGrob("Additive association between LDL-C and rs11076175 by growth class and adjustment status", gp=gpar(fontsize=20, font=3)))
+
+# save for use in defense slides at https://www.overleaf.com/15861270tdtfhzyywpyy
+
+png(file="includes/scripts/presentations/defense-May-2018/figures/aim3-lgmm.png", height=8, width=12, units='in', res=300)
+grid.arrange(arrangeGrob(plot.traj.def + theme(legend.position="none"),
+                         ldl.plot2 + theme(legend.position="none"),
+                         nrow=1),
+             mylegend, nrow=2,heights=c(10, 1))
+             #top=textGrob("Additive association between LDL-C (mg/dL) and rs11076175 by growth class and adjustment status", gp=gpar(fontsize=20, font=3)))
+dev.off()
+
+
+```
+
+
+```{r, eval=F}
+
+# check sitar results for rs5880, ldl, height velocity
+dim(ldl.sub2)
+
+ldl.plot3 = ggplot(ldl.sub2,
+       aes(x=class.order, y=est., shape=adj, color=class.order)) +
+  facet_grid(outcome ~ snp + sex, scale='free') + # label_parsed allows greek symbols in the strip text
+    geom_errorbar(aes(ymin=est.-1.96*se., ymax=est.+1.96*se.), 
+                  width=.1, position=pd, size=1.5) +
+    geom_point(position=pd, size=10) +
+  geom_hline(yintercept = 0, color="black", lwd=1, lty=3) +
+  scale_color_manual("Latent Class Groups", values = cbbPalette) +
+  scale_shape_manual("Adjusted", values = c(0,15)) +
+  xlab(" ") +
+  ylab("Coefficient of association") +
+  theme_bw(base_size=20) +
+  theme(#axis.text.x = element_text(angle = 45, hjust = 1),
+        axis.title=element_text(size=18),
+        axis.text.x = element_blank(),
+        strip.background = element_rect(fill="white"),
+       strip.text.y = element_text(size = 18, colour = "black"),
+       strip.text.x = element_text(size = 18, colour = "black"),
+       plot.caption = element_text(size = 12, hjust = 0.5),
+       legend.position = "bottom") +
+   expand_limits(y = 0) +
+ labs(#title="Coefficent of snp-lipid associations.",
+      #subtitle = "For LDL-C distal outcomes, by lipid, snp, sex of child, and type of trajectory",
+      caption="Note: Adjusted analyses includes sex of child (for pooled sample),\n randomization status, socioeconomic status and principal components.")
+
+ldl.plot3
+
+
+```
+
+```{r}
+
 # plot of both for poster
 levels(cn$class.order)
 cn$class.order = factor(cn$class.order, 
-                        labels = c("Slow", "Fast"))
+                        labels = c("Slower", "Faster"))
 
 both.plot = ggplot(cn[!(cn$snp %in% c("rs4420638")),],
        aes(x=class.order, y=est., shape=adj, color=class.order)) +
@@ -1266,16 +1990,16 @@ dev.off()
 
 
 
-
-```{r, fig.cap="Plot of mean lipid values for WFL trajectories and LDL-C lipid outcome by latent growth class", fig.pos="H", eval=F}
+```{r, fig.cap="(MS3: Figure 3) Plot of mean lipid values for WFL trajectories and LDL-C lipid outcome by latent growth class", fig.pos="H", eval=F}
 
 ## WFL and LDL: Mean distal lipid values for most likely latent class trajectories by sex of child, distal outcome and adjustment status
 
-
 # plot for export to aha 2018 slides
 # -----------------------------------
+dat = plot.mean.dat2[plot.mean.dat2$est>0 & plot.mean.dat2$lipid=="LDL-C" &  plot.mean.dat2$snp=="rs11076175",]
+
 aha.2018.m2.plotmeans = 
-ggplot(plot.mean.dat2[plot.mean.dat2$est>0 & plot.mean.dat2$outcome=="WFL" & plot.mean.dat2$lipid=="LDL-C",],
+ggplot(dat,
        aes(x=class.order, y=est, color=class.order, shape=adj)) +
   facet_grid(lipid ~ sex + outcome, scale='free') + # label_parsed allows greek symbols in the strip text
     geom_errorbar(aes(ymin=est-1.96*se, ymax=est+1.96*se), 
@@ -1294,10 +2018,18 @@ ggplot(plot.mean.dat2[plot.mean.dat2$est>0 & plot.mean.dat2$outcome=="WFL" & plo
 aha.2018.m2.plotmeans +
   labs(caption="Note: Adjusted analyses include sex of child (for pooled sample), randomization status, and socioeconomic status.") 
 
-
-
 ```
 
+
+```{r, fig.cap = "(MS3: Figure 4) Plot of association between infant weight SITAR growth velocity parameter and LDL-C levels by rs11076175 allele frequency.", fig.pos="H", fig.keep='all'}
+
+wt.plot
+
+png(file="includes/scripts/presentations/defense-May-2018/figures/aim3-sitar.png", height=6, width=8, units='in', res=300)
+  wt.plot 
+dev.off()
+
+```
 
 
 
@@ -1461,4 +2193,3 @@ aha.2018.m2.plotmeans +
 <!-- ## SEM diagram for adjusted stratified LGMM analyses -->
 
 <!-- ![Diagram of stratified and adjusted LGMM for aim3 ](../../figures/aim3-strat-conf.png){#fig:lgmm1} -->
-
